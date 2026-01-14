@@ -1,3 +1,4 @@
+import requests
 import os
 import re
 import glob
@@ -25,15 +26,22 @@ def parse_party_and_download_date_from_filename(path: str):
     name = os.path.splitext(base)[0]
 
     m = DATE_RE.search(name)
-    if not m:
-        raise ValueError(f"Could not find YYYY-MM-DD in filename: {base}")
-
-    download_date = datetime.strptime(m.group(1), "%Y-%m-%d").date()
-    party_part = name[:m.start()].rstrip("-_ ").strip()
-    if not party_part:
-        party_part = "UNKNOWN_PARTY"
-
-    return party_part, download_date
+    if m:
+        download_date = datetime.strptime(m.group(1), "%Y-%m-%d").date()
+        party_part = name[:m.start()].rstrip("-_ ").strip()
+        if not party_part:
+            party_part = "UNKNOWN_PARTY"
+        return party_part, download_date
+    else:
+        # Fallback: use filename (minus extension) as party, file's mtime as download date
+        party_part = name.strip() if name.strip() else "UNKNOWN_PARTY"
+        try:
+            mtime = os.path.getmtime(path)
+            download_date = datetime.fromtimestamp(mtime).date()
+        except Exception:
+            # If file doesn't exist or error, fallback to today
+            download_date = date.today()
+        return party_part, download_date
 
 
 def parse_meta_spend_midpoint(spend_value) -> float | None:
@@ -62,8 +70,13 @@ def to_date_safe(x) -> date | None:
     s = str(x).strip()
     if not s or s.lower() == "nan":
         return None
-    # expected "YYYY-MM-DD"
-    return datetime.strptime(s[:10], "%Y-%m-%d").date()
+    # Try multiple date formats
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(s[:10], fmt).date()
+        except ValueError:
+            continue
+    return None
 
 
 def week_start_sunday(d: date) -> date:
@@ -92,49 +105,80 @@ def iter_week_starts(start_day: date, end_day: date):
 # ---------------------------
 
 def process_meta_folder(input_folder: str, output_csv_path: str):
+    # Exchange rate cache: {date_str: rate}
+    exchange_rate_cache = {}
+
+    def get_usd_to_ils_rate(date_obj):
+        # Use 3.5 as the default fallback rate
+        DEFAULT_RATE = 3.5
+        API_KEY = "REMOVED_APILAYER_API_KEY"
+        min_supported = datetime(2020, 1, 1).date()
+        if date_obj < min_supported:
+            print(f"Date {date_obj} before 2020-01-01, using 2020-01-01 for rate lookup.")
+            date_obj = min_supported
+        date_str = date_obj.strftime("%Y-%m-%d")
+        if date_str in exchange_rate_cache:
+            return exchange_rate_cache[date_str]
+        url = f"https://api.exchangerate.host/{date_str}?base=USD&symbols=ILS&access_key={API_KEY}"
+        try:
+            resp = requests.get(url, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            # If API requires access key or fails, use default
+            if not data.get("success", True) or "error" in data:
+                print(f"WARNING: API error or missing access key for {date_str}. Using default rate {DEFAULT_RATE}.")
+                exchange_rate_cache[date_str] = DEFAULT_RATE
+                return DEFAULT_RATE
+            if "rates" in data and "ILS" in data["rates"]:
+                rate = data["rates"]["ILS"]
+                exchange_rate_cache[date_str] = rate
+                return rate
+            else:
+                print(f"WARNING: Unexpected API response for {date_str}: {data}. Using default rate {DEFAULT_RATE}.")
+                exchange_rate_cache[date_str] = DEFAULT_RATE
+                return DEFAULT_RATE
+        except Exception as e:
+            print(f"WARNING: Could not fetch USD→ILS rate for {date_str}: {e}. Using default rate {DEFAULT_RATE}.")
+            exchange_rate_cache[date_str] = DEFAULT_RATE
+            return DEFAULT_RATE
+
     csv_paths = sorted(glob.glob(os.path.join(input_folder, "*.csv")))
     if not csv_paths:
         raise FileNotFoundError(f"No CSV files found in folder: {input_folder}")
 
-    # aggregation: (party, week_start) -> total spend in that week
+    # aggregation: (party, week_start, currency) -> total spend in that week
     agg_total_week = defaultdict(float)
-
-    # optional: track currencies to warn if mixed
-    currencies_seen = set()
+    # track which (party, week_start) exist for output
+    output_keys = set()
 
     for path in csv_paths:
         party, download_dt = parse_party_and_download_date_from_filename(path)
-
         df = pd.read_csv(path)
-
-        # currency column exists in your sample files
-        if "currency" in df.columns:
-            for c in df["currency"].dropna().unique().tolist():
-                currencies_seen.add(str(c))
 
         # Required columns (based on your sample):
         # ad_delivery_start_time, ad_delivery_stop_time, spend
         for row in df.itertuples(index=False):
-            # tuple access by attribute name (pandas creates valid identifiers)
             start = to_date_safe(getattr(row, "ad_delivery_start_time", None))
             stop = to_date_safe(getattr(row, "ad_delivery_stop_time", None))
             spend_mid = parse_meta_spend_midpoint(getattr(row, "spend", None))
-
+            currency = getattr(row, "currency", None)
+            if currency is None and "currency" in df.columns:
+                # fallback if column exists but value is missing
+                currency = df["currency"].iloc[0]
+            currency = str(currency) if currency is not None else "UNKNOWN"
             if start is None or spend_mid is None:
                 continue
-
-            # if still running -> assume ended at download date (as you requested)
             if stop is None:
                 stop = download_dt
-
-            # guard
             if stop < start:
                 continue
-
+            # Convert USD to ILS if needed
+            if currency == "USD":
+                rate = get_usd_to_ils_rate(start)
+                spend_mid = spend_mid * rate
+                currency = "ILS"  # treat as ILS from now on
             duration_days = (stop - start).days + 1
             daily_spend = spend_mid / duration_days
-
-            # allocate into weeks by day-overlap
             for ws in iter_week_starts(start, stop):
                 week_end = ws + timedelta(days=6)
                 overlap_start = max(start, ws)
@@ -142,10 +186,12 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
                 overlap_days = (overlap_end - overlap_start).days + 1
                 if overlap_days > 0:
                     agg_total_week[(party, ws)] += overlap_days * daily_spend
+                    output_keys.add((party, ws))
 
     # build output dataframe
     out_rows = []
-    for (party, ws), total_week in agg_total_week.items():
+    for (party, ws) in output_keys:
+        total_week = agg_total_week[(party, ws)]
         out_rows.append({
             "source": "meta",
             "party_name": party,
@@ -153,6 +199,7 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
             "week_index_since_2020": week_index_since_2020(ws),
             "total_spend_week": total_week,
             "avg_spend_per_day_week": total_week / 7.0,
+            "currency": "ILS",
         })
 
     out_df = pd.DataFrame(out_rows)
@@ -167,10 +214,7 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
     # helpful print
     print(f"Processed {len(csv_paths)} files.")
     print(f"Output: {output_csv_path}")
-    if len(currencies_seen) > 1:
-        print(f"WARNING: multiple currencies detected: {sorted(currencies_seen)}")
-    elif len(currencies_seen) == 1:
-        print(f"Currency: {next(iter(currencies_seen))}")
+    print("All spend is now in ILS. USD values were converted using exchangerate.host.")
 
 
 if __name__ == "__main__":
