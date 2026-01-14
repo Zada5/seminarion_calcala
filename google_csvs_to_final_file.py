@@ -1,4 +1,5 @@
 import math
+import os
 from datetime import date, datetime, timedelta
 
 import pandas as pd
@@ -99,12 +100,13 @@ def process_google_file(input_path: str, output_csv_path: str, sheet_name: str |
             "week_start_sunday": ws.isoformat(),
             "week_index_since_2020": week_index_since_2020(ws),
             "total_spend_week": total_week,
-            "avg_spend_per_day_week": total_week / 7.0,
+            "avg_spend_per_day_week": round(total_week / 7.0, 2),
             "currency": "ILS",
         })
 
     out_df = pd.DataFrame(out_rows)
     out_df = out_df.sort_values(["party_name", "week_start_sunday"]).reset_index(drop=True)
+    os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
     out_df.to_csv(output_csv_path, index=False, encoding="utf-8-sig")
 
     print(f"Output: {output_csv_path}")
@@ -112,5 +114,5 @@ def process_google_file(input_path: str, output_csv_path: str, sheet_name: str |
 
 if __name__ == "__main__":
     input_path = "./google_csv/Google Ads Political Spendings Cleaned.xlsx"
-    output_csv_path = "./weekly_party_spend_google.csv"
+    output_csv_path = "./cleaned_data/weekly_party_spend_google.csv"
     process_google_file(input_path, output_csv_path)
