@@ -208,5 +208,5 @@ __marimo__/
 
 
 #this project: 
-meta_csvs/*
 weekly_party_spend_meta.csv
+.DS_Store
