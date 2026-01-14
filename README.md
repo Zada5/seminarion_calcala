@@ -206,7 +206,7 @@ Use `google_csvs_to_final_file.py` to convert the cleaned Google Ads XLSX export
 | `Week_Start_Date` | Week start date (Excel serial or date)  |
 | `Spend_ILS`       | Total spend per week (ILS)              |
 
-The output file is `weekly_party_spend_google.csv`, with the same `week_index_since_2020` logic as the Meta pipeline.
+The output file is `cleaned_data/weekly_party_spend_google.csv`, with the same `week_index_since_2020` logic as the Meta pipeline.
 
 ## For AI Agents (Important)
 
@@ -252,7 +252,7 @@ Common extensions that can be added safely:
    ```bash
    python build_weekly_spend.py
    ```
-4. Use `weekly_party_spend_meta.csv` for analysis
+4. Use `cleaned_data/weekly_party_spend_meta.csv` for analysis
 
 ---
 
