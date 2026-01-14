@@ -196,7 +196,7 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
             "week_start_sunday": ws.isoformat(),
             "week_index_since_2020": week_index_since_2020(ws),
             "total_spend_week": total_week,
-            "avg_spend_per_day_week": total_week / 7.0,
+            "avg_spend_per_day_week": round(total_week / 7.0, 2),
             "currency": "ILS",
         })
 
@@ -207,6 +207,7 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
     out_df = out_df.sort_values(["party_name", "week_start_sunday"]).reset_index(drop=True)
 
     # write
+    os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
     out_df.to_csv(output_csv_path, index=False, encoding="utf-8-sig")
 
     # helpful print
@@ -219,5 +220,5 @@ if __name__ == "__main__":
     # Example usage:
     # Put this script in your project, and set input folder to the folder containing the 50 CSVs.
     input_folder = "./meta_csvs"  # <-- change this
-    output_csv_path = "./weekly_party_spend_meta.csv"
+    output_csv_path = "./cleaned_data/weekly_party_spend_meta.csv"
     process_meta_folder(input_folder, output_csv_path)
