@@ -119,26 +119,24 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
         date_str = date_obj.strftime("%Y-%m-%d")
         if date_str in exchange_rate_cache:
             return exchange_rate_cache[date_str]
-        url = f"https://api.exchangerate.host/{date_str}?base=USD&symbols=ILS&access_key={API_KEY}"
+        url = f"https://api.apilayer.com/currency_data/convert?base=USD&symbols=ILS&amount=1&date={date_str}"
+        headers = {"apikey": API_KEY}
         try:
-            resp = requests.get(url, timeout=10)
+            print(f"Fetching USD→ILS rate for {date_str} using API key: {API_KEY[:4]}... (URL: {url})")
+            resp = requests.get(url, headers=headers, timeout=10)
             resp.raise_for_status()
             data = resp.json()
-            # If API requires access key or fails, use default
-            if not data.get("success", True) or "error" in data:
-                print(f"WARNING: API error or missing access key for {date_str}. Using default rate {DEFAULT_RATE}.")
-                exchange_rate_cache[date_str] = DEFAULT_RATE
-                return DEFAULT_RATE
-            if "rates" in data and "ILS" in data["rates"]:
-                rate = data["rates"]["ILS"]
+            # The expected response has 'result' for the converted amount
+            if resp.status_code == 200 and "result" in data:
+                rate = float(data["result"])
                 exchange_rate_cache[date_str] = rate
                 return rate
             else:
-                print(f"WARNING: Unexpected API response for {date_str}: {data}. Using default rate {DEFAULT_RATE}.")
+                print(f"ERROR: Unexpected API response for {date_str}: {data}. Using default rate {DEFAULT_RATE}.")
                 exchange_rate_cache[date_str] = DEFAULT_RATE
                 return DEFAULT_RATE
         except Exception as e:
-            print(f"WARNING: Could not fetch USD→ILS rate for {date_str}: {e}. Using default rate {DEFAULT_RATE}.")
+            print(f"ERROR: Could not fetch USD→ILS rate for {date_str}: {e}. URL: {url} Using default rate {DEFAULT_RATE}.")
             exchange_rate_cache[date_str] = DEFAULT_RATE
             return DEFAULT_RATE
 
