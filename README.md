@@ -6,6 +6,8 @@
 
 This project provides a **deterministic, reproducible pipeline** for transforming raw Meta Ad Library CSV exports into a **weekly time-series dataset of political advertising spend by party**.
 
+It also includes a companion script for **Google Ads political spend** exports (weekly data already aggregated) that emits the **same output schema**, so both sources can be merged cleanly.
+
 The script is designed to support:
 
 * **Longitudinal analysis** of political ad spending
@@ -118,6 +120,7 @@ The script produces a **single CSV file** with the following schema:
 | `week_index_since_2020`  | Sequential week number since 2020-01-05   |
 | `total_spend_week`       | Total estimated spend in that week        |
 | `avg_spend_per_day_week` | `total_spend_week / 7`                    |
+| `currency`               | Spend currency (Meta outputs in ILS)      |
 
 Each row represents:
 
@@ -180,6 +183,18 @@ This makes it suitable for:
 * Feeding into causal or predictive models
 
 ---
+
+## Google Ads Companion Script
+
+Use `google_csvs_to_final_file.py` to convert the cleaned Google Ads XLSX export into the **same weekly schema** as the Meta output. It expects a sheet containing:
+
+| Column name       | Purpose                                 |
+| ----------------- | --------------------------------------- |
+| `Advertiser_Name` | Party identifier                        |
+| `Week_Start_Date` | Week start date (Excel serial or date)  |
+| `Spend_ILS`       | Total spend per week (ILS)              |
+
+The output file is `weekly_party_spend_google.csv`, with the same `week_index_since_2020` logic as the Meta pipeline.
 
 ## For AI Agents (Important)
 
