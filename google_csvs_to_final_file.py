@@ -46,7 +46,13 @@ def normalize_columns(df: pd.DataFrame) -> dict[str, str]:
 
 
 def process_google_file(input_path: str, output_csv_path: str, sheet_name: str | int = 0):
-    df = pd.read_excel(input_path, sheet_name=sheet_name)
+    try:
+        df = pd.read_excel(input_path, sheet_name=sheet_name, engine="openpyxl")
+    except ImportError as exc:
+        raise ImportError(
+            "Missing optional dependency 'openpyxl'. Install it with "
+            "`pip install -r requirements.txt` and retry."
+        ) from exc
     normalized = normalize_columns(df)
 
     advertiser_col = normalized.get("advertiser_name")

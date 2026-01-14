@@ -19,6 +19,18 @@ The output is a single, clean CSV file where **each row represents one party in 
 
 ---
 
+## Setup
+
+Create a virtual environment and install dependencies:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+---
+
 ## Problem Definition
 
 Meta Ad Library data is:
