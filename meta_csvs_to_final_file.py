@@ -220,5 +220,5 @@ if __name__ == "__main__":
     # Example usage:
     # Put this script in your project, and set input folder to the folder containing the 50 CSVs.
     input_folder = "./meta_csvs"  # <-- change this
-    output_csv_path = "./cleaned_data/weekly_party_spend_meta.csv"
+    output_csv_path = "./first_cleaning/weekly_party_spend_meta.csv"
     process_meta_folder(input_folder, output_csv_path)

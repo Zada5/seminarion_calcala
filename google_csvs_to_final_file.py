@@ -114,5 +114,5 @@ def process_google_file(input_path: str, output_csv_path: str, sheet_name: str |
 
 if __name__ == "__main__":
     input_path = "./google_csv/Google Ads Political Spendings Cleaned.xlsx"
-    output_csv_path = "./cleaned_data/weekly_party_spend_google.csv"
+    output_csv_path = "./first_cleaning/weekly_party_spend_google.csv"
     process_google_file(input_path, output_csv_path)
