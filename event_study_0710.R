@@ -190,7 +190,7 @@ cat("Event window      : +/- ", analysis_window_weeks, " weeks\n", sep = "")
 google_weekly_spend <- read_weekly_spend_file(google_data_path)
 meta_weekly_spend <- read_weekly_spend_file(meta_data_path)
 
-required_spend_columns <- c("source", "party_name", "week_start_sunday", "total_spend_week", "class")
+required_spend_columns <- c("source", "party_name", "week_start_sunday", "total_spend_week", "class", "currency")
 missing_google_columns <- setdiff(required_spend_columns, names(google_weekly_spend))
 missing_meta_columns <- setdiff(required_spend_columns, names(meta_weekly_spend))
 
