@@ -1,0 +1,154 @@
+Event-Study Regression Summary
+================================
+Generated: 2026-03-03 18:57:27.021755
+
+
+--- all_entities_all_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 10,038
+Fixed-effects: entity_name: 65,  data_source: 2,  event_id: 66
+Standard-errors: Clustered (entity_name) 
+                   Estimate Std. Error  t value Pr(>|t|)    
+relative_week::-2  0.071342   0.030522  2.33743 0.022557 *  
+relative_week::-1  0.055986   0.026321  2.12699 0.037281 *  
+relative_week::1  -0.024866   0.024779 -1.00353 0.319383    
+relative_week::2  -0.043181   0.025524 -1.69180 0.095548 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.16113     Adj. R2: 0.340191
+                Within R2: 0.001475
+
+--- political_parties_all_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 1,411
+Fixed-effects: entity_name: 16,  data_source: 2,  event_id: 66
+Standard-errors: Clustered (entity_name) 
+                   Estimate Std. Error   t value Pr(>|t|) 
+relative_week::-2  0.161966   0.092919  1.743090  0.10177 
+relative_week::-1  0.091496   0.085961  1.064394  0.30399 
+relative_week::1   0.000075   0.057308  0.001308  0.99897 
+relative_week::2  -0.040511   0.063226 -0.640734  0.53136 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.131     Adj. R2: 0.400107
+              Within R2: 0.004017
+
+--- other_orgs_people_all_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 8,627
+Fixed-effects: entity_name: 49,  data_source: 2,  event_id: 66
+Standard-errors: Clustered (entity_name) 
+                   Estimate Std. Error   t value Pr(>|t|) 
+relative_week::-2  0.042220   0.031576  1.337080  0.18750 
+relative_week::-1  0.033925   0.027362  1.239880  0.22105 
+relative_week::1  -0.022516   0.027181 -0.828375  0.41156 
+relative_week::2  -0.040726   0.026456 -1.539403  0.13027 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.12704     Adj. R2: 0.355639
+                Within R2: 7.934e-4
+
+--- all_entities_political_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 5,323
+Fixed-effects: entity_name: 64,  data_source: 2,  event_id: 36
+Standard-errors: Clustered (entity_name) 
+                   Estimate Std. Error  t value   Pr(>|t|)    
+relative_week::-2  0.113583   0.039611  2.86748 5.6210e-03 ** 
+relative_week::-1  0.148871   0.034638  4.29787 6.0936e-05 ***
+relative_week::1  -0.065781   0.033129 -1.98562 5.1432e-02 .  
+relative_week::2  -0.067418   0.037269 -1.80895 7.5230e-02 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.2012     Adj. R2: 0.31814 
+               Within R2: 0.005587
+
+--- all_entities_terror_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 4,714
+Fixed-effects: entity_name: 61,  data_source: 2,  event_id: 30
+Standard-errors: Clustered (entity_name) 
+                   Estimate Std. Error   t value Pr(>|t|) 
+relative_week::-2  0.024992   0.043989  0.568146  0.57206 
+relative_week::-1 -0.058210   0.042571 -1.367387  0.17660 
+relative_week::1   0.016889   0.029752  0.567661  0.57238 
+relative_week::2  -0.017768   0.040719 -0.436361  0.66414 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.07952     Adj. R2: 0.397114
+                Within R2: 7.467e-4
+
+--- political_parties_political_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 755
+Fixed-effects: entity_name: 16,  data_source: 2,  event_id: 36
+Standard-errors: Clustered (entity_name) 
+                   Estimate Std. Error  t value Pr(>|t|)    
+relative_week::-2  0.233255   0.156433  1.49109 0.156667    
+relative_week::-1  0.173505   0.155774  1.11382 0.282885    
+relative_week::1  -0.185449   0.123884 -1.49695 0.155150    
+relative_week::2  -0.193744   0.098479 -1.96735 0.067919 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.17129     Adj. R2: 0.411678
+                Within R2: 0.020781
+
+--- political_parties_terror_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 656
+Fixed-effects: entity_name: 14,  data_source: 2,  event_id: 30
+Standard-errors: Clustered (entity_name) 
+                  Estimate Std. Error  t value   Pr(>|t|)    
+relative_week::-2 0.093503   0.081785 1.143269 0.27354450    
+relative_week::-1 0.002481   0.079067 0.031373 0.97544826    
+relative_week::1  0.175184   0.039260 4.462184 0.00064014 ***
+relative_week::2  0.119526   0.079382 1.505697 0.15605146    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.00884     Adj. R2: 0.443901
+                Within R2: 0.004516
+
+--- other_orgs_people_political_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 4,568
+Fixed-effects: entity_name: 48,  data_source: 2,  event_id: 36
+Standard-errors: Clustered (entity_name) 
+                   Estimate Std. Error  t value  Pr(>|t|)    
+relative_week::-2  0.070524   0.040796  1.72870 0.0904276 .  
+relative_week::-1  0.122073   0.034656  3.52247 0.0009633 ***
+relative_week::1  -0.042227   0.033448 -1.26248 0.2130055    
+relative_week::2  -0.042782   0.036654 -1.16720 0.2490178    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.16495     Adj. R2: 0.331402
+                Within R2: 0.003119
+
+--- other_orgs_people_terror_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 4,058
+Fixed-effects: entity_name: 47,  data_source: 2,  event_id: 30
+Standard-errors: Clustered (entity_name) 
+                   Estimate Std. Error   t value Pr(>|t|) 
+relative_week::-2  0.012561   0.048496  0.259013  0.79678 
+relative_week::-1 -0.071528   0.046828 -1.527445  0.13350 
+relative_week::1  -0.002071   0.032250 -0.064211  0.94908 
+relative_week::2  -0.036885   0.043704 -0.843975  0.40305 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.05749     Adj. R2: 0.405383
+                Within R2: 8.411e-4
+
+--- dedicated_oct7_model ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 144
+Fixed-effects: entity_name: 33,  data_source: 2
+Standard-errors: Clustered (entity_name) 
+                  Estimate Std. Error t value Pr(>|t|) 
+relative_week::-2 0.460830   0.287782 1.60132  0.11913 
+relative_week::-1 0.374732   0.324855 1.15354  0.25723 
+relative_week::1  0.395939   0.235347 1.68236  0.10223 
+relative_week::2  0.301242   0.295338 1.01999  0.31538 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.872677     Adj. R2: 0.5669 
+                 Within R2: 0.03059
