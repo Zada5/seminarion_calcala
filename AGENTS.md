@@ -8,7 +8,8 @@ Main research question:
 
 ## Data scope
 - Sources: Meta Ads Library and Google Ads Library
-- Time span: 2020 through end of 2025 (some rows may extend a bit beyond due to export timing)
+- Data available in cleaned weekly spend files: approximately 2018 through 2026 (depending on platform/export)
+- Default seminar analysis window: 2020 through end of 2025 (unless a script explicitly documents a different filter)
 - Geography/context: Israel
 - Unit used for analysis: weekly spend (Sunday-start week)
 
