@@ -69,8 +69,41 @@ safe_fitstat <- function(model_object, stat_name) {
   as.numeric(stat_value)[1]
 }
 
+add_baseline_coefficient_row <- function(coefficients_table, model_name_label) {
+  baseline_row <- tibble::tibble(
+    model_name = model_name_label,
+    relative_week = 0L,
+    estimate = 0,
+    std.error = NA_real_,
+    statistic = NA_real_,
+    p.value = NA_real_,
+    conf.low = 0,
+    conf.high = 0
+  )
+
+  dplyr::bind_rows(coefficients_table, baseline_row) %>%
+    dplyr::distinct(model_name, relative_week, .keep_all = TRUE) %>%
+    dplyr::arrange(relative_week)
+}
+
+plot_event_study_coefficients <- function(coefficients_table, plot_title, plot_subtitle) {
+  ggplot2::ggplot(coefficients_table, ggplot2::aes(x = relative_week, y = estimate)) +
+    ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
+    ggplot2::geom_vline(xintercept = 0, linetype = "dotted") +
+    ggplot2::geom_point(size = 2) +
+    ggplot2::geom_errorbar(ggplot2::aes(ymin = conf.low, ymax = conf.high), width = 0.15) +
+    ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
+    ggplot2::labs(
+      title = plot_title,
+      subtitle = plot_subtitle,
+      x = "Weeks relative to event week",
+      y = "Estimated change vs baseline week (95% CI)"
+    ) +
+    ggplot2::theme_minimal(base_size = 12)
+}
+
 run_event_study_model <- function(model_data) {
-  if (nrow(model_data) < 100) {
+  if (nrow(model_data) < 10) {
     return(NULL)
   }
   if (dplyr::n_distinct(model_data$entity_name) < 2 || dplyr::n_distinct(model_data$relative_week) < 2) {
@@ -257,6 +290,79 @@ if (nrow(events_table) == 0) {
 }
 
 # -------------------------
+# Week-level spend/event panel for correlation summaries
+# -------------------------
+weekly_spend_totals <- weekly_spend_panel %>%
+  dplyr::group_by(week_start_sunday, entity_group) %>%
+  dplyr::summarise(
+    total_weekly_spend_ils = sum(weekly_spend_ils, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+weekly_spend_totals_all_entities <- weekly_spend_panel %>%
+  dplyr::group_by(week_start_sunday) %>%
+  dplyr::summarise(
+    total_weekly_spend_ils = sum(weekly_spend_ils, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  dplyr::mutate(entity_group = "all_entities")
+
+weekly_spend_totals_for_correlation <- dplyr::bind_rows(
+  weekly_spend_totals_all_entities,
+  weekly_spend_totals
+)
+
+weekly_event_counts <- events_table %>%
+  dplyr::group_by(event_week_start_sunday, event_type_group) %>%
+  dplyr::summarise(event_count = dplyr::n(), .groups = "drop") %>%
+  dplyr::rename(week_start_sunday = event_week_start_sunday)
+
+weekly_event_counts_wide <- weekly_event_counts %>%
+  tidyr::pivot_wider(
+    names_from = event_type_group,
+    values_from = event_count,
+    values_fill = 0
+  ) %>%
+  dplyr::mutate(all_events = political + terror)
+
+correlation_panel <- weekly_spend_totals_for_correlation %>%
+  dplyr::left_join(weekly_event_counts_wide, by = "week_start_sunday") %>%
+  dplyr::mutate(
+    all_events = dplyr::coalesce(all_events, 0),
+    political = dplyr::coalesce(political, 0),
+    terror = dplyr::coalesce(terror, 0)
+  )
+
+safe_correlation <- function(x, y) {
+  valid_rows <- stats::complete.cases(x, y)
+  x <- x[valid_rows]
+  y <- y[valid_rows]
+
+  if (length(x) < 3 || stats::sd(x) == 0 || stats::sd(y) == 0) {
+    return(NA_real_)
+  }
+
+  stats::cor(x, y)
+}
+
+correlation_summary <- correlation_panel %>%
+  tidyr::pivot_longer(
+    cols = c(all_events, political, terror),
+    names_to = "event_scope",
+    values_to = "weekly_event_count"
+  ) %>%
+  dplyr::group_by(entity_group, event_scope) %>%
+  dplyr::summarise(
+    correlation_weekly_spend_vs_event_count = safe_correlation(total_weekly_spend_ils, weekly_event_count),
+    weeks_in_sample = dplyr::n(),
+    weeks_with_any_event = sum(weekly_event_count > 0, na.rm = TRUE),
+    average_weekly_spend_ils = mean(total_weekly_spend_ils, na.rm = TRUE),
+    average_weekly_event_count = mean(weekly_event_count, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  dplyr::arrange(entity_group, event_scope)
+
+# -------------------------
 # Descriptive statistics
 # -------------------------
 overall_spend_stats <- weekly_spend_panel %>%
@@ -389,6 +495,69 @@ all_model_coefficients <- dplyr::bind_rows(model_results$coefficients)
 all_model_fit <- dplyr::bind_rows(model_results$fit)
 
 # -------------------------
+# Save event-study figures for every model split
+# -------------------------
+event_study_figures_directory <- file.path(output_directory, "event_study_figures")
+dir.create(event_study_figures_directory, showWarnings = FALSE, recursive = TRUE)
+
+event_study_coefficients_for_plot <- purrr::map_dfr(
+  split(all_model_coefficients, all_model_coefficients$model_name),
+  ~ add_baseline_coefficient_row(.x, unique(.x$model_name)[1])
+)
+
+for (row_index in seq_len(nrow(model_results))) {
+  current_model_name <- model_results$model_name[[row_index]]
+  current_coefficients <- event_study_coefficients_for_plot %>%
+    dplyr::filter(model_name == current_model_name)
+
+  if (nrow(current_coefficients) == 0) {
+    next
+  }
+
+  current_plot <- plot_event_study_coefficients(
+    coefficients_table = current_coefficients,
+    plot_title = paste("Event Study:", current_model_name),
+    plot_subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = 0"
+  )
+
+  ggplot2::ggsave(
+    filename = file.path(event_study_figures_directory, paste0(current_model_name, ".png")),
+    plot = current_plot,
+    width = 9,
+    height = 5,
+    dpi = 300
+  )
+}
+
+if (nrow(event_study_coefficients_for_plot) > 0) {
+  combined_event_study_plot <- ggplot2::ggplot(
+    event_study_coefficients_for_plot,
+    ggplot2::aes(x = relative_week, y = estimate)
+  ) +
+    ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
+    ggplot2::geom_vline(xintercept = 0, linetype = "dotted") +
+    ggplot2::geom_point(size = 1.8) +
+    ggplot2::geom_errorbar(ggplot2::aes(ymin = conf.low, ymax = conf.high), width = 0.15) +
+    ggplot2::facet_wrap(~ model_name, scales = "free_y") +
+    ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
+    ggplot2::labs(
+      title = "Event-Study Coefficients Across All Model Splits",
+      subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = 0",
+      x = "Weeks relative to event week",
+      y = "Estimated change vs baseline week (95% CI)"
+    ) +
+    ggplot2::theme_minimal(base_size = 11)
+
+  ggplot2::ggsave(
+    filename = file.path(output_directory, "event_study_figure_all_models.png"),
+    plot = combined_event_study_plot,
+    width = 14,
+    height = 10,
+    dpi = 300
+  )
+}
+
+# -------------------------
 # Keep dedicated 07/10/2023 event-study figure (for continuity)
 # -------------------------
 oct7_event <- events_table %>%
@@ -406,38 +575,88 @@ if (nrow(oct7_event) == 1) {
 
   if (!is.null(oct7_model)) {
     oct7_coefficients <- extract_relative_week_coefficients(oct7_model, "oct7_event")
+    oct7_coefficients_for_plot <- add_baseline_coefficient_row(oct7_coefficients, "oct7_event")
 
-    baseline_row <- tibble::tibble(
-      model_name = "oct7_event",
-      relative_week = 0L,
-      estimate = 0,
-      std.error = NA_real_,
-      statistic = NA_real_,
-      p.value = NA_real_,
-      conf.low = 0,
-      conf.high = 0
+    oct7_plot <- plot_event_study_coefficients(
+      coefficients_table = oct7_coefficients_for_plot,
+      plot_title = "Event Study Around 2023-10-07",
+      plot_subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = 0 (week starts 2023-10-08)"
     )
-
-    oct7_coefficients_for_plot <- dplyr::bind_rows(oct7_coefficients, baseline_row) %>%
-      dplyr::arrange(relative_week)
-
-    oct7_plot <- ggplot2::ggplot(oct7_coefficients_for_plot, ggplot2::aes(x = relative_week, y = estimate)) +
-      ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
-      ggplot2::geom_vline(xintercept = 0, linetype = "dotted") +
-      ggplot2::geom_point(size = 2) +
-      ggplot2::geom_errorbar(ggplot2::aes(ymin = conf.low, ymax = conf.high), width = 0.15) +
-      ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
-      ggplot2::labs(
-        title = "Event Study Around 2023-10-07",
-        subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = 0 (week starts 2023-10-08)",
-        x = "Weeks relative to event week",
-        y = "Estimated change vs baseline week (95% CI)"
-      ) +
-      ggplot2::theme_minimal(base_size = 12)
 
     ggplot2::ggsave(
       filename = file.path(output_directory, "event_study_figure_0710.png"),
       plot = oct7_plot,
+      width = 9,
+      height = 5,
+      dpi = 300
+    )
+  }
+}
+
+# -------------------------
+# Dedicated 07/10/2023 split by entity group
+# -------------------------
+oct7_group_specifications <- tibble::tribble(
+  ~model_name, ~entity_group_filter,
+  "oct7_political_parties", "political_party",
+  "oct7_other_orgs_people", "other_org_or_person"
+)
+
+oct7_group_results <- tibble::tibble()
+oct7_group_coefficients <- tibble::tibble()
+oct7_group_fit <- tibble::tibble()
+
+if (nrow(oct7_event) == 1) {
+  oct7_group_results <- oct7_group_specifications %>%
+    dplyr::mutate(
+      model_data = purrr::map(entity_group_filter, function(group_filter) {
+        oct7_event_window %>%
+          dplyr::filter(entity_group == group_filter)
+      }),
+      input_rows = purrr::map_int(model_data, nrow),
+      model = purrr::map(model_data, run_event_study_model),
+      coefficients = purrr::map2(model, model_name, extract_relative_week_coefficients),
+      fit = purrr::pmap(list(model, model_name, input_rows), extract_model_fit)
+    )
+
+  oct7_group_coefficients <- dplyr::bind_rows(oct7_group_results$coefficients)
+  oct7_group_fit <- dplyr::bind_rows(oct7_group_results$fit)
+
+  oct7_group_coefficients_for_plot <- purrr::map_dfr(
+    split(oct7_group_coefficients, oct7_group_coefficients$model_name),
+    ~ add_baseline_coefficient_row(.x, unique(.x$model_name)[1])
+  ) %>%
+    dplyr::mutate(
+      entity_group = dplyr::case_when(
+        model_name == "oct7_political_parties" ~ "political_party",
+        model_name == "oct7_other_orgs_people" ~ "other_org_or_person",
+        TRUE ~ model_name
+      )
+    )
+
+  if (nrow(oct7_group_coefficients_for_plot) > 0) {
+    oct7_group_plot <- ggplot2::ggplot(
+      oct7_group_coefficients_for_plot,
+      ggplot2::aes(x = relative_week, y = estimate, color = entity_group)
+    ) +
+      ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
+      ggplot2::geom_vline(xintercept = 0, linetype = "dotted") +
+      ggplot2::geom_line() +
+      ggplot2::geom_point(size = 2) +
+      ggplot2::geom_errorbar(ggplot2::aes(ymin = conf.low, ymax = conf.high), width = 0.12) +
+      ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
+      ggplot2::labs(
+        title = "Event Study Around 2023-10-07 by Entity Group",
+        subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = 0 (week starts 2023-10-08)",
+        x = "Weeks relative to event week",
+        y = "Estimated change vs baseline week (95% CI)",
+        color = "Entity group"
+      ) +
+      ggplot2::theme_minimal(base_size = 12)
+
+    ggplot2::ggsave(
+      filename = file.path(output_directory, "event_study_figure_0710_by_group.png"),
+      plot = oct7_group_plot,
       width = 9,
       height = 5,
       dpi = 300
@@ -453,12 +672,19 @@ readr::write_csv(spend_stats_by_group, file.path(output_directory, "descriptive_
 readr::write_csv(yearly_spend_stats, file.path(output_directory, "descriptive_by_year.csv"))
 readr::write_csv(yearly_spend_stats_by_group, file.path(output_directory, "descriptive_by_year_and_group.csv"))
 readr::write_csv(pre_post_oct7_stats, file.path(output_directory, "descriptive_pre_post_oct7.csv"))
+readr::write_csv(correlation_summary, file.path(output_directory, "correlation_summary.csv"))
 
 readr::write_csv(all_model_coefficients, file.path(output_directory, "event_study_coefficients_by_model.csv"))
 readr::write_csv(all_model_fit, file.path(output_directory, "event_study_model_fit.csv"))
 
 if (nrow(oct7_coefficients_for_plot) > 0) {
   readr::write_csv(oct7_coefficients_for_plot, file.path(output_directory, "event_study_coefs_0710.csv"))
+}
+if (nrow(oct7_group_coefficients) > 0) {
+  readr::write_csv(oct7_group_coefficients, file.path(output_directory, "event_study_coefs_0710_by_group.csv"))
+}
+if (nrow(oct7_group_fit) > 0) {
+  readr::write_csv(oct7_group_fit, file.path(output_directory, "event_study_model_fit_0710_by_group.csv"))
 }
 
 # Write textual summaries for easy reading in RStudio and externally
@@ -469,6 +695,10 @@ on.exit(close(summary_connection), add = TRUE)
 writeLines("Event-Study Regression Summary", con = summary_connection)
 writeLines("================================", con = summary_connection)
 writeLines(sprintf("Generated: %s", as.character(Sys.time())), con = summary_connection)
+writeLines("", con = summary_connection)
+
+writeLines("--- correlation_summary ---", con = summary_connection)
+writeLines(capture.output(print(correlation_summary)), con = summary_connection)
 writeLines("", con = summary_connection)
 
 for (row_index in seq_len(nrow(model_results))) {
@@ -490,6 +720,21 @@ if (!is.null(oct7_model)) {
   writeLines(capture.output(summary(oct7_model)), con = summary_connection)
 }
 
+if (nrow(oct7_group_results) > 0) {
+  for (row_index in seq_len(nrow(oct7_group_results))) {
+    current_model_name <- oct7_group_results$model_name[[row_index]]
+    current_model <- oct7_group_results$model[[row_index]]
+
+    writeLines(sprintf("\n--- %s ---", current_model_name), con = summary_connection)
+
+    if (is.null(current_model)) {
+      writeLines("Model not estimated (failed or insufficient data).", con = summary_connection)
+    } else {
+      writeLines(capture.output(summary(current_model)), con = summary_connection)
+    }
+  }
+}
+
 # -------------------------
 # Console output for RStudio users
 # -------------------------
@@ -505,8 +750,16 @@ print(yearly_spend_stats)
 print_section("Pre/Post October 7 Reference Week")
 print(pre_post_oct7_stats)
 
+print_section("Correlation Summary")
+print(correlation_summary)
+
 print_section("Regression Model Fit (All Splits)")
 print(all_model_fit)
+
+if (nrow(oct7_group_fit) > 0) {
+  print_section("October 7 Model Fit (By Group)")
+  print(oct7_group_fit)
+}
 
 print_section("Output Files")
 cat("Saved descriptive stats and regressions to: ", normalizePath(output_directory), "\n", sep = "")
@@ -515,10 +768,18 @@ cat("- descriptive_by_group.csv\n")
 cat("- descriptive_by_year.csv\n")
 cat("- descriptive_by_year_and_group.csv\n")
 cat("- descriptive_pre_post_oct7.csv\n")
+cat("- correlation_summary.csv\n")
 cat("- event_study_coefficients_by_model.csv\n")
 cat("- event_study_model_fit.csv\n")
 cat("- regression_summary.txt\n")
+cat("- event_study_figure_all_models.png\n")
+cat("- event_study_figures/*.png\n")
 if (nrow(oct7_coefficients_for_plot) > 0) {
   cat("- event_study_coefs_0710.csv\n")
   cat("- event_study_figure_0710.png\n")
+}
+if (nrow(oct7_group_coefficients) > 0) {
+  cat("- event_study_coefs_0710_by_group.csv\n")
+  cat("- event_study_model_fit_0710_by_group.csv\n")
+  cat("- event_study_figure_0710_by_group.png\n")
 }

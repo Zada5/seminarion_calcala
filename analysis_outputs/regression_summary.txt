@@ -1,6 +1,23 @@
 Event-Study Regression Summary
 ================================
-Generated: 2026-03-03 18:57:27.021755
+Generated: 2026-03-18 11:56:25.485259
+
+--- correlation_summary ---
+# A tibble: 9 × 7
+  entity_group        event_scope correlation_weekly_spend_vs_…¹ weeks_in_sample
+  <chr>               <chr>                                <dbl>           <int>
+1 all_entities        all_events                        -0.00730             390
+2 all_entities        political                         -0.0202              390
+3 all_entities        terror                             0.0119              390
+4 other_org_or_person all_events                         0.100               390
+5 other_org_or_person political                          0.0574              390
+6 other_org_or_person terror                             0.0868              390
+7 political_party     all_events                        -0.112               358
+8 political_party     political                         -0.0922              358
+9 political_party     terror                            -0.0646              358
+# ℹ abbreviated name: ¹​correlation_weekly_spend_vs_event_count
+# ℹ 3 more variables: weeks_with_any_event <int>,
+#   average_weekly_spend_ils <dbl>, average_weekly_event_count <dbl>
 
 
 --- all_entities_all_events ---
@@ -152,3 +169,32 @@ relative_week::2  0.301242   0.295338 1.01999  0.31538
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 RMSE: 0.872677     Adj. R2: 0.5669 
                  Within R2: 0.03059
+
+--- oct7_political_parties ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 13
+Fixed-effects: entity_name: 4,  data_source: 2
+Standard-errors: Clustered (entity_name) 
+                  Estimate Std. Error t value Pr(>|t|)    
+relative_week::-2 1.781303   0.400864 4.44366 0.021195 *  
+relative_week::-1 1.079206   0.400864 2.69220 0.074276 .  
+relative_week::1  0.405183   0.245548 1.65012 0.197482    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.490984     Adj. R2: 0.299061
+                 Within R2: 0.557366
+
+--- oct7_other_orgs_people ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 131
+Fixed-effects: entity_name: 29,  data_source: 2
+Standard-errors: Clustered (entity_name) 
+                  Estimate Std. Error  t value Pr(>|t|) 
+relative_week::-2 0.332147   0.299858 1.107682  0.27742 
+relative_week::-1 0.339847   0.339060 1.002322  0.32477 
+relative_week::1  0.366948   0.246621 1.487904  0.14795 
+relative_week::2  0.251470   0.299121 0.840697  0.40764 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.89025     Adj. R2: 0.553842
+                Within R2: 0.020956
