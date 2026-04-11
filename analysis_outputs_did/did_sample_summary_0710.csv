@@ -1,0 +1,3 @@
+model_name,period,rows,entities,events,avg_weekly_spend_ils,median_weekly_spend_ils,avg_log_weekly_spend
+oct7_event,post_event,84,31,1,5746.3794230955955,1801.3190475000001,7.437584005043224
+oct7_event,pre_event,62,32,1,3909.049977768872,1701.1645835,7.27983044171368
