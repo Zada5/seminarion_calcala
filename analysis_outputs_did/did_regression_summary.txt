@@ -1,0 +1,182 @@
+DiD-Style Post-Event Regression Summary
+=======================================
+Generated: 2026-04-09 17:57:07.807169
+Event window: +/- 2 weeks
+PostEvent definition: 1 if relative_week >= 0, else 0
+
+--- did_design_overview ---
+# A tibble: 1 × 8
+  event_window_weeks total_rows total_entities total_events pre_event_rows
+               <int>      <int>          <int>        <int>          <int>
+1                  2      10040             67           66           4073
+# ℹ 3 more variables: post_event_rows <int>, first_week <date>,
+#   last_week <date>
+
+--- did_sample_summary_by_model ---
+# A tibble: 18 × 8
+   model_name                  period  rows entities events avg_weekly_spend_ils
+   <chr>                       <chr>  <int>    <int>  <int>                <dbl>
+ 1 all_entities_all_events     post_…  5967       64     66                5515.
+ 2 all_entities_all_events     pre_e…  4073       66     66                6583.
+ 3 political_parties_all_even… post_…   824       15     66                3924.
+ 4 political_parties_all_even… pre_e…   588       16     66                8132.
+ 5 other_orgs_people_all_even… post_…  5143       49     66                5770.
+ 6 other_orgs_people_all_even… pre_e…  3485       50     66                6322.
+ 7 all_entities_political_eve… post_…  3130       63     36                5242.
+ 8 all_entities_political_eve… pre_e…  2195       65     36                7603.
+ 9 all_entities_terror_events  post_…  2837       62     30                5817.
+10 all_entities_terror_events  pre_e…  1878       60     30                5391.
+11 political_parties_politica… post_…   421       14     36                2943.
+12 political_parties_politica… pre_e…   334       16     36               12208.
+13 political_parties_terror_e… post_…   403       15     30                4947.
+14 political_parties_terror_e… pre_e…   254       13     30                2773.
+15 other_orgs_people_politica… post_…  2709       49     36                5599.
+16 other_orgs_people_politica… pre_e…  1861       49     36                6777.
+17 other_orgs_people_terror_e… post_…  2434       47     30                5961.
+18 other_orgs_people_terror_e… pre_e…  1624       47     30                5801.
+# ℹ 2 more variables: median_weekly_spend_ils <dbl>, avg_log_weekly_spend <dbl>
+
+
+--- all_entities_all_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 10,038
+Fixed-effects: entity_name: 65,  data_source: 2,  event_id: 66
+Standard-errors: Clustered (entity_name) 
+            Estimate Std. Error  t value   Pr(>|t|)    
+post_event -0.086375   0.022322 -3.86952 0.00025821 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.16122     Adj. R2: 0.340289
+                Within R2: 0.001321
+
+--- political_parties_all_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 1,411
+Fixed-effects: entity_name: 16,  data_source: 2,  event_id: 66
+Standard-errors: Clustered (entity_name) 
+            Estimate Std. Error t value Pr(>|t|)    
+post_event -0.140393   0.076743 -1.8294 0.087287 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.13132     Adj. R2: 0.401125
+                Within R2: 0.003455
+
+--- other_orgs_people_all_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 8,627
+Fixed-effects: entity_name: 49,  data_source: 2,  event_id: 66
+Standard-errors: Clustered (entity_name) 
+            Estimate Std. Error  t value Pr(>|t|)    
+post_event -0.059096   0.022086 -2.67571  0.01017 *  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.12711     Adj. R2: 0.355779
+                Within R2: 6.586e-4
+
+--- all_entities_political_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 5,323
+Fixed-effects: entity_name: 64,  data_source: 2,  event_id: 36
+Standard-errors: Clustered (entity_name) 
+            Estimate Std. Error  t value   Pr(>|t|)    
+post_event -0.176083   0.036324 -4.84754 8.5223e-06 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.20149     Adj. R2: 0.318201
+                Within R2: 0.005104
+
+--- all_entities_terror_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 4,714
+Fixed-effects: entity_name: 61,  data_source: 2,  event_id: 30
+Standard-errors: Clustered (entity_name) 
+           Estimate Std. Error  t value Pr(>|t|) 
+post_event 0.016341   0.030727 0.531805  0.59682 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.0799     Adj. R2: 0.397088
+               Within R2: 5.451e-5
+
+--- political_parties_political_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 755
+Fixed-effects: entity_name: 16,  data_source: 2,  event_id: 36
+Standard-errors: Clustered (entity_name) 
+            Estimate Std. Error  t value Pr(>|t|)    
+post_event -0.336355   0.164731 -2.04184 0.059162 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.17318     Adj. R2: 0.412298
+                Within R2: 0.017616
+
+--- political_parties_terror_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 656
+Fixed-effects: entity_name: 14,  data_source: 2,  event_id: 30
+Standard-errors: Clustered (entity_name) 
+           Estimate Std. Error  t value Pr(>|t|) 
+post_event 0.049528   0.063634 0.778326  0.45031 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.01084     Adj. R2: 0.444426
+                Within R2: 5.498e-4
+
+--- other_orgs_people_political_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 4,568
+Fixed-effects: entity_name: 48,  data_source: 2,  event_id: 36
+Standard-errors: Clustered (entity_name) 
+           Estimate Std. Error  t value   Pr(>|t|)    
+post_event -0.12478    0.03303 -3.77777 0.00044479 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.16517     Adj. R2: 0.331599
+                Within R2: 0.002746
+
+--- other_orgs_people_terror_events ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 4,058
+Fixed-effects: entity_name: 47,  data_source: 2,  event_id: 30
+Standard-errors: Clustered (entity_name) 
+           Estimate Std. Error  t value Pr(>|t|) 
+post_event 0.016487   0.032888 0.501296  0.61855 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 1.05791     Adj. R2: 0.405366
+                Within R2: 5.798e-5
+
+--- dedicated_oct7_model ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 144
+Fixed-effects: entity_name: 33,  data_source: 2
+Standard-errors: Clustered (entity_name) 
+           Estimate Std. Error   t value Pr(>|t|) 
+post_event -0.19054   0.277634 -0.686301  0.49747 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.881841     Adj. R2: 0.569928
+                 Within R2: 0.010123
+
+--- oct7_political_parties ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 13
+Fixed-effects: entity_name: 4,  data_source: 2
+Standard-errors: Clustered (entity_name) 
+           Estimate Std. Error  t value   Pr(>|t|)    
+post_event -1.30558   0.063288 -20.6293 0.00024909 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.569802     Adj. R2: 0.325681
+                 Within R2: 0.403847
+
+--- oct7_other_orgs_people ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 131
+Fixed-effects: entity_name: 29,  data_source: 2
+Standard-errors: Clustered (entity_name) 
+            Estimate Std. Error   t value Pr(>|t|) 
+post_event -0.127915   0.287114 -0.445521  0.65937 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.897652     Adj. R2: 0.56    
+                 Within R2: 0.004608
