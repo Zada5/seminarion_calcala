@@ -31,6 +31,35 @@ pip install -r requirements.txt
 
 ---
 
+## Analysis Scripts
+
+After the weekly Meta and Google files are prepared, the repository includes two R analysis entry points:
+
+* `event_study_0710.R`
+  Main descriptive and event-study regression script. Default output directory: `./analysis_outputs`
+
+* `did_0710.R`
+  Separate DiD-style post-event fixed-effects regression on the same cleaned weekly inputs. Default output directory: `./analysis_outputs_did`
+
+Both scripts use these default inputs unless command-line arguments override them:
+
+```bash
+./second_cleaning/weekly_party_spend_google.csv
+./second_cleaning/weekly_party_spend_meta.csv
+./Consolidated List of Terror and Political incidents 2020-2025 v3.csv
+```
+
+Run them from terminal with:
+
+```bash
+Rscript event_study_0710.R
+Rscript did_0710.R
+```
+
+`did_0710.R` uses the same Sunday-start event windows as the event-study script and defines `PostEvent = 1` when `relative_week >= 0`.
+
+---
+
 ## Problem Definition
 
 Meta Ad Library data is:
