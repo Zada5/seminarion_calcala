@@ -1,21 +1,21 @@
 DiD-Style Post-Event Regression Summary
 =======================================
-Generated: 2026-04-09 17:57:07.807169
+Generated: 2026-04-15 16:10:47.144507
 Event window: +/- 2 weeks
 PostEvent definition: 1 if relative_week >= 0, else 0
 
 --- did_design_overview ---
 # A tibble: 1 × 8
   event_window_weeks total_rows total_entities total_events pre_event_rows
-               <int>      <int>          <int>        <int>          <int>
+               <dbl>      <dbl>          <dbl>        <dbl>          <dbl>
 1                  2      10040             67           66           4073
-# ℹ 3 more variables: post_event_rows <int>, first_week <date>,
+# ℹ 3 more variables: post_event_rows <dbl>, first_week <date>,
 #   last_week <date>
 
 --- did_sample_summary_by_model ---
 # A tibble: 18 × 8
    model_name                  period  rows entities events avg_weekly_spend_ils
-   <chr>                       <chr>  <int>    <int>  <int>                <dbl>
+   <chr>                       <chr>  <dbl>    <dbl>  <dbl>                <dbl>
  1 all_entities_all_events     post_…  5967       64     66                5515.
  2 all_entities_all_events     pre_e…  4073       66     66                6583.
  3 political_parties_all_even… post_…   824       15     66                3924.
@@ -146,6 +146,18 @@ RMSE: 1.05791     Adj. R2: 0.405366
                 Within R2: 5.798e-5
 
 --- dedicated_oct7_model ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 144
+Fixed-effects: entity_name: 33,  data_source: 2
+Standard-errors: Clustered (entity_name) 
+           Estimate Std. Error   t value Pr(>|t|) 
+post_event -0.19054   0.277634 -0.686301  0.49747 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.881841     Adj. R2: 0.569928
+                 Within R2: 0.010123
+
+--- oct7_all_entities ---
 OLS estimation, Dep. Var.: log_weekly_spend
 Observations: 144
 Fixed-effects: entity_name: 33,  data_source: 2
