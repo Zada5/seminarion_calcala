@@ -1,22 +1,39 @@
 Event-Study Regression Summary
 ================================
-Generated: 2026-03-18 11:56:25.485259
+Generated: 2026-04-15 16:12:12.419958
 
 --- correlation_summary ---
 # A tibble: 9 × 7
   entity_group        event_scope correlation_weekly_spend_vs_…¹ weeks_in_sample
-  <chr>               <chr>                                <dbl>           <int>
-1 all_entities        all_events                        -0.00730             390
-2 all_entities        political                         -0.0202              390
-3 all_entities        terror                             0.0119              390
-4 other_org_or_person all_events                         0.100               390
-5 other_org_or_person political                          0.0574              390
-6 other_org_or_person terror                             0.0868              390
-7 political_party     all_events                        -0.112               358
-8 political_party     political                         -0.0922              358
-9 political_party     terror                            -0.0646              358
+  <chr>               <chr>                                <dbl>           <dbl>
+1 all_entities        all_events                          -0.007             390
+2 all_entities        political                           -0.02              390
+3 all_entities        terror                               0.012             390
+4 other_org_or_person all_events                           0.1               390
+5 other_org_or_person political                            0.057             390
+6 other_org_or_person terror                               0.087             390
+7 political_party     all_events                          -0.112             358
+8 political_party     political                           -0.092             358
+9 political_party     terror                              -0.065             358
 # ℹ abbreviated name: ¹​correlation_weekly_spend_vs_event_count
-# ℹ 3 more variables: weeks_with_any_event <int>,
+# ℹ 3 more variables: weeks_with_any_event <dbl>,
+#   average_weekly_spend_ils <dbl>, average_weekly_event_count <dbl>
+
+--- placebo_correlation_summary ---
+# A tibble: 9 × 7
+  entity_group        event_scope correlation_weekly_spend_vs_…¹ weeks_in_sample
+  <chr>               <chr>                                <dbl>           <dbl>
+1 all_entities        all_events                          -0.004             390
+2 all_entities        political                           -0.039             390
+3 all_entities        terror                               0.037             390
+4 other_org_or_person all_events                          -0.011             390
+5 other_org_or_person political                           -0.023             390
+6 other_org_or_person terror                               0.01              390
+7 political_party     all_events                          -0.009             358
+8 political_party     political                           -0.051             358
+9 political_party     terror                               0.042             358
+# ℹ abbreviated name: ¹​correlation_weekly_spend_vs_event_count
+# ℹ 3 more variables: weeks_with_any_event <dbl>,
 #   average_weekly_spend_ils <dbl>, average_weekly_event_count <dbl>
 
 
@@ -156,6 +173,21 @@ RMSE: 1.05749     Adj. R2: 0.405383
                 Within R2: 8.411e-4
 
 --- dedicated_oct7_model ---
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 144
+Fixed-effects: entity_name: 33,  data_source: 2
+Standard-errors: Clustered (entity_name) 
+                  Estimate Std. Error t value Pr(>|t|) 
+relative_week::-2 0.460830   0.287782 1.60132  0.11913 
+relative_week::-1 0.374732   0.324855 1.15354  0.25723 
+relative_week::1  0.395939   0.235347 1.68236  0.10223 
+relative_week::2  0.301242   0.295338 1.01999  0.31538 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.872677     Adj. R2: 0.5669 
+                 Within R2: 0.03059
+
+--- oct7_all_entities ---
 OLS estimation, Dep. Var.: log_weekly_spend
 Observations: 144
 Fixed-effects: entity_name: 33,  data_source: 2

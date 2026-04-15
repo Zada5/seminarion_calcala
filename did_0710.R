@@ -74,6 +74,20 @@ safe_fitstat <- function(model_object, stat_name) {
   as.numeric(stat_value)[1]
 }
 
+round_numeric_columns <- function(dataframe, digits = 3L) {
+  dataframe %>%
+    dplyr::mutate(
+      dplyr::across(
+        .cols = where(is.numeric),
+        .fns = ~ round(as.numeric(Re(.x)), digits = digits)
+      )
+    )
+}
+
+write_clean_csv <- function(dataframe, file_path, digits = 3L) {
+  readr::write_csv(round_numeric_columns(dataframe, digits = digits), file_path)
+}
+
 read_weekly_spend_file <- function(file_path) {
   dataset <- readr::read_csv(file_path, show_col_types = FALSE)
   names(dataset) <- trimws(names(dataset))
@@ -111,7 +125,7 @@ extract_post_event_coefficient <- function(model_object, model_name_label) {
     return(tibble::tibble())
   }
 
-  broom::tidy(model_object, conf.int = TRUE) %>%
+  broom::tidy(model_object, conf.int = TRUE, conf.level = 0.95) %>%
     dplyr::filter(term == "post_event") %>%
     dplyr::mutate(model_name = model_name_label) %>%
     dplyr::select(
@@ -427,6 +441,7 @@ if (nrow(oct7_event) == 1) {
 # -------------------------
 oct7_group_specifications <- tibble::tribble(
   ~model_name, ~entity_group_filter,
+  "oct7_all_entities", "all",
   "oct7_political_parties", "political_party",
   "oct7_other_orgs_people", "other_org_or_person"
 )
@@ -440,8 +455,11 @@ if (nrow(oct7_event) == 1) {
   oct7_group_results <- oct7_group_specifications %>%
     dplyr::mutate(
       model_data = purrr::map(entity_group_filter, function(group_filter) {
-        oct7_event_window %>%
-          dplyr::filter(entity_group == group_filter)
+        if (group_filter == "all") {
+          oct7_event_window
+        } else {
+          oct7_event_window %>% dplyr::filter(entity_group == group_filter)
+        }
       }),
       input_rows = purrr::map_int(model_data, nrow),
       model = purrr::map(model_data, run_did_model),
@@ -474,25 +492,26 @@ if (nrow(oct7_event) == 1) {
 # -------------------------
 # Save outputs
 # -------------------------
-readr::write_csv(did_design_overview, file.path(output_directory, "did_design_overview.csv"))
-readr::write_csv(all_model_sample_summary, file.path(output_directory, "did_sample_summary_by_model.csv"))
-readr::write_csv(all_model_coefficients, file.path(output_directory, "did_coefficients_by_model.csv"))
-readr::write_csv(all_model_fit, file.path(output_directory, "did_model_fit.csv"))
+write_clean_csv(did_design_overview, file.path(output_directory, "did_design_overview.csv"))
+write_clean_csv(all_model_sample_summary, file.path(output_directory, "did_sample_summary_by_model.csv"))
+write_clean_csv(all_model_coefficients, file.path(output_directory, "did_coefficients_by_model.csv"))
+write_clean_csv(all_model_fit, file.path(output_directory, "did_model_fit.csv"))
 
 if (nrow(oct7_coefficient) > 0) {
-  readr::write_csv(oct7_coefficient, file.path(output_directory, "did_coefs_0710.csv"))
+  write_clean_csv(oct7_coefficient, file.path(output_directory, "did_coefs_0710.csv"))
 }
 if (nrow(oct7_sample_summary) > 0) {
-  readr::write_csv(oct7_sample_summary, file.path(output_directory, "did_sample_summary_0710.csv"))
+  write_clean_csv(oct7_sample_summary, file.path(output_directory, "did_sample_summary_0710.csv"))
 }
 if (nrow(oct7_group_coefficients) > 0) {
-  readr::write_csv(oct7_group_coefficients, file.path(output_directory, "did_coefs_0710_by_group.csv"))
+  write_clean_csv(oct7_group_coefficients, file.path(output_directory, "did_coefs_0710_by_group.csv"))
+  write_clean_csv(oct7_group_coefficients, file.path(output_directory, "did_coefs_0710_all_party_org.csv"))
 }
 if (nrow(oct7_group_fit) > 0) {
-  readr::write_csv(oct7_group_fit, file.path(output_directory, "did_model_fit_0710_by_group.csv"))
+  write_clean_csv(oct7_group_fit, file.path(output_directory, "did_model_fit_0710_by_group.csv"))
 }
 if (nrow(oct7_group_sample_summary) > 0) {
-  readr::write_csv(oct7_group_sample_summary, file.path(output_directory, "did_sample_summary_0710_by_group.csv"))
+  write_clean_csv(oct7_group_sample_summary, file.path(output_directory, "did_sample_summary_0710_by_group.csv"))
 }
 
 summary_file_path <- file.path(output_directory, "did_regression_summary.txt")
@@ -507,11 +526,11 @@ writeLines("PostEvent definition: 1 if relative_week >= 0, else 0", con = summar
 writeLines("", con = summary_connection)
 
 writeLines("--- did_design_overview ---", con = summary_connection)
-writeLines(capture.output(print(did_design_overview)), con = summary_connection)
+writeLines(capture.output(print(round_numeric_columns(did_design_overview))), con = summary_connection)
 writeLines("", con = summary_connection)
 
 writeLines("--- did_sample_summary_by_model ---", con = summary_connection)
-writeLines(capture.output(print(all_model_sample_summary)), con = summary_connection)
+writeLines(capture.output(print(round_numeric_columns(all_model_sample_summary))), con = summary_connection)
 writeLines("", con = summary_connection)
 
 for (row_index in seq_len(nrow(model_results))) {
@@ -585,6 +604,7 @@ if (nrow(oct7_coefficient) > 0) {
 }
 if (nrow(oct7_group_coefficients) > 0) {
   cat("- did_coefs_0710_by_group.csv\n")
+  cat("- did_coefs_0710_all_party_org.csv\n")
   cat("- did_model_fit_0710_by_group.csv\n")
   cat("- did_sample_summary_0710_by_group.csv\n")
   cat("- did_coefficients_0710_by_group.png\n")
