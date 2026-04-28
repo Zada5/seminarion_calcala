@@ -1,4 +1,0 @@
-model_name,term,estimate,std.error,statistic,p.value,conf.low,conf.high
-oct7_all_entities,post_event,-0.191,0.278,-0.686,0.497,-0.756,0.375
-oct7_political_parties,post_event,-1.306,0.063,-20.629,0,-1.507,-1.104
-oct7_other_orgs_people,post_event,-0.128,0.287,-0.446,0.659,-0.716,0.46

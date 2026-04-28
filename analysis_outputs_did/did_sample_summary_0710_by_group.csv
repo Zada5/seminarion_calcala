@@ -1,7 +1,7 @@
 model_name,period,rows,entities,events,avg_weekly_spend_ils,median_weekly_spend_ils,avg_log_weekly_spend
 oct7_all_entities,post_event,84,31,1,5746.379,1801.319,7.438
-oct7_all_entities,pre_event,62,32,1,3909.05,1701.165,7.28
-oct7_political_parties,post_event,5,2,1,363.025,347.5,5.757
-oct7_political_parties,pre_event,10,5,1,902.124,921.25,6.473
-oct7_other_orgs_people,post_event,79,29,1,6087.098,1926.15,7.544
+oct7_all_entities,pre_event,62,32,1,3909.050,1701.165,7.280
+oct7_political_parties,post_event,5,2,1,363.025,347.500,5.757
+oct7_political_parties,pre_event,10,5,1,902.124,921.250,6.473
+oct7_other_orgs_people,post_event,79,29,1,6087.098,1926.150,7.544
 oct7_other_orgs_people,pre_event,52,27,1,4487.305,1951.335,7.435

@@ -56,7 +56,7 @@ Rscript event_study_0710.R
 Rscript did_0710.R
 ```
 
-`did_0710.R` uses the same Sunday-start event windows as the event-study script and defines `PostEvent = 1` when `relative_week >= 0`.
+`did_0710.R` uses the same Sunday-start event windows as the event-study script and defines `PostEvent = 1` when `relative_week >= 0`. It also writes an additional robustness version where `PostEvent = 1` starts at `relative_week >= -1`.
 
 ### Main analysis outputs
 
@@ -65,14 +65,16 @@ Rscript did_0710.R
 * Real-event correlation tables and graphs (`correlation_summary.csv`, `correlation_coefficients_heatmap.png`, `correlation_scatter_panels.png`)
 * Placebo event dates + placebo correlations (`placebo_events_dates.csv`, `placebo_correlation_summary.csv`, placebo correlation graphs)
 * Real and placebo event-study model outputs (CSV + per-model/combined figures)
-* Dedicated 2023-10-07 outputs split as all / political parties / other organizations (`event_study_coefs_0710_all_party_org.csv`)
+* Additional event-study outputs with `relative_week = -1` as the reference week (`*_ref_minus1.csv`, `*_ref_minus1.png`, and `*_figures_ref_minus1/`)
+* Dedicated 2023-10-07 outputs split as all / political parties / other organizations (`event_study_coefs_0710_by_group.csv`)
 * Uses the repository placebo list file `placebo_events_2020_2025.csv` (if present) so placebo dates are explicit and shared across collaborators
 
 `did_0710.R` writes DiD outputs into `analysis_outputs_did/`, including dedicated 2023-10-07 all / political parties / other organizations coefficients in:
 
-* `did_coefs_0710_all_party_org.csv`
+* `did_coefs_0710_by_group.csv`
+* `did_coefs_0710_by_group_post_from_minus1.csv`
 
-Numeric outputs in generated CSV files are rounded to 3 decimal places for readability.
+Numeric outputs in generated CSV and summary text files are formatted to 3 decimal places where relevant, without scientific notation. Very small p-values are displayed as `<0.001` rather than `0.000`.
 
 ---
 

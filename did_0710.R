@@ -84,8 +84,99 @@ round_numeric_columns <- function(dataframe, digits = 3L) {
     )
 }
 
+format_output_column <- function(values, column_name, digits = 3L) {
+  numeric_values <- as.numeric(Re(values))
+  formatted_values <- rep(NA_character_, length(numeric_values))
+  finite_values <- is.finite(numeric_values)
+  p_value_threshold <- 10^-digits
+
+  if (column_name == "p.value") {
+    tiny_values <- finite_values & numeric_values < p_value_threshold
+    regular_values <- finite_values & !tiny_values
+
+    formatted_values[tiny_values] <- paste0(
+      "<",
+      formatC(p_value_threshold, format = "f", digits = digits)
+    )
+    formatted_values[regular_values] <- formatC(
+      round(numeric_values[regular_values], digits = digits),
+      format = "f",
+      digits = digits
+    )
+
+    return(formatted_values)
+  }
+
+  if (any(finite_values)) {
+    integer_like_column <- all(
+      abs(numeric_values[finite_values] - round(numeric_values[finite_values])) <
+        sqrt(.Machine$double.eps)
+    )
+
+    if (integer_like_column) {
+      formatted_values[finite_values] <- formatC(
+        round(numeric_values[finite_values]),
+        format = "f",
+        digits = 0
+      )
+    } else {
+      formatted_values[finite_values] <- formatC(
+        round(numeric_values[finite_values], digits = digits),
+        format = "f",
+        digits = digits
+      )
+    }
+  }
+
+  formatted_values
+}
+
+format_output_table <- function(dataframe, digits = 3L) {
+  dataframe %>%
+    dplyr::mutate(
+      dplyr::across(
+        .cols = where(is.numeric),
+        .fns = ~ format_output_column(.x, dplyr::cur_column(), digits = digits)
+      )
+    )
+}
+
 write_clean_csv <- function(dataframe, file_path, digits = 3L) {
-  readr::write_csv(round_numeric_columns(dataframe, digits = digits), file_path)
+  readr::write_csv(format_output_table(dataframe, digits = digits), file_path, na = "")
+}
+
+write_formatted_table <- function(dataframe, summary_connection, digits = 3L) {
+  if (nrow(dataframe) == 0) {
+    writeLines("No rows.", con = summary_connection)
+    return(invisible(NULL))
+  }
+
+  table_output <- capture.output(print(format_output_table(dataframe, digits = digits), n = Inf, width = Inf))
+  table_output <- sub("[[:space:]]+$", "", table_output)
+  writeLines(table_output, con = summary_connection)
+  invisible(NULL)
+}
+
+write_model_summary_sections <- function(model_names, coefficients_table, fit_table, summary_connection) {
+  for (current_model_name in model_names) {
+    writeLines(sprintf("\n--- %s ---", current_model_name), con = summary_connection)
+
+    current_coefficients <- if ("model_name" %in% names(coefficients_table)) {
+      coefficients_table %>% dplyr::filter(model_name == current_model_name)
+    } else {
+      tibble::tibble()
+    }
+    current_fit <- if ("model_name" %in% names(fit_table)) {
+      fit_table %>% dplyr::filter(model_name == current_model_name)
+    } else {
+      tibble::tibble()
+    }
+
+    writeLines("Coefficients:", con = summary_connection)
+    write_formatted_table(current_coefficients, summary_connection)
+    writeLines("Model fit:", con = summary_connection)
+    write_formatted_table(current_fit, summary_connection)
+  }
 }
 
 read_weekly_spend_file <- function(file_path) {
@@ -375,30 +466,70 @@ model_specifications <- tibble::tribble(
   "other_orgs_people_terror_events", "other_org_or_person", "terror"
 )
 
-model_results <- model_specifications %>%
+fit_did_specs <- function(input_panel, specifications) {
+  specifications %>%
+    dplyr::mutate(
+      model_data = purrr::map2(entity_group_filter, event_type_filter, function(group_filter, type_filter) {
+        filtered_data <- input_panel
+
+        if (group_filter != "all") {
+          filtered_data <- filtered_data %>% dplyr::filter(entity_group == group_filter)
+        }
+        if (type_filter != "all") {
+          filtered_data <- filtered_data %>% dplyr::filter(event_type_group == type_filter)
+        }
+
+        filtered_data
+      }),
+      input_rows = purrr::map_int(model_data, nrow),
+      model = purrr::map(model_data, run_did_model),
+      coefficient = purrr::map2(model, model_name, extract_post_event_coefficient),
+      fit = purrr::pmap(list(model, model_name, input_rows), extract_model_fit),
+      sample_summary = purrr::map2(model_data, model_name, build_sample_summary)
+    )
+}
+
+event_window_panel_post_from_minus1 <- event_window_panel %>%
   dplyr::mutate(
-    model_data = purrr::map2(entity_group_filter, event_type_filter, function(group_filter, type_filter) {
-      filtered_data <- event_window_panel
-
-      if (group_filter != "all") {
-        filtered_data <- filtered_data %>% dplyr::filter(entity_group == group_filter)
-      }
-      if (type_filter != "all") {
-        filtered_data <- filtered_data %>% dplyr::filter(event_type_group == type_filter)
-      }
-
-      filtered_data
-    }),
-    input_rows = purrr::map_int(model_data, nrow),
-    model = purrr::map(model_data, run_did_model),
-    coefficient = purrr::map2(model, model_name, extract_post_event_coefficient),
-    fit = purrr::pmap(list(model, model_name, input_rows), extract_model_fit),
-    sample_summary = purrr::map2(model_data, model_name, build_sample_summary)
+    post_event = dplyr::if_else(relative_week >= -1L, 1L, 0L)
   )
+
+did_design_overview_post_from_minus1 <- event_window_panel_post_from_minus1 %>%
+  dplyr::summarise(
+    event_window_weeks = analysis_window_weeks,
+    total_rows = dplyr::n(),
+    total_entities = dplyr::n_distinct(entity_name),
+    total_events = dplyr::n_distinct(event_id),
+    pre_event_rows = sum(post_event == 0L),
+    post_event_rows = sum(post_event == 1L),
+    first_week = min(week_start_sunday, na.rm = TRUE),
+    last_week = max(week_start_sunday, na.rm = TRUE)
+  )
+
+model_results <- fit_did_specs(
+  input_panel = event_window_panel,
+  specifications = model_specifications
+)
+
+model_results_post_from_minus1 <- fit_did_specs(
+  input_panel = event_window_panel_post_from_minus1,
+  specifications = model_specifications
+)
 
 all_model_coefficients <- dplyr::bind_rows(model_results$coefficient)
 all_model_fit <- dplyr::bind_rows(model_results$fit)
 all_model_sample_summary <- dplyr::bind_rows(model_results$sample_summary)
+
+all_model_coefficients_post_from_minus1 <- dplyr::bind_rows(model_results_post_from_minus1$coefficient)
+all_model_fit_post_from_minus1 <- dplyr::bind_rows(model_results_post_from_minus1$fit)
+all_model_sample_summary_post_from_minus1 <- dplyr::bind_rows(
+  model_results_post_from_minus1$sample_summary
+)
+
+legacy_duplicate_oct7_outputs <- c(
+  file.path(output_directory, "did_coefs_0710_all_party_org.csv")
+)
+unlink(legacy_duplicate_oct7_outputs[file.exists(legacy_duplicate_oct7_outputs)])
 
 if (nrow(all_model_coefficients) > 0) {
   combined_did_plot <- plot_did_coefficients(
@@ -416,6 +547,22 @@ if (nrow(all_model_coefficients) > 0) {
   )
 }
 
+if (nrow(all_model_coefficients_post_from_minus1) > 0) {
+  combined_did_post_from_minus1_plot <- plot_did_coefficients(
+    coefficients_table = all_model_coefficients_post_from_minus1,
+    plot_title = "DiD-Style Post-Event Estimates Across Model Splits",
+    plot_subtitle = "DV: log(1 + weekly spend). PostEvent = 1 for relative_week >= -1"
+  )
+
+  ggplot2::ggsave(
+    filename = file.path(output_directory, "did_coefficients_by_model_post_from_minus1.png"),
+    plot = combined_did_post_from_minus1_plot,
+    width = 11,
+    height = 6.5,
+    dpi = 300
+  )
+}
+
 # -------------------------
 # Dedicated 07/10/2023 DiD-style model
 # -------------------------
@@ -426,14 +573,29 @@ oct7_event <- events_table %>%
 oct7_coefficient <- tibble::tibble()
 oct7_model <- NULL
 oct7_sample_summary <- tibble::tibble()
+oct7_coefficient_post_from_minus1 <- tibble::tibble()
+oct7_model_post_from_minus1 <- NULL
+oct7_sample_summary_post_from_minus1 <- tibble::tibble()
 
 if (nrow(oct7_event) == 1) {
   oct7_event_window <- event_window_panel %>%
+    dplyr::filter(event_id == oct7_event$event_id)
+  oct7_event_window_post_from_minus1 <- event_window_panel_post_from_minus1 %>%
     dplyr::filter(event_id == oct7_event$event_id)
 
   oct7_model <- run_did_model(oct7_event_window)
   oct7_coefficient <- extract_post_event_coefficient(oct7_model, "oct7_event")
   oct7_sample_summary <- build_sample_summary(oct7_event_window, "oct7_event")
+
+  oct7_model_post_from_minus1 <- run_did_model(oct7_event_window_post_from_minus1)
+  oct7_coefficient_post_from_minus1 <- extract_post_event_coefficient(
+    oct7_model_post_from_minus1,
+    "oct7_event"
+  )
+  oct7_sample_summary_post_from_minus1 <- build_sample_summary(
+    oct7_event_window_post_from_minus1,
+    "oct7_event"
+  )
 }
 
 # -------------------------
@@ -450,6 +612,10 @@ oct7_group_results <- tibble::tibble()
 oct7_group_coefficients <- tibble::tibble()
 oct7_group_fit <- tibble::tibble()
 oct7_group_sample_summary <- tibble::tibble()
+oct7_group_results_post_from_minus1 <- tibble::tibble()
+oct7_group_coefficients_post_from_minus1 <- tibble::tibble()
+oct7_group_fit_post_from_minus1 <- tibble::tibble()
+oct7_group_sample_summary_post_from_minus1 <- tibble::tibble()
 
 if (nrow(oct7_event) == 1) {
   oct7_group_results <- oct7_group_specifications %>%
@@ -487,6 +653,46 @@ if (nrow(oct7_event) == 1) {
       dpi = 300
     )
   }
+
+  oct7_group_results_post_from_minus1 <- oct7_group_specifications %>%
+    dplyr::mutate(
+      model_data = purrr::map(entity_group_filter, function(group_filter) {
+        if (group_filter == "all") {
+          oct7_event_window_post_from_minus1
+        } else {
+          oct7_event_window_post_from_minus1 %>% dplyr::filter(entity_group == group_filter)
+        }
+      }),
+      input_rows = purrr::map_int(model_data, nrow),
+      model = purrr::map(model_data, run_did_model),
+      coefficient = purrr::map2(model, model_name, extract_post_event_coefficient),
+      fit = purrr::pmap(list(model, model_name, input_rows), extract_model_fit),
+      sample_summary = purrr::map2(model_data, model_name, build_sample_summary)
+    )
+
+  oct7_group_coefficients_post_from_minus1 <- dplyr::bind_rows(
+    oct7_group_results_post_from_minus1$coefficient
+  )
+  oct7_group_fit_post_from_minus1 <- dplyr::bind_rows(oct7_group_results_post_from_minus1$fit)
+  oct7_group_sample_summary_post_from_minus1 <- dplyr::bind_rows(
+    oct7_group_results_post_from_minus1$sample_summary
+  )
+
+  if (nrow(oct7_group_coefficients_post_from_minus1) > 0) {
+    oct7_group_post_from_minus1_plot <- plot_did_coefficients(
+      coefficients_table = oct7_group_coefficients_post_from_minus1,
+      plot_title = "DiD-Style Post-Event Estimates Around 2023-10-07",
+      plot_subtitle = "DV: log(1 + weekly spend). PostEvent = 1 for relative_week >= -1"
+    )
+
+    ggplot2::ggsave(
+      filename = file.path(output_directory, "did_coefficients_0710_by_group_post_from_minus1.png"),
+      plot = oct7_group_post_from_minus1_plot,
+      width = 8.5,
+      height = 4.5,
+      dpi = 300
+    )
+  }
 }
 
 # -------------------------
@@ -496,22 +702,67 @@ write_clean_csv(did_design_overview, file.path(output_directory, "did_design_ove
 write_clean_csv(all_model_sample_summary, file.path(output_directory, "did_sample_summary_by_model.csv"))
 write_clean_csv(all_model_coefficients, file.path(output_directory, "did_coefficients_by_model.csv"))
 write_clean_csv(all_model_fit, file.path(output_directory, "did_model_fit.csv"))
+write_clean_csv(
+  did_design_overview_post_from_minus1,
+  file.path(output_directory, "did_design_overview_post_from_minus1.csv")
+)
+write_clean_csv(
+  all_model_sample_summary_post_from_minus1,
+  file.path(output_directory, "did_sample_summary_by_model_post_from_minus1.csv")
+)
+write_clean_csv(
+  all_model_coefficients_post_from_minus1,
+  file.path(output_directory, "did_coefficients_by_model_post_from_minus1.csv")
+)
+write_clean_csv(
+  all_model_fit_post_from_minus1,
+  file.path(output_directory, "did_model_fit_post_from_minus1.csv")
+)
 
 if (nrow(oct7_coefficient) > 0) {
   write_clean_csv(oct7_coefficient, file.path(output_directory, "did_coefs_0710.csv"))
 }
+if (nrow(oct7_coefficient_post_from_minus1) > 0) {
+  write_clean_csv(
+    oct7_coefficient_post_from_minus1,
+    file.path(output_directory, "did_coefs_0710_post_from_minus1.csv")
+  )
+}
 if (nrow(oct7_sample_summary) > 0) {
   write_clean_csv(oct7_sample_summary, file.path(output_directory, "did_sample_summary_0710.csv"))
 }
+if (nrow(oct7_sample_summary_post_from_minus1) > 0) {
+  write_clean_csv(
+    oct7_sample_summary_post_from_minus1,
+    file.path(output_directory, "did_sample_summary_0710_post_from_minus1.csv")
+  )
+}
 if (nrow(oct7_group_coefficients) > 0) {
   write_clean_csv(oct7_group_coefficients, file.path(output_directory, "did_coefs_0710_by_group.csv"))
-  write_clean_csv(oct7_group_coefficients, file.path(output_directory, "did_coefs_0710_all_party_org.csv"))
 }
 if (nrow(oct7_group_fit) > 0) {
   write_clean_csv(oct7_group_fit, file.path(output_directory, "did_model_fit_0710_by_group.csv"))
 }
 if (nrow(oct7_group_sample_summary) > 0) {
   write_clean_csv(oct7_group_sample_summary, file.path(output_directory, "did_sample_summary_0710_by_group.csv"))
+}
+if (nrow(oct7_group_coefficients_post_from_minus1) > 0) {
+  write_clean_csv(
+    oct7_group_coefficients_post_from_minus1,
+    file.path(output_directory, "did_coefs_0710_by_group_post_from_minus1.csv")
+  )
+}
+if (nrow(oct7_group_fit_post_from_minus1) > 0) {
+  write_clean_csv(
+    oct7_group_fit_post_from_minus1,
+    file.path(output_directory, "did_model_fit_0710_by_group_post_from_minus1.csv")
+  )
+}
+if (nrow(oct7_group_sample_summary_post_from_minus1) > 0) {
+  write_clean_csv(
+    oct7_group_sample_summary_post_from_minus1,
+    file.path(output_directory, "did_sample_summary_0710_by_group_post_from_minus1.csv")
+  )
 }
 
 summary_file_path <- file.path(output_directory, "did_regression_summary.txt")
@@ -526,66 +777,95 @@ writeLines("PostEvent definition: 1 if relative_week >= 0, else 0", con = summar
 writeLines("", con = summary_connection)
 
 writeLines("--- did_design_overview ---", con = summary_connection)
-writeLines(capture.output(print(round_numeric_columns(did_design_overview))), con = summary_connection)
+write_formatted_table(did_design_overview, summary_connection)
 writeLines("", con = summary_connection)
 
 writeLines("--- did_sample_summary_by_model ---", con = summary_connection)
-writeLines(capture.output(print(round_numeric_columns(all_model_sample_summary))), con = summary_connection)
+write_formatted_table(all_model_sample_summary, summary_connection)
 writeLines("", con = summary_connection)
 
-for (row_index in seq_len(nrow(model_results))) {
-  current_model_name <- model_results$model_name[[row_index]]
-  current_model <- model_results$model[[row_index]]
+writeLines("--- did_design_overview_post_from_minus1 ---", con = summary_connection)
+write_formatted_table(did_design_overview_post_from_minus1, summary_connection)
+writeLines("", con = summary_connection)
 
-  writeLines(sprintf("\n--- %s ---", current_model_name), con = summary_connection)
+writeLines("--- did_sample_summary_by_model_post_from_minus1 ---", con = summary_connection)
+write_formatted_table(all_model_sample_summary_post_from_minus1, summary_connection)
+writeLines("", con = summary_connection)
 
-  if (is.null(current_model)) {
-    writeLines("Model not estimated (failed or insufficient data).", con = summary_connection)
-  } else {
-    writeLines(capture.output(summary(current_model)), con = summary_connection)
-  }
+writeLines("--- did_models_post_from_0 ---", con = summary_connection)
+write_model_summary_sections(
+  model_names = model_results$model_name,
+  coefficients_table = all_model_coefficients,
+  fit_table = all_model_fit,
+  summary_connection = summary_connection
+)
+
+writeLines("\n--- did_models_post_from_minus1 ---", con = summary_connection)
+write_model_summary_sections(
+  model_names = model_results_post_from_minus1$model_name,
+  coefficients_table = all_model_coefficients_post_from_minus1,
+  fit_table = all_model_fit_post_from_minus1,
+  summary_connection = summary_connection
+)
+
+if (nrow(oct7_coefficient) > 0) {
+  writeLines("\n--- dedicated_oct7_model ---", con = summary_connection)
+  write_formatted_table(oct7_coefficient, summary_connection)
 }
 
-if (!is.null(oct7_model)) {
-  writeLines("\n--- dedicated_oct7_model ---", con = summary_connection)
-  writeLines(capture.output(summary(oct7_model)), con = summary_connection)
+if (nrow(oct7_coefficient_post_from_minus1) > 0) {
+  writeLines("\n--- dedicated_oct7_model_post_from_minus1 ---", con = summary_connection)
+  write_formatted_table(oct7_coefficient_post_from_minus1, summary_connection)
 }
 
 if (nrow(oct7_group_results) > 0) {
-  for (row_index in seq_len(nrow(oct7_group_results))) {
-    current_model_name <- oct7_group_results$model_name[[row_index]]
-    current_model <- oct7_group_results$model[[row_index]]
+  writeLines("\n--- oct7_group_models ---", con = summary_connection)
+  write_model_summary_sections(
+    model_names = oct7_group_results$model_name,
+    coefficients_table = oct7_group_coefficients,
+    fit_table = oct7_group_fit,
+    summary_connection = summary_connection
+  )
+}
 
-    writeLines(sprintf("\n--- %s ---", current_model_name), con = summary_connection)
-
-    if (is.null(current_model)) {
-      writeLines("Model not estimated (failed or insufficient data).", con = summary_connection)
-    } else {
-      writeLines(capture.output(summary(current_model)), con = summary_connection)
-    }
-  }
+if (nrow(oct7_group_results_post_from_minus1) > 0) {
+  writeLines("\n--- oct7_group_models_post_from_minus1 ---", con = summary_connection)
+  write_model_summary_sections(
+    model_names = oct7_group_results_post_from_minus1$model_name,
+    coefficients_table = oct7_group_coefficients_post_from_minus1,
+    fit_table = oct7_group_fit_post_from_minus1,
+    summary_connection = summary_connection
+  )
 }
 
 # -------------------------
 # Console output for RStudio users
 # -------------------------
 print_section("DiD Design Overview")
-print(did_design_overview)
+print(format_output_table(did_design_overview))
+
+print_section("DiD Design Overview (Post From -1)")
+print(format_output_table(did_design_overview_post_from_minus1))
 
 print_section("DiD Sample Summary")
-print(all_model_sample_summary)
+print(format_output_table(all_model_sample_summary))
 
 print_section("DiD Model Fit")
-print(all_model_fit)
+print(format_output_table(all_model_fit))
 
 if (nrow(all_model_coefficients) > 0) {
   print_section("DiD Coefficients")
-  print(all_model_coefficients)
+  print(format_output_table(all_model_coefficients))
+}
+
+if (nrow(all_model_coefficients_post_from_minus1) > 0) {
+  print_section("DiD Coefficients (Post From -1)")
+  print(format_output_table(all_model_coefficients_post_from_minus1))
 }
 
 if (nrow(oct7_group_fit) > 0) {
   print_section("October 7 DiD Model Fit (By Group)")
-  print(oct7_group_fit)
+  print(format_output_table(oct7_group_fit))
 }
 
 print_section("Output Files")
@@ -594,18 +874,34 @@ cat("- did_design_overview.csv\n")
 cat("- did_sample_summary_by_model.csv\n")
 cat("- did_coefficients_by_model.csv\n")
 cat("- did_model_fit.csv\n")
+cat("- did_design_overview_post_from_minus1.csv\n")
+cat("- did_sample_summary_by_model_post_from_minus1.csv\n")
+cat("- did_coefficients_by_model_post_from_minus1.csv\n")
+cat("- did_model_fit_post_from_minus1.csv\n")
 cat("- did_regression_summary.txt\n")
 if (nrow(all_model_coefficients) > 0) {
   cat("- did_coefficients_by_model.png\n")
+}
+if (nrow(all_model_coefficients_post_from_minus1) > 0) {
+  cat("- did_coefficients_by_model_post_from_minus1.png\n")
 }
 if (nrow(oct7_coefficient) > 0) {
   cat("- did_coefs_0710.csv\n")
   cat("- did_sample_summary_0710.csv\n")
 }
+if (nrow(oct7_coefficient_post_from_minus1) > 0) {
+  cat("- did_coefs_0710_post_from_minus1.csv\n")
+  cat("- did_sample_summary_0710_post_from_minus1.csv\n")
+}
 if (nrow(oct7_group_coefficients) > 0) {
   cat("- did_coefs_0710_by_group.csv\n")
-  cat("- did_coefs_0710_all_party_org.csv\n")
   cat("- did_model_fit_0710_by_group.csv\n")
   cat("- did_sample_summary_0710_by_group.csv\n")
   cat("- did_coefficients_0710_by_group.png\n")
+}
+if (nrow(oct7_group_coefficients_post_from_minus1) > 0) {
+  cat("- did_coefs_0710_by_group_post_from_minus1.csv\n")
+  cat("- did_model_fit_0710_by_group_post_from_minus1.csv\n")
+  cat("- did_sample_summary_0710_by_group_post_from_minus1.csv\n")
+  cat("- did_coefficients_0710_by_group_post_from_minus1.png\n")
 }

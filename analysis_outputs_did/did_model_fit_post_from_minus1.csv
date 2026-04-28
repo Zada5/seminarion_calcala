@@ -1,0 +1,10 @@
+model_name,model_status,input_rows,used_rows,r2,within_r2,adjusted_r2
+all_entities_all_events,ok,10040,10038,0.348,0.001,0.340
+political_parties_all_events,ok,1412,1411,0.435,0.003,0.401
+other_orgs_people_all_events,ok,8628,8627,0.364,0.000,0.356
+all_entities_political_events,ok,5325,5323,0.328,0.001,0.316
+all_entities_terror_events,ok,4715,4714,0.409,0.000,0.397
+political_parties_political_events,ok,755,755,0.448,0.008,0.407
+political_parties_terror_events,ok,657,656,0.481,0.000,0.444
+other_orgs_people_political_events,ok,4570,4568,0.342,0.000,0.330
+other_orgs_people_terror_events,ok,4058,4058,0.417,0.000,0.405

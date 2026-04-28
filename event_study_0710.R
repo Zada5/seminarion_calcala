@@ -79,14 +79,105 @@ round_numeric_columns <- function(dataframe, digits = 3L) {
     )
 }
 
-write_clean_csv <- function(dataframe, file_path, digits = 3L) {
-  readr::write_csv(round_numeric_columns(dataframe, digits = digits), file_path)
+format_output_column <- function(values, column_name, digits = 3L) {
+  numeric_values <- as.numeric(Re(values))
+  formatted_values <- rep(NA_character_, length(numeric_values))
+  finite_values <- is.finite(numeric_values)
+  p_value_threshold <- 10^-digits
+
+  if (column_name == "p.value") {
+    tiny_values <- finite_values & numeric_values < p_value_threshold
+    regular_values <- finite_values & !tiny_values
+
+    formatted_values[tiny_values] <- paste0(
+      "<",
+      formatC(p_value_threshold, format = "f", digits = digits)
+    )
+    formatted_values[regular_values] <- formatC(
+      round(numeric_values[regular_values], digits = digits),
+      format = "f",
+      digits = digits
+    )
+
+    return(formatted_values)
+  }
+
+  if (any(finite_values)) {
+    integer_like_column <- all(
+      abs(numeric_values[finite_values] - round(numeric_values[finite_values])) <
+        sqrt(.Machine$double.eps)
+    )
+
+    if (integer_like_column) {
+      formatted_values[finite_values] <- formatC(
+        round(numeric_values[finite_values]),
+        format = "f",
+        digits = 0
+      )
+    } else {
+      formatted_values[finite_values] <- formatC(
+        round(numeric_values[finite_values], digits = digits),
+        format = "f",
+        digits = digits
+      )
+    }
+  }
+
+  formatted_values
 }
 
-add_baseline_coefficient_row <- function(coefficients_table, model_name_label) {
+format_output_table <- function(dataframe, digits = 3L) {
+  dataframe %>%
+    dplyr::mutate(
+      dplyr::across(
+        .cols = where(is.numeric),
+        .fns = ~ format_output_column(.x, dplyr::cur_column(), digits = digits)
+      )
+    )
+}
+
+write_clean_csv <- function(dataframe, file_path, digits = 3L) {
+  readr::write_csv(format_output_table(dataframe, digits = digits), file_path, na = "")
+}
+
+write_formatted_table <- function(dataframe, summary_connection, digits = 3L) {
+  if (nrow(dataframe) == 0) {
+    writeLines("No rows.", con = summary_connection)
+    return(invisible(NULL))
+  }
+
+  table_output <- capture.output(print(format_output_table(dataframe, digits = digits), n = Inf, width = Inf))
+  table_output <- sub("[[:space:]]+$", "", table_output)
+  writeLines(table_output, con = summary_connection)
+  invisible(NULL)
+}
+
+write_model_summary_sections <- function(model_names, coefficients_table, fit_table, summary_connection) {
+  for (current_model_name in model_names) {
+    writeLines(sprintf("\n--- %s ---", current_model_name), con = summary_connection)
+
+    current_coefficients <- if ("model_name" %in% names(coefficients_table)) {
+      coefficients_table %>% dplyr::filter(model_name == current_model_name)
+    } else {
+      tibble::tibble()
+    }
+    current_fit <- if ("model_name" %in% names(fit_table)) {
+      fit_table %>% dplyr::filter(model_name == current_model_name)
+    } else {
+      tibble::tibble()
+    }
+
+    writeLines("Coefficients:", con = summary_connection)
+    write_formatted_table(current_coefficients, summary_connection)
+    writeLines("Model fit:", con = summary_connection)
+    write_formatted_table(current_fit, summary_connection)
+  }
+}
+
+add_baseline_coefficient_row <- function(coefficients_table, model_name_label, baseline_relative_week = 0L) {
   baseline_row <- tibble::tibble(
     model_name = model_name_label,
-    relative_week = 0L,
+    relative_week = baseline_relative_week,
     estimate = 0,
     std.error = NA_real_,
     statistic = NA_real_,
@@ -116,7 +207,7 @@ plot_event_study_coefficients <- function(coefficients_table, plot_title, plot_s
     ggplot2::theme_minimal(base_size = 12)
 }
 
-run_event_study_model <- function(model_data) {
+run_event_study_model <- function(model_data, reference_week = 0L) {
   if (nrow(model_data) < 10) {
     return(NULL)
   }
@@ -125,9 +216,15 @@ run_event_study_model <- function(model_data) {
   }
 
   model_formula <- if (dplyr::n_distinct(model_data$event_id) > 1) {
-    as.formula("log_weekly_spend ~ i(relative_week, ref = 0) | entity_name + data_source + event_id")
+    as.formula(sprintf(
+      "log_weekly_spend ~ i(relative_week, ref = %s) | entity_name + data_source + event_id",
+      reference_week
+    ))
   } else {
-    as.formula("log_weekly_spend ~ i(relative_week, ref = 0) | entity_name + data_source")
+    as.formula(sprintf(
+      "log_weekly_spend ~ i(relative_week, ref = %s) | entity_name + data_source",
+      reference_week
+    ))
   }
 
   tryCatch(
@@ -658,28 +755,50 @@ model_specifications <- tibble::tribble(
   "other_orgs_people_terror_events", "other_org_or_person", "terror"
 )
 
-model_results <- model_specifications %>%
-  dplyr::mutate(
-    model_data = purrr::map2(entity_group_filter, event_type_filter, function(group_filter, type_filter) {
-      filtered_data <- event_window_panel
+fit_event_study_specs <- function(input_panel, specifications, reference_week = 0L) {
+  specifications %>%
+    dplyr::mutate(
+      model_data = purrr::map2(entity_group_filter, event_type_filter, function(group_filter, type_filter) {
+        filtered_data <- input_panel
 
-      if (group_filter != "all") {
-        filtered_data <- filtered_data %>% dplyr::filter(entity_group == group_filter)
-      }
-      if (type_filter != "all") {
-        filtered_data <- filtered_data %>% dplyr::filter(event_type_group == type_filter)
-      }
+        if (group_filter != "all") {
+          filtered_data <- filtered_data %>% dplyr::filter(entity_group == group_filter)
+        }
+        if (type_filter != "all") {
+          filtered_data <- filtered_data %>% dplyr::filter(event_type_group == type_filter)
+        }
 
-      filtered_data
-    }),
-    input_rows = purrr::map_int(model_data, nrow),
-    model = purrr::map(model_data, run_event_study_model),
-    coefficients = purrr::map2(model, model_name, extract_relative_week_coefficients),
-    fit = purrr::pmap(list(model, model_name, input_rows), extract_model_fit)
-  )
+        filtered_data
+      }),
+      input_rows = purrr::map_int(model_data, nrow),
+      model = purrr::map(model_data, run_event_study_model, reference_week = reference_week),
+      coefficients = purrr::map2(model, model_name, extract_relative_week_coefficients),
+      fit = purrr::pmap(list(model, model_name, input_rows), extract_model_fit)
+    )
+}
+
+model_results <- fit_event_study_specs(
+  input_panel = event_window_panel,
+  specifications = model_specifications,
+  reference_week = 0L
+)
+
+model_results_ref_minus1 <- fit_event_study_specs(
+  input_panel = event_window_panel,
+  specifications = model_specifications,
+  reference_week = -1L
+)
 
 all_model_coefficients <- dplyr::bind_rows(model_results$coefficients)
 all_model_fit <- dplyr::bind_rows(model_results$fit)
+
+all_model_coefficients_ref_minus1 <- dplyr::bind_rows(model_results_ref_minus1$coefficients)
+all_model_fit_ref_minus1 <- dplyr::bind_rows(model_results_ref_minus1$fit)
+
+legacy_duplicate_oct7_outputs <- c(
+  file.path(output_directory, "event_study_coefs_0710_all_party_org.csv")
+)
+unlink(legacy_duplicate_oct7_outputs[file.exists(legacy_duplicate_oct7_outputs)])
 
 # -------------------------
 # Save event-study figures for every model split
@@ -738,6 +857,67 @@ if (nrow(event_study_coefficients_for_plot) > 0) {
   ggplot2::ggsave(
     filename = file.path(output_directory, "event_study_figure_all_models.png"),
     plot = combined_event_study_plot,
+    width = 14,
+    height = 10,
+    dpi = 300
+  )
+}
+
+event_study_figures_ref_minus1_directory <- file.path(output_directory, "event_study_figures_ref_minus1")
+dir.create(event_study_figures_ref_minus1_directory, showWarnings = FALSE, recursive = TRUE)
+
+event_study_coefficients_ref_minus1_for_plot <- tibble::tibble()
+if (nrow(all_model_coefficients_ref_minus1) > 0) {
+  event_study_coefficients_ref_minus1_for_plot <- purrr::map_dfr(
+    split(all_model_coefficients_ref_minus1, all_model_coefficients_ref_minus1$model_name),
+    ~ add_baseline_coefficient_row(.x, unique(.x$model_name)[1], baseline_relative_week = -1L)
+  )
+
+  for (row_index in seq_len(nrow(model_results_ref_minus1))) {
+    current_model_name <- model_results_ref_minus1$model_name[[row_index]]
+    current_coefficients <- event_study_coefficients_ref_minus1_for_plot %>%
+      dplyr::filter(model_name == current_model_name)
+
+    if (nrow(current_coefficients) == 0) {
+      next
+    }
+
+    current_plot <- plot_event_study_coefficients(
+      coefficients_table = current_coefficients,
+      plot_title = paste("Event Study:", current_model_name),
+      plot_subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = -1"
+    )
+
+    ggplot2::ggsave(
+      filename = file.path(event_study_figures_ref_minus1_directory, paste0(current_model_name, ".png")),
+      plot = current_plot,
+      width = 9,
+      height = 5,
+      dpi = 300
+    )
+  }
+
+  combined_event_study_ref_minus1_plot <- ggplot2::ggplot(
+    event_study_coefficients_ref_minus1_for_plot,
+    ggplot2::aes(x = relative_week, y = estimate)
+  ) +
+    ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
+    ggplot2::geom_vline(xintercept = 0, linetype = "dotted") +
+    ggplot2::geom_point(size = 1.8) +
+    ggplot2::geom_errorbar(ggplot2::aes(ymin = conf.low, ymax = conf.high), width = 0.15) +
+    ggplot2::facet_wrap(~ model_name, scales = "free_y") +
+    ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
+    ggplot2::labs(
+      title = "Event-Study Coefficients Across All Model Splits",
+      subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = -1",
+      x = "Weeks relative to event week",
+      y = "Estimated change vs baseline week (95% CI)"
+    ) +
+    ggplot2::theme_minimal(base_size = 11)
+
+  ggplot2::ggsave(
+    filename = file.path(output_directory, "event_study_figure_all_models_ref_minus1.png"),
+    plot = combined_event_study_ref_minus1_plot,
     width = 14,
     height = 10,
     dpi = 300
@@ -819,28 +999,23 @@ placebo_event_window_panel <- tidyr::crossing(
   ) %>%
   dplyr::filter(relative_week >= -analysis_window_weeks, relative_week <= analysis_window_weeks)
 
-placebo_model_results <- model_specifications %>%
-  dplyr::mutate(
-    model_data = purrr::map2(entity_group_filter, event_type_filter, function(group_filter, type_filter) {
-      filtered_data <- placebo_event_window_panel
+placebo_model_results <- fit_event_study_specs(
+  input_panel = placebo_event_window_panel,
+  specifications = model_specifications,
+  reference_week = 0L
+)
 
-      if (group_filter != "all") {
-        filtered_data <- filtered_data %>% dplyr::filter(entity_group == group_filter)
-      }
-      if (type_filter != "all") {
-        filtered_data <- filtered_data %>% dplyr::filter(event_type_group == type_filter)
-      }
-
-      filtered_data
-    }),
-    input_rows = purrr::map_int(model_data, nrow),
-    model = purrr::map(model_data, run_event_study_model),
-    coefficients = purrr::map2(model, model_name, extract_relative_week_coefficients),
-    fit = purrr::pmap(list(model, model_name, input_rows), extract_model_fit)
-  )
+placebo_model_results_ref_minus1 <- fit_event_study_specs(
+  input_panel = placebo_event_window_panel,
+  specifications = model_specifications,
+  reference_week = -1L
+)
 
 placebo_model_coefficients <- dplyr::bind_rows(placebo_model_results$coefficients)
 placebo_model_fit <- dplyr::bind_rows(placebo_model_results$fit)
+
+placebo_model_coefficients_ref_minus1 <- dplyr::bind_rows(placebo_model_results_ref_minus1$coefficients)
+placebo_model_fit_ref_minus1 <- dplyr::bind_rows(placebo_model_results_ref_minus1$fit)
 
 placebo_figures_directory <- file.path(output_directory, "placebo_event_study_figures")
 dir.create(placebo_figures_directory, showWarnings = FALSE, recursive = TRUE)
@@ -902,6 +1077,67 @@ if (nrow(placebo_model_coefficients) > 0) {
   )
 }
 
+placebo_figures_ref_minus1_directory <- file.path(output_directory, "placebo_event_study_figures_ref_minus1")
+dir.create(placebo_figures_ref_minus1_directory, showWarnings = FALSE, recursive = TRUE)
+
+placebo_coefficients_ref_minus1_for_plot <- tibble::tibble()
+if (nrow(placebo_model_coefficients_ref_minus1) > 0) {
+  placebo_coefficients_ref_minus1_for_plot <- purrr::map_dfr(
+    split(placebo_model_coefficients_ref_minus1, placebo_model_coefficients_ref_minus1$model_name),
+    ~ add_baseline_coefficient_row(.x, unique(.x$model_name)[1], baseline_relative_week = -1L)
+  )
+
+  for (row_index in seq_len(nrow(placebo_model_results_ref_minus1))) {
+    current_model_name <- placebo_model_results_ref_minus1$model_name[[row_index]]
+    current_coefficients <- placebo_coefficients_ref_minus1_for_plot %>%
+      dplyr::filter(model_name == current_model_name)
+
+    if (nrow(current_coefficients) == 0) {
+      next
+    }
+
+    current_plot <- plot_event_study_coefficients(
+      coefficients_table = current_coefficients,
+      plot_title = paste("Placebo Event Study:", current_model_name),
+      plot_subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = -1"
+    )
+
+    ggplot2::ggsave(
+      filename = file.path(placebo_figures_ref_minus1_directory, paste0(current_model_name, ".png")),
+      plot = current_plot,
+      width = 9,
+      height = 5,
+      dpi = 300
+    )
+  }
+
+  combined_placebo_ref_minus1_plot <- ggplot2::ggplot(
+    placebo_coefficients_ref_minus1_for_plot,
+    ggplot2::aes(x = relative_week, y = estimate)
+  ) +
+    ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
+    ggplot2::geom_vline(xintercept = 0, linetype = "dotted") +
+    ggplot2::geom_point(size = 1.8) +
+    ggplot2::geom_errorbar(ggplot2::aes(ymin = conf.low, ymax = conf.high), width = 0.15) +
+    ggplot2::facet_wrap(~ model_name, scales = "free_y") +
+    ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
+    ggplot2::labs(
+      title = "Placebo Event-Study Coefficients Across All Model Splits",
+      subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = -1",
+      x = "Weeks relative to placebo event week",
+      y = "Estimated change vs baseline week (95% CI)"
+    ) +
+    ggplot2::theme_minimal(base_size = 11)
+
+  ggplot2::ggsave(
+    filename = file.path(output_directory, "placebo_event_study_figure_all_models_ref_minus1.png"),
+    plot = combined_placebo_ref_minus1_plot,
+    width = 14,
+    height = 10,
+    dpi = 300
+  )
+}
+
 if (nrow(placebo_correlation_summary) > 0) {
   placebo_correlation_heatmap <- plot_correlation_coefficients(
     correlation_table = placebo_correlation_summary,
@@ -941,6 +1177,8 @@ oct7_event <- events_table %>%
 
 oct7_coefficients_for_plot <- tibble::tibble()
 oct7_model <- NULL
+oct7_coefficients_ref_minus1_for_plot <- tibble::tibble()
+oct7_model_ref_minus1 <- NULL
 
 if (nrow(oct7_event) == 1) {
   oct7_event_window <- event_window_panel %>%
@@ -966,6 +1204,34 @@ if (nrow(oct7_event) == 1) {
       dpi = 300
     )
   }
+
+  oct7_model_ref_minus1 <- run_event_study_model(oct7_event_window, reference_week = -1L)
+
+  if (!is.null(oct7_model_ref_minus1)) {
+    oct7_coefficients_ref_minus1 <- extract_relative_week_coefficients(
+      oct7_model_ref_minus1,
+      "oct7_event"
+    )
+    oct7_coefficients_ref_minus1_for_plot <- add_baseline_coefficient_row(
+      oct7_coefficients_ref_minus1,
+      "oct7_event",
+      baseline_relative_week = -1L
+    )
+
+    oct7_ref_minus1_plot <- plot_event_study_coefficients(
+      coefficients_table = oct7_coefficients_ref_minus1_for_plot,
+      plot_title = "Event Study Around 2023-10-07",
+      plot_subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = -1"
+    )
+
+    ggplot2::ggsave(
+      filename = file.path(output_directory, "event_study_figure_0710_ref_minus1.png"),
+      plot = oct7_ref_minus1_plot,
+      width = 9,
+      height = 5,
+      dpi = 300
+    )
+  }
 }
 
 # -------------------------
@@ -981,6 +1247,10 @@ oct7_group_specifications <- tibble::tribble(
 oct7_group_results <- tibble::tibble()
 oct7_group_coefficients <- tibble::tibble()
 oct7_group_fit <- tibble::tibble()
+oct7_group_results_ref_minus1 <- tibble::tibble()
+oct7_group_coefficients_ref_minus1 <- tibble::tibble()
+oct7_group_fit_ref_minus1 <- tibble::tibble()
+oct7_group_coefficients_ref_minus1_for_plot <- tibble::tibble()
 
 if (nrow(oct7_event) == 1) {
   oct7_group_results <- oct7_group_specifications %>%
@@ -1042,6 +1312,68 @@ if (nrow(oct7_event) == 1) {
       dpi = 300
     )
   }
+
+  oct7_group_results_ref_minus1 <- oct7_group_specifications %>%
+    dplyr::mutate(
+      model_data = purrr::map(entity_group_filter, function(group_filter) {
+        if (group_filter == "all") {
+          oct7_event_window
+        } else {
+          oct7_event_window %>% dplyr::filter(entity_group == group_filter)
+        }
+      }),
+      input_rows = purrr::map_int(model_data, nrow),
+      model = purrr::map(model_data, run_event_study_model, reference_week = -1L),
+      coefficients = purrr::map2(model, model_name, extract_relative_week_coefficients),
+      fit = purrr::pmap(list(model, model_name, input_rows), extract_model_fit)
+    )
+
+  oct7_group_coefficients_ref_minus1 <- dplyr::bind_rows(oct7_group_results_ref_minus1$coefficients)
+  oct7_group_fit_ref_minus1 <- dplyr::bind_rows(oct7_group_results_ref_minus1$fit)
+
+  if (nrow(oct7_group_coefficients_ref_minus1) > 0) {
+    oct7_group_coefficients_ref_minus1_for_plot <- purrr::map_dfr(
+      split(oct7_group_coefficients_ref_minus1, oct7_group_coefficients_ref_minus1$model_name),
+      ~ add_baseline_coefficient_row(.x, unique(.x$model_name)[1], baseline_relative_week = -1L)
+    ) %>%
+      dplyr::mutate(
+        entity_group = dplyr::case_when(
+          model_name == "oct7_all_entities" ~ "all_entities",
+          model_name == "oct7_political_parties" ~ "political_party",
+          model_name == "oct7_other_orgs_people" ~ "other_org_or_person",
+          TRUE ~ model_name
+        )
+      )
+  }
+
+  if (nrow(oct7_group_coefficients_ref_minus1_for_plot) > 0) {
+    oct7_group_ref_minus1_plot <- ggplot2::ggplot(
+      oct7_group_coefficients_ref_minus1_for_plot,
+      ggplot2::aes(x = relative_week, y = estimate, color = entity_group)
+    ) +
+      ggplot2::geom_hline(yintercept = 0, linetype = "dashed") +
+      ggplot2::geom_vline(xintercept = 0, linetype = "dotted") +
+      ggplot2::geom_line() +
+      ggplot2::geom_point(size = 2) +
+      ggplot2::geom_errorbar(ggplot2::aes(ymin = conf.low, ymax = conf.high), width = 0.12) +
+      ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
+      ggplot2::labs(
+        title = "Event Study Around 2023-10-07 by Entity Group",
+        subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = -1",
+        x = "Weeks relative to event week",
+        y = "Estimated change vs baseline week (95% CI)",
+        color = "Entity group"
+      ) +
+      ggplot2::theme_minimal(base_size = 12)
+
+    ggplot2::ggsave(
+      filename = file.path(output_directory, "event_study_figure_0710_by_group_ref_minus1.png"),
+      plot = oct7_group_ref_minus1_plot,
+      width = 9,
+      height = 5,
+      dpi = 300
+    )
+  }
 }
 
 # -------------------------
@@ -1058,18 +1390,51 @@ write_clean_csv(placebo_correlation_summary, file.path(output_directory, "placeb
 
 write_clean_csv(all_model_coefficients, file.path(output_directory, "event_study_coefficients_by_model.csv"))
 write_clean_csv(all_model_fit, file.path(output_directory, "event_study_model_fit.csv"))
+write_clean_csv(
+  all_model_coefficients_ref_minus1,
+  file.path(output_directory, "event_study_coefficients_by_model_ref_minus1.csv")
+)
+write_clean_csv(
+  all_model_fit_ref_minus1,
+  file.path(output_directory, "event_study_model_fit_ref_minus1.csv")
+)
 write_clean_csv(placebo_model_coefficients, file.path(output_directory, "placebo_event_study_coefficients_by_model.csv"))
 write_clean_csv(placebo_model_fit, file.path(output_directory, "placebo_event_study_model_fit.csv"))
+write_clean_csv(
+  placebo_model_coefficients_ref_minus1,
+  file.path(output_directory, "placebo_event_study_coefficients_by_model_ref_minus1.csv")
+)
+write_clean_csv(
+  placebo_model_fit_ref_minus1,
+  file.path(output_directory, "placebo_event_study_model_fit_ref_minus1.csv")
+)
 
 if (nrow(oct7_coefficients_for_plot) > 0) {
   write_clean_csv(oct7_coefficients_for_plot, file.path(output_directory, "event_study_coefs_0710.csv"))
 }
+if (nrow(oct7_coefficients_ref_minus1_for_plot) > 0) {
+  write_clean_csv(
+    oct7_coefficients_ref_minus1_for_plot,
+    file.path(output_directory, "event_study_coefs_0710_ref_minus1.csv")
+  )
+}
 if (nrow(oct7_group_coefficients) > 0) {
   write_clean_csv(oct7_group_coefficients, file.path(output_directory, "event_study_coefs_0710_by_group.csv"))
-  write_clean_csv(oct7_group_coefficients, file.path(output_directory, "event_study_coefs_0710_all_party_org.csv"))
 }
 if (nrow(oct7_group_fit) > 0) {
   write_clean_csv(oct7_group_fit, file.path(output_directory, "event_study_model_fit_0710_by_group.csv"))
+}
+if (nrow(oct7_group_coefficients_ref_minus1) > 0) {
+  write_clean_csv(
+    oct7_group_coefficients_ref_minus1,
+    file.path(output_directory, "event_study_coefs_0710_by_group_ref_minus1.csv")
+  )
+}
+if (nrow(oct7_group_fit_ref_minus1) > 0) {
+  write_clean_csv(
+    oct7_group_fit_ref_minus1,
+    file.path(output_directory, "event_study_model_fit_0710_by_group_ref_minus1.csv")
+  )
 }
 
 # Write textual summaries for easy reading in RStudio and externally
@@ -1083,71 +1448,86 @@ writeLines(sprintf("Generated: %s", as.character(Sys.time())), con = summary_con
 writeLines("", con = summary_connection)
 
 writeLines("--- correlation_summary ---", con = summary_connection)
-writeLines(capture.output(print(round_numeric_columns(correlation_summary))), con = summary_connection)
+write_formatted_table(correlation_summary, summary_connection)
 writeLines("", con = summary_connection)
 
 writeLines("--- placebo_correlation_summary ---", con = summary_connection)
-writeLines(capture.output(print(round_numeric_columns(placebo_correlation_summary))), con = summary_connection)
+write_formatted_table(placebo_correlation_summary, summary_connection)
 writeLines("", con = summary_connection)
 
-for (row_index in seq_len(nrow(model_results))) {
-  current_model_name <- model_results$model_name[[row_index]]
-  current_model <- model_results$model[[row_index]]
+writeLines("--- event_study_models_baseline_0 ---", con = summary_connection)
+write_model_summary_sections(
+  model_names = model_results$model_name,
+  coefficients_table = all_model_coefficients,
+  fit_table = all_model_fit,
+  summary_connection = summary_connection
+)
 
-  writeLines(sprintf("\n--- %s ---", current_model_name), con = summary_connection)
+writeLines("\n--- event_study_models_baseline_minus1 ---", con = summary_connection)
+write_model_summary_sections(
+  model_names = model_results_ref_minus1$model_name,
+  coefficients_table = all_model_coefficients_ref_minus1,
+  fit_table = all_model_fit_ref_minus1,
+  summary_connection = summary_connection
+)
 
-  if (is.null(current_model)) {
-    writeLines("Model not estimated (failed or insufficient data).", con = summary_connection)
-  } else {
-    model_output <- capture.output(summary(current_model))
-    writeLines(model_output, con = summary_connection)
-  }
+if (nrow(oct7_coefficients_for_plot) > 0) {
+  writeLines("\n--- dedicated_oct7_model ---", con = summary_connection)
+  write_formatted_table(oct7_coefficients_for_plot, summary_connection)
 }
 
-if (!is.null(oct7_model)) {
-  writeLines("\n--- dedicated_oct7_model ---", con = summary_connection)
-  writeLines(capture.output(summary(oct7_model)), con = summary_connection)
+if (nrow(oct7_coefficients_ref_minus1_for_plot) > 0) {
+  writeLines("\n--- dedicated_oct7_model_baseline_minus1 ---", con = summary_connection)
+  write_formatted_table(oct7_coefficients_ref_minus1_for_plot, summary_connection)
 }
 
 if (nrow(oct7_group_results) > 0) {
-  for (row_index in seq_len(nrow(oct7_group_results))) {
-    current_model_name <- oct7_group_results$model_name[[row_index]]
-    current_model <- oct7_group_results$model[[row_index]]
+  writeLines("\n--- oct7_group_models ---", con = summary_connection)
+  write_model_summary_sections(
+    model_names = oct7_group_results$model_name,
+    coefficients_table = oct7_group_coefficients,
+    fit_table = oct7_group_fit,
+    summary_connection = summary_connection
+  )
+}
 
-    writeLines(sprintf("\n--- %s ---", current_model_name), con = summary_connection)
-
-    if (is.null(current_model)) {
-      writeLines("Model not estimated (failed or insufficient data).", con = summary_connection)
-    } else {
-      writeLines(capture.output(summary(current_model)), con = summary_connection)
-    }
-  }
+if (nrow(oct7_group_results_ref_minus1) > 0) {
+  writeLines("\n--- oct7_group_models_baseline_minus1 ---", con = summary_connection)
+  write_model_summary_sections(
+    model_names = oct7_group_results_ref_minus1$model_name,
+    coefficients_table = oct7_group_coefficients_ref_minus1,
+    fit_table = oct7_group_fit_ref_minus1,
+    summary_connection = summary_connection
+  )
 }
 
 # -------------------------
 # Console output for RStudio users
 # -------------------------
 print_section("Descriptive Statistics (Overall)")
-print(overall_spend_stats)
+print(format_output_table(overall_spend_stats))
 
 print_section("Descriptive Statistics (By Group)")
-print(spend_stats_by_group)
+print(format_output_table(spend_stats_by_group))
 
 print_section("Descriptive Statistics (By Year)")
-print(yearly_spend_stats)
+print(format_output_table(yearly_spend_stats))
 
 print_section("Pre/Post October 7 Reference Week")
-print(pre_post_oct7_stats)
+print(format_output_table(pre_post_oct7_stats))
 
 print_section("Correlation Summary")
-print(correlation_summary)
+print(format_output_table(correlation_summary))
 
 print_section("Regression Model Fit (All Splits)")
-print(all_model_fit)
+print(format_output_table(all_model_fit))
+
+print_section("Regression Model Fit (Baseline -1)")
+print(format_output_table(all_model_fit_ref_minus1))
 
 if (nrow(oct7_group_fit) > 0) {
   print_section("October 7 Model Fit (By Group)")
-  print(oct7_group_fit)
+  print(format_output_table(oct7_group_fit))
 }
 
 print_section("Output Files")
@@ -1166,20 +1546,36 @@ cat("- placebo_correlation_coefficients_heatmap.png\n")
 cat("- placebo_correlation_scatter_panels.png\n")
 cat("- event_study_coefficients_by_model.csv\n")
 cat("- event_study_model_fit.csv\n")
+cat("- event_study_coefficients_by_model_ref_minus1.csv\n")
+cat("- event_study_model_fit_ref_minus1.csv\n")
 cat("- placebo_event_study_coefficients_by_model.csv\n")
 cat("- placebo_event_study_model_fit.csv\n")
+cat("- placebo_event_study_coefficients_by_model_ref_minus1.csv\n")
+cat("- placebo_event_study_model_fit_ref_minus1.csv\n")
 cat("- regression_summary.txt\n")
 cat("- event_study_figure_all_models.png\n")
 cat("- event_study_figures/*.png\n")
+cat("- event_study_figure_all_models_ref_minus1.png\n")
+cat("- event_study_figures_ref_minus1/*.png\n")
 cat("- placebo_event_study_figure_all_models.png\n")
 cat("- placebo_event_study_figures/*.png\n")
+cat("- placebo_event_study_figure_all_models_ref_minus1.png\n")
+cat("- placebo_event_study_figures_ref_minus1/*.png\n")
 if (nrow(oct7_coefficients_for_plot) > 0) {
   cat("- event_study_coefs_0710.csv\n")
   cat("- event_study_figure_0710.png\n")
 }
+if (nrow(oct7_coefficients_ref_minus1_for_plot) > 0) {
+  cat("- event_study_coefs_0710_ref_minus1.csv\n")
+  cat("- event_study_figure_0710_ref_minus1.png\n")
+}
 if (nrow(oct7_group_coefficients) > 0) {
   cat("- event_study_coefs_0710_by_group.csv\n")
-  cat("- event_study_coefs_0710_all_party_org.csv\n")
   cat("- event_study_model_fit_0710_by_group.csv\n")
   cat("- event_study_figure_0710_by_group.png\n")
+}
+if (nrow(oct7_group_coefficients_ref_minus1) > 0) {
+  cat("- event_study_coefs_0710_by_group_ref_minus1.csv\n")
+  cat("- event_study_model_fit_0710_by_group_ref_minus1.csv\n")
+  cat("- event_study_figure_0710_by_group_ref_minus1.png\n")
 }

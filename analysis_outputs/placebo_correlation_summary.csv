@@ -4,7 +4,7 @@ all_entities,political,-0.039,390,36,166236.162,0.092
 all_entities,terror,0.037,390,30,166236.162,0.077
 other_org_or_person,all_events,-0.011,390,66,124673.852,0.169
 other_org_or_person,political,-0.023,390,36,124673.852,0.092
-other_org_or_person,terror,0.01,390,30,124673.852,0.077
+other_org_or_person,terror,0.010,390,30,124673.852,0.077
 political_party,all_events,-0.009,358,65,45277.377,0.182
 political_party,political,-0.051,358,35,45277.377,0.098
 political_party,terror,0.042,358,30,45277.377,0.084
