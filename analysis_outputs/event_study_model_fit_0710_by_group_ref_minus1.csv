@@ -1,0 +1,4 @@
+model_name,model_status,input_rows,used_rows,r2,within_r2,adjusted_r2
+oct7_all_entities,ok,146,144,0.679,0.031,0.567
+oct7_political_parties,ok,15,13,0.708,0.557,0.299
+oct7_other_orgs_people,ok,131,131,0.667,0.021,0.554

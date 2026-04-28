@@ -1,6 +1,6 @@
 model_name,relative_week,estimate,std.error,statistic,p.value,conf.low,conf.high
 oct7_event,-2,0.461,0.288,1.601,0.119,-0.125,1.047
 oct7_event,-1,0.375,0.325,1.154,0.257,-0.287,1.036
-oct7_event,0,0,NA,NA,NA,0,0
+oct7_event,0,0.000,,,,0.000,0.000
 oct7_event,1,0.396,0.235,1.682,0.102,-0.083,0.875
-oct7_event,2,0.301,0.295,1.02,0.315,-0.3,0.903
+oct7_event,2,0.301,0.295,1.020,0.315,-0.300,0.903

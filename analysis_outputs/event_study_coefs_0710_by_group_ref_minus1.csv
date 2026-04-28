@@ -1,0 +1,12 @@
+model_name,relative_week,estimate,std.error,statistic,p.value,conf.low,conf.high
+oct7_all_entities,-2,0.086,0.152,0.565,0.576,-0.224,0.396
+oct7_all_entities,0,-0.375,0.325,-1.154,0.257,-1.036,0.287
+oct7_all_entities,1,0.021,0.342,0.062,0.951,-0.675,0.717
+oct7_all_entities,2,-0.073,0.352,-0.209,0.836,-0.791,0.644
+oct7_political_parties,-2,0.702,0.802,0.876,0.446,-1.849,3.254
+oct7_political_parties,0,-1.079,0.401,-2.692,0.074,-2.355,0.197
+oct7_political_parties,1,-0.674,0.328,-2.057,0.132,-1.717,0.369
+oct7_other_orgs_people,-2,-0.008,0.150,-0.051,0.959,-0.314,0.299
+oct7_other_orgs_people,0,-0.340,0.339,-1.002,0.325,-1.034,0.355
+oct7_other_orgs_people,1,0.027,0.356,0.076,0.940,-0.701,0.756
+oct7_other_orgs_people,2,-0.088,0.360,-0.246,0.808,-0.825,0.648
