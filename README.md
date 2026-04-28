@@ -66,6 +66,7 @@ Rscript did_0710.R
 * Placebo event dates + placebo correlations (`placebo_events_dates.csv`, `placebo_correlation_summary.csv`, placebo correlation graphs)
 * Real and placebo event-study model outputs (CSV + per-model/combined figures)
 * Dedicated 2023-10-07 outputs split as all / political parties / other organizations (`event_study_coefs_0710_all_party_org.csv`)
+* Uses the repository placebo list file `placebo_events_2020_2025.csv` (if present) so placebo dates are explicit and shared across collaborators
 
 `did_0710.R` writes DiD outputs into `analysis_outputs_did/`, including dedicated 2023-10-07 all / political parties / other organizations coefficients in:
 

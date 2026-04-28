@@ -323,6 +323,77 @@ create_placebo_events <- function(real_events_table, candidate_weeks, min_gap_we
     dplyr::mutate(event_id = dplyr::row_number())
 }
 
+load_placebo_events_from_repo <- function(
+  placebo_file_path,
+  real_events_table,
+  min_gap_weeks = 3L
+) {
+  if (!file.exists(placebo_file_path)) {
+    return(NULL)
+  }
+
+  placebo_file <- readr::read_csv(placebo_file_path, show_col_types = FALSE)
+  names(placebo_file) <- trimws(names(placebo_file))
+
+  required_placebo_columns <- c("event_date", "event_type_group")
+  missing_columns <- setdiff(required_placebo_columns, names(placebo_file))
+  if (length(missing_columns) > 0) {
+    stop(
+      "Placebo file missing columns: ",
+      paste(missing_columns, collapse = ", "),
+      ". File: ",
+      placebo_file_path
+    )
+  }
+
+  placebo_events <- placebo_file %>%
+    dplyr::transmute(
+      event_date = parse_date_flexible(event_date),
+      event_type_group = as.character(event_type_group)
+    ) %>%
+    dplyr::filter(!is.na(event_date), event_type_group %in% c("political", "terror")) %>%
+    dplyr::arrange(event_date)
+
+  if (nrow(placebo_events) == 0) {
+    stop("Placebo file has no valid rows after parsing: ", placebo_file_path)
+  }
+
+  placebo_events <- placebo_events %>%
+    dplyr::mutate(
+      event_week_start_sunday = event_date,
+      event_type_raw = paste0("placebo_", event_type_group),
+      event_name = paste0("placebo_event_", dplyr::row_number()),
+      event_details = "Predefined placebo week from repository list",
+      event_id = dplyr::row_number()
+    ) %>%
+    dplyr::select(
+      event_date,
+      event_type_raw,
+      event_type_group,
+      event_name,
+      event_details,
+      event_id,
+      event_week_start_sunday
+    )
+
+  real_event_weeks <- unique(real_events_table$event_week_start_sunday)
+  minimum_gap <- min(sapply(placebo_events$event_week_start_sunday, function(candidate_week) {
+    min(abs(as.integer(candidate_week - real_event_weeks) / 7))
+  }))
+
+  if (minimum_gap <= min_gap_weeks) {
+    stop(
+      "Placebo list violates minimum gap from real events. Min gap observed: ",
+      minimum_gap,
+      " weeks, required: > ",
+      min_gap_weeks,
+      " weeks."
+    )
+  }
+
+  placebo_events
+}
+
 read_weekly_spend_file <- function(file_path) {
   dataset <- readr::read_csv(file_path, show_col_types = FALSE)
   names(dataset) <- trimws(names(dataset))
@@ -704,20 +775,29 @@ if (nrow(correlation_summary) > 0) {
 # -------------------------
 # Placebo events (seeded random dates with distance from real events)
 # -------------------------
+repo_placebo_dates_path <- "./placebo_events_2020_2025.csv"
 placebo_window_start <- as.Date("2020-01-05")
 placebo_window_end <- as.Date("2025-12-28")
-candidate_placebo_weeks <- sort(unique(
-  weekly_spend_panel$week_start_sunday[
-    weekly_spend_panel$week_start_sunday >= placebo_window_start &
-      weekly_spend_panel$week_start_sunday <= placebo_window_end
-  ]
-))
-placebo_events_table <- create_placebo_events(
+placebo_events_table <- load_placebo_events_from_repo(
+  placebo_file_path = repo_placebo_dates_path,
   real_events_table = events_table,
-  candidate_weeks = candidate_placebo_weeks,
-  min_gap_weeks = analysis_window_weeks + 1L,
-  seed = 7102023L
+  min_gap_weeks = analysis_window_weeks + 1L
 )
+
+if (is.null(placebo_events_table)) {
+  candidate_placebo_weeks <- sort(unique(
+    weekly_spend_panel$week_start_sunday[
+      weekly_spend_panel$week_start_sunday >= placebo_window_start &
+        weekly_spend_panel$week_start_sunday <= placebo_window_end
+    ]
+  ))
+  placebo_events_table <- create_placebo_events(
+    real_events_table = events_table,
+    candidate_weeks = candidate_placebo_weeks,
+    min_gap_weeks = analysis_window_weeks + 1L,
+    seed = 7102023L
+  )
+}
 
 placebo_weekly_event_counts_wide <- build_event_count_wide(placebo_events_table)
 placebo_correlation_outputs <- build_correlation_outputs(
