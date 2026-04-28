@@ -1,6 +1,6 @@
 Event-Study Regression Summary
 ================================
-Generated: 2026-04-15 16:12:12.419958
+Generated: 2026-04-15 16:28:39.003723
 
 --- correlation_summary ---
 # A tibble: 9 × 7
