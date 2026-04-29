@@ -1,9 +1,22 @@
 Event-Study Regression Summary
 ================================
-Generated: 2026-04-29 14:57:34.954795
+Generated: 2026-04-29 16:23:17.478762
+Effective spec used here: log(Spending_{i,t}) = alpha_i + sum_k beta_k * D_{i,k} + u_{i,t}
+alpha_i = entity FE (entity_name + data_source); multi-event panels also add event_id FE.
+Single-event runs (Oct 7) use entity FE only.
+Dependent variable: log(weekly_spend_ils). Weeks with spend <= 0 are dropped (log undefined).
+
+Note on gamma_t: the textbook canonical spec adds calendar-week FE
+(gamma_t, i.e. week_start_sunday FE). In our stacked design every entity is
+inside the +/-W window of every event, so calendar-week FE absorbs the
+variation that identifies beta_k -- standard errors blow up ~300x and the
+relative-week coefficients collapse to a linear-in-k pattern. We therefore
+omit gamma_t for stacked specs (standard stacked-event-study practice).
+A single demonstration run with gamma_t included is preserved in
+event_study/gamma_t_demonstration/ for the paper.
 
 --- correlation_summary ---
-# A tibble: 9 × 7
+# A tibble: 9 x 7
   entity_group        event_scope correlation_weekly_spend_vs_event_count
   <chr>               <chr>       <chr>
 1 all_entities        all_events  -0.007
@@ -39,7 +52,7 @@ Generated: 2026-04-29 14:57:34.954795
 9 0.084
 
 --- placebo_correlation_summary ---
-# A tibble: 9 × 7
+# A tibble: 9 x 7
   entity_group        event_scope correlation_weekly_spend_vs_event_count
   <chr>               <chr>       <chr>
 1 all_entities        all_events  -0.004
@@ -78,45 +91,45 @@ Generated: 2026-04-29 14:57:34.954795
 
 --- all_entities_all_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name              relative_week estimate std.error statistic p.value
   <chr>                   <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_all_events -2            0.071    0.031     2.337     0.023
-2 all_entities_all_events -1            0.056    0.026     2.127     0.037
-3 all_entities_all_events 1             -0.025   0.025     -1.004    0.319
-4 all_entities_all_events 2             -0.043   0.026     -1.692    0.096
+1 all_entities_all_events -2            0.071    0.031     2.328     0.023
+2 all_entities_all_events -1            0.056    0.026     2.113     0.039
+3 all_entities_all_events 1             -0.025   0.025     -1.012    0.315
+4 all_entities_all_events 2             -0.044   0.026     -1.714    0.091
   conf.low conf.high
   <chr>    <chr>
 1 0.010    0.132
-2 0.003    0.109
-3 -0.074   0.025
-4 -0.094   0.008
+2 0.003    0.108
+3 -0.075   0.024
+4 -0.096   0.007
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name              model_status input_rows used_rows r2    within_r2
   <chr>                   <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_all_events ok           10040      10038     0.349 0.001
+1 all_entities_all_events ok           10040      10038     0.347 0.001
   adjusted_r2
   <chr>
-1 0.340
+1 0.338
 
 --- political_parties_all_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                   relative_week estimate std.error statistic
   <chr>                        <chr>         <chr>    <chr>     <chr>
-1 political_parties_all_events -2            0.162    0.093     1.743
-2 political_parties_all_events -1            0.091    0.086     1.064
-3 political_parties_all_events 1             0.000    0.057     0.001
-4 political_parties_all_events 2             -0.041   0.063     -0.641
+1 political_parties_all_events -2            0.162    0.093     1.742
+2 political_parties_all_events -1            0.091    0.086     1.062
+3 political_parties_all_events 1             0.000    0.057     0.003
+4 political_parties_all_events 2             -0.041   0.063     -0.647
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
 1 0.102   -0.036   0.360
-2 0.304   -0.092   0.275
-3 0.999   -0.122   0.122
-4 0.531   -0.175   0.094
+2 0.305   -0.092   0.274
+3 0.997   -0.122   0.123
+4 0.527   -0.176   0.094
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                   model_status input_rows used_rows r2    within_r2
   <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
 1 political_parties_all_events ok           1412       1411      0.436 0.004
@@ -126,215 +139,215 @@ Model fit:
 
 --- other_orgs_people_all_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                   relative_week estimate std.error statistic
   <chr>                        <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_all_events -2            0.042    0.032     1.337
-2 other_orgs_people_all_events -1            0.034    0.027     1.240
-3 other_orgs_people_all_events 1             -0.023   0.027     -0.828
-4 other_orgs_people_all_events 2             -0.041   0.026     -1.539
+1 other_orgs_people_all_events -2            0.042    0.032     1.328
+2 other_orgs_people_all_events -1            0.034    0.027     1.228
+3 other_orgs_people_all_events 1             -0.023   0.027     -0.838
+4 other_orgs_people_all_events 2             -0.042   0.027     -1.562
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.187   -0.021   0.106
-2 0.221   -0.021   0.089
-3 0.412   -0.077   0.032
-4 0.130   -0.094   0.012
+1 0.190   -0.022   0.106
+2 0.226   -0.021   0.089
+3 0.406   -0.078   0.032
+4 0.125   -0.096   0.012
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                   model_status input_rows used_rows r2    within_r2
   <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 other_orgs_people_all_events ok           8628       8627      0.364 0.001
+1 other_orgs_people_all_events ok           8628       8627      0.362 0.001
   adjusted_r2
   <chr>
-1 0.356
+1 0.353
 
 --- all_entities_political_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                    relative_week estimate std.error statistic
   <chr>                         <chr>         <chr>    <chr>     <chr>
-1 all_entities_political_events -2            0.114    0.040     2.867
-2 all_entities_political_events -1            0.149    0.035     4.298
-3 all_entities_political_events 1             -0.066   0.033     -1.986
-4 all_entities_political_events 2             -0.067   0.037     -1.809
+1 all_entities_political_events -2            0.114    0.040     2.865
+2 all_entities_political_events -1            0.149    0.035     4.293
+3 all_entities_political_events 1             -0.066   0.033     -1.978
+4 all_entities_political_events 2             -0.068   0.037     -1.828
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
 1 0.006   0.034    0.193
 2 <0.001  0.080    0.218
-3 0.051   -0.132   0.000
-4 0.075   -0.142   0.007
+3 0.052   -0.132   0.001
+4 0.072   -0.143   0.006
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                    model_status input_rows used_rows r2
   <chr>                         <chr>        <chr>      <chr>     <chr>
-1 all_entities_political_events ok           5325       5323      0.331
+1 all_entities_political_events ok           5325       5323      0.329
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.006     0.318
+1 0.006     0.316
 
 --- all_entities_terror_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                 relative_week estimate std.error statistic p.value
   <chr>                      <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_terror_events -2            0.025    0.044     0.568     0.572
-2 all_entities_terror_events -1            -0.058   0.043     -1.367    0.177
-3 all_entities_terror_events 1             0.017    0.030     0.568     0.572
-4 all_entities_terror_events 2             -0.018   0.041     -0.436    0.664
+1 all_entities_terror_events -2            0.025    0.044     0.553     0.582
+2 all_entities_terror_events -1            -0.059   0.043     -1.382    0.172
+3 all_entities_terror_events 1             0.016    0.030     0.543     0.589
+4 all_entities_terror_events 2             -0.019   0.041     -0.465    0.644
   conf.low conf.high
   <chr>    <chr>
-1 -0.063   0.113
-2 -0.143   0.027
-3 -0.043   0.076
-4 -0.099   0.064
+1 -0.064   0.113
+2 -0.144   0.026
+3 -0.044   0.076
+4 -0.102   0.063
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                 model_status input_rows used_rows r2    within_r2
   <chr>                      <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_terror_events ok           4715       4714      0.409 0.001
+1 all_entities_terror_events ok           4715       4714      0.407 0.001
   adjusted_r2
   <chr>
-1 0.397
+1 0.395
 
 --- political_parties_political_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                         relative_week estimate std.error statistic
   <chr>                              <chr>         <chr>    <chr>     <chr>
-1 political_parties_political_events -2            0.233    0.156     1.491
+1 political_parties_political_events -2            0.233    0.157     1.489
 2 political_parties_political_events -1            0.174    0.156     1.114
-3 political_parties_political_events 1             -0.185   0.124     -1.497
-4 political_parties_political_events 2             -0.194   0.098     -1.967
+3 political_parties_political_events 1             -0.185   0.124     -1.493
+4 political_parties_political_events 2             -0.194   0.099     -1.970
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.157   -0.100   0.567
+1 0.157   -0.101   0.568
 2 0.283   -0.159   0.506
-3 0.155   -0.450   0.079
-4 0.068   -0.404   0.016
+3 0.156   -0.450   0.079
+4 0.068   -0.405   0.016
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                         model_status input_rows used_rows r2
   <chr>                              <chr>        <chr>      <chr>     <chr>
-1 political_parties_political_events ok           755        755       0.455
+1 political_parties_political_events ok           755        755       0.454
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.021     0.412
+1 0.021     0.411
 
 --- political_parties_terror_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                      relative_week estimate std.error statistic
   <chr>                           <chr>         <chr>    <chr>     <chr>
-1 political_parties_terror_events -2            0.094    0.082     1.143
-2 political_parties_terror_events -1            0.002    0.079     0.031
-3 political_parties_terror_events 1             0.175    0.039     4.462
-4 political_parties_terror_events 2             0.120    0.079     1.506
+1 political_parties_terror_events -2            0.094    0.082     1.144
+2 political_parties_terror_events -1            0.002    0.079     0.023
+3 political_parties_terror_events 1             0.175    0.039     4.447
+4 political_parties_terror_events 2             0.119    0.079     1.502
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.274   -0.083   0.270
-2 0.975   -0.168   0.173
-3 <0.001  0.090    0.260
-4 0.156   -0.052   0.291
+1 0.273   -0.083   0.271
+2 0.982   -0.169   0.173
+3 <0.001  0.090    0.261
+4 0.157   -0.052   0.291
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                      model_status input_rows used_rows r2
   <chr>                           <chr>        <chr>      <chr>     <chr>
-1 political_parties_terror_events ok           657        656       0.484
+1 political_parties_terror_events ok           657        656       0.483
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.005     0.444
+1 0.005     0.443
 
 --- other_orgs_people_political_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                         relative_week estimate std.error statistic
   <chr>                              <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_political_events -2            0.071    0.041     1.729
-2 other_orgs_people_political_events -1            0.122    0.035     3.522
-3 other_orgs_people_political_events 1             -0.042   0.033     -1.262
-4 other_orgs_people_political_events 2             -0.043   0.037     -1.167
+1 other_orgs_people_political_events -2            0.071    0.041     1.728
+2 other_orgs_people_political_events -1            0.122    0.035     3.519
+3 other_orgs_people_political_events 1             -0.042   0.034     -1.256
+4 other_orgs_people_political_events 2             -0.044   0.037     -1.187
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.090   -0.012   0.153
+1 0.091   -0.012   0.153
 2 <0.001  0.052    0.192
-3 0.213   -0.110   0.025
-4 0.249   -0.117   0.031
+3 0.215   -0.110   0.025
+4 0.241   -0.117   0.030
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                         model_status input_rows used_rows r2
   <chr>                              <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_political_events ok           4570       4568      0.344
+1 other_orgs_people_political_events ok           4570       4568      0.342
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.003     0.331
+1 0.003     0.329
 
 --- other_orgs_people_terror_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                      relative_week estimate std.error statistic
   <chr>                           <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_terror_events -2            0.013    0.048     0.259
-2 other_orgs_people_terror_events -1            -0.072   0.047     -1.527
-3 other_orgs_people_terror_events 1             -0.002   0.032     -0.064
-4 other_orgs_people_terror_events 2             -0.037   0.044     -0.844
+1 other_orgs_people_terror_events -2            0.012    0.049     0.245
+2 other_orgs_people_terror_events -1            -0.072   0.047     -1.541
+3 other_orgs_people_terror_events 1             -0.003   0.032     -0.087
+4 other_orgs_people_terror_events 2             -0.039   0.044     -0.867
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.797   -0.085   0.110
-2 0.133   -0.166   0.023
-3 0.949   -0.067   0.063
-4 0.403   -0.125   0.051
+1 0.808   -0.086   0.110
+2 0.130   -0.167   0.022
+3 0.931   -0.068   0.063
+4 0.390   -0.128   0.051
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                      model_status input_rows used_rows r2
   <chr>                           <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_terror_events ok           4058       4058      0.417
+1 other_orgs_people_terror_events ok           4058       4058      0.415
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.001     0.405
+1 0.001     0.403
 
 --- event_study_models_baseline_minus1 ---
 
 --- all_entities_all_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name              relative_week estimate std.error statistic p.value
   <chr>                   <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_all_events -2            0.015    0.023     0.681     0.498
-2 all_entities_all_events 0             -0.056   0.026     -2.127    0.037
-3 all_entities_all_events 1             -0.081   0.027     -3.044    0.003
-4 all_entities_all_events 2             -0.099   0.030     -3.322    0.001
+1 all_entities_all_events -2            0.015    0.023     0.683     0.497
+2 all_entities_all_events 0             -0.056   0.026     -2.113    0.039
+3 all_entities_all_events 1             -0.081   0.027     -3.043    0.003
+4 all_entities_all_events 2             -0.100   0.030     -3.335    0.001
   conf.low conf.high
   <chr>    <chr>
-1 -0.030   0.060
-2 -0.109   -0.003
+1 -0.030   0.061
+2 -0.108   -0.003
 3 -0.134   -0.028
-4 -0.159   -0.040
+4 -0.160   -0.040
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name              model_status input_rows used_rows r2    within_r2
   <chr>                   <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_all_events ok           10040      10038     0.349 0.001
+1 all_entities_all_events ok           10040      10038     0.347 0.001
   adjusted_r2
   <chr>
-1 0.340
+1 0.338
 
 --- political_parties_all_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                   relative_week estimate std.error statistic
   <chr>                        <chr>         <chr>    <chr>     <chr>
-1 political_parties_all_events -2            0.070    0.094     0.753
-2 political_parties_all_events 0             -0.091   0.086     -1.064
-3 political_parties_all_events 1             -0.091   0.101     -0.908
-4 political_parties_all_events 2             -0.132   0.112     -1.175
+1 political_parties_all_events -2            0.071    0.094     0.757
+2 political_parties_all_events 0             -0.091   0.086     -1.062
+3 political_parties_all_events 1             -0.091   0.101     -0.904
+4 political_parties_all_events 2             -0.132   0.112     -1.176
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.463   -0.129   0.270
-2 0.304   -0.275   0.092
-3 0.378   -0.306   0.123
+1 0.461   -0.129   0.270
+2 0.305   -0.274   0.092
+3 0.380   -0.306   0.124
 4 0.258   -0.372   0.107
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                   model_status input_rows used_rows r2    within_r2
   <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
 1 political_parties_all_events ok           1412       1411      0.436 0.004
@@ -344,215 +357,215 @@ Model fit:
 
 --- other_orgs_people_all_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                   relative_week estimate std.error statistic
   <chr>                        <chr>         <chr>    <chr>     <chr>
 1 other_orgs_people_all_events -2            0.008    0.021     0.397
-2 other_orgs_people_all_events 0             -0.034   0.027     -1.240
-3 other_orgs_people_all_events 1             -0.056   0.027     -2.110
-4 other_orgs_people_all_events 2             -0.075   0.028     -2.669
+2 other_orgs_people_all_events 0             -0.034   0.027     -1.228
+3 other_orgs_people_all_events 1             -0.057   0.027     -2.110
+4 other_orgs_people_all_events 2             -0.076   0.028     -2.684
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
 1 0.693   -0.034   0.050
-2 0.221   -0.089   0.021
+2 0.226   -0.089   0.021
 3 0.040   -0.110   -0.003
-4 0.010   -0.131   -0.018
+4 0.010   -0.132   -0.019
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                   model_status input_rows used_rows r2    within_r2
   <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 other_orgs_people_all_events ok           8628       8627      0.364 0.001
+1 other_orgs_people_all_events ok           8628       8627      0.362 0.001
   adjusted_r2
   <chr>
-1 0.356
+1 0.353
 
 --- all_entities_political_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                    relative_week estimate std.error statistic
   <chr>                         <chr>         <chr>    <chr>     <chr>
 1 all_entities_political_events -2            -0.035   0.038     -0.919
-2 all_entities_political_events 0             -0.149   0.035     -4.298
-3 all_entities_political_events 1             -0.215   0.047     -4.531
-4 all_entities_political_events 2             -0.216   0.052     -4.128
+2 all_entities_political_events 0             -0.149   0.035     -4.293
+3 all_entities_political_events 1             -0.215   0.047     -4.526
+4 all_entities_political_events 2             -0.217   0.052     -4.143
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.362   -0.112   0.041
+1 0.362   -0.112   0.042
 2 <0.001  -0.218   -0.080
-3 <0.001  -0.309   -0.120
-4 <0.001  -0.321   -0.112
+3 <0.001  -0.310   -0.120
+4 <0.001  -0.322   -0.112
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                    model_status input_rows used_rows r2
   <chr>                         <chr>        <chr>      <chr>     <chr>
-1 all_entities_political_events ok           5325       5323      0.331
+1 all_entities_political_events ok           5325       5323      0.329
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.006     0.318
+1 0.006     0.316
 
 --- all_entities_terror_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                 relative_week estimate std.error statistic p.value
   <chr>                      <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_terror_events -2            0.083    0.036     2.301     0.025
-2 all_entities_terror_events 0             0.058    0.043     1.367     0.177
-3 all_entities_terror_events 1             0.075    0.038     1.972     0.053
-4 all_entities_terror_events 2             0.040    0.047     0.863     0.391
+1 all_entities_terror_events -2            0.083    0.036     2.306     0.025
+2 all_entities_terror_events 0             0.059    0.043     1.382     0.172
+3 all_entities_terror_events 1             0.075    0.038     1.971     0.053
+4 all_entities_terror_events 2             0.040    0.047     0.843     0.403
   conf.low conf.high
   <chr>    <chr>
 1 0.011    0.156
-2 -0.027   0.143
-3 -0.001   0.151
-4 -0.053   0.134
+2 -0.026   0.144
+3 -0.001   0.152
+4 -0.055   0.134
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                 model_status input_rows used_rows r2    within_r2
   <chr>                      <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_terror_events ok           4715       4714      0.409 0.001
+1 all_entities_terror_events ok           4715       4714      0.407 0.001
   adjusted_r2
   <chr>
-1 0.397
+1 0.395
 
 --- political_parties_political_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                         relative_week estimate std.error statistic
   <chr>                              <chr>         <chr>    <chr>     <chr>
-1 political_parties_political_events -2            0.060    0.123     0.485
+1 political_parties_political_events -2            0.060    0.123     0.484
 2 political_parties_political_events 0             -0.174   0.156     -1.114
-3 political_parties_political_events 1             -0.359   0.228     -1.577
-4 political_parties_political_events 2             -0.367   0.197     -1.864
+3 political_parties_political_events 1             -0.359   0.228     -1.576
+4 political_parties_political_events 2             -0.368   0.197     -1.866
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.635   -0.203   0.322
+1 0.635   -0.203   0.323
 2 0.283   -0.506   0.159
-3 0.136   -0.844   0.126
-4 0.082   -0.787   0.053
+3 0.136   -0.845   0.127
+4 0.082   -0.789   0.052
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                         model_status input_rows used_rows r2
   <chr>                              <chr>        <chr>      <chr>     <chr>
-1 political_parties_political_events ok           755        755       0.455
+1 political_parties_political_events ok           755        755       0.454
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.021     0.412
+1 0.021     0.411
 
 --- political_parties_terror_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                      relative_week estimate std.error statistic
   <chr>                           <chr>         <chr>    <chr>     <chr>
-1 political_parties_terror_events -2            0.091    0.086     1.056
-2 political_parties_terror_events 0             -0.002   0.079     -0.031
-3 political_parties_terror_events 1             0.173    0.085     2.042
-4 political_parties_terror_events 2             0.117    0.109     1.077
+1 political_parties_terror_events -2            0.092    0.086     1.068
+2 political_parties_terror_events 0             -0.002   0.079     -0.023
+3 political_parties_terror_events 1             0.174    0.085     2.047
+4 political_parties_terror_events 2             0.118    0.109     1.079
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.310   -0.095   0.277
-2 0.975   -0.173   0.168
-3 0.062   -0.010   0.355
-4 0.301   -0.118   0.352
+1 0.305   -0.094   0.278
+2 0.982   -0.173   0.169
+3 0.061   -0.010   0.357
+4 0.300   -0.118   0.353
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                      model_status input_rows used_rows r2
   <chr>                           <chr>        <chr>      <chr>     <chr>
-1 political_parties_terror_events ok           657        656       0.484
+1 political_parties_terror_events ok           657        656       0.483
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.005     0.444
+1 0.005     0.443
 
 --- other_orgs_people_political_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                         relative_week estimate std.error statistic
   <chr>                              <chr>         <chr>    <chr>     <chr>
 1 other_orgs_people_political_events -2            -0.052   0.040     -1.301
-2 other_orgs_people_political_events 0             -0.122   0.035     -3.522
-3 other_orgs_people_political_events 1             -0.164   0.043     -3.783
-4 other_orgs_people_political_events 2             -0.165   0.050     -3.301
+2 other_orgs_people_political_events 0             -0.122   0.035     -3.519
+3 other_orgs_people_political_events 1             -0.164   0.044     -3.776
+4 other_orgs_people_political_events 2             -0.166   0.050     -3.319
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.199   -0.131   0.028
+1 0.200   -0.132   0.028
 2 <0.001  -0.192   -0.052
 3 <0.001  -0.252   -0.077
-4 0.002   -0.265   -0.064
+4 0.002   -0.266   -0.065
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                         model_status input_rows used_rows r2
   <chr>                              <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_political_events ok           4570       4568      0.344
+1 other_orgs_people_political_events ok           4570       4568      0.342
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.003     0.331
+1 0.003     0.329
 
 --- other_orgs_people_terror_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                      relative_week estimate std.error statistic
   <chr>                           <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_terror_events -2            0.084    0.039     2.165
-2 other_orgs_people_terror_events 0             0.072    0.047     1.527
-3 other_orgs_people_terror_events 1             0.069    0.039     1.767
-4 other_orgs_people_terror_events 2             0.035    0.049     0.712
+1 other_orgs_people_terror_events -2            0.084    0.039     2.168
+2 other_orgs_people_terror_events 0             0.072    0.047     1.541
+3 other_orgs_people_terror_events 1             0.069    0.039     1.766
+4 other_orgs_people_terror_events 2             0.034    0.049     0.689
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.036   0.006    0.162
-2 0.133   -0.023   0.166
+1 0.035   0.006    0.163
+2 0.130   -0.022   0.167
 3 0.084   -0.010   0.149
-4 0.480   -0.063   0.133
+4 0.494   -0.065   0.132
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                      model_status input_rows used_rows r2
   <chr>                           <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_terror_events ok           4058       4058      0.417
+1 other_orgs_people_terror_events ok           4058       4058      0.415
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.001     0.405
+1 0.001     0.403
 
 --- placebo_event_study_models_baseline_0 ---
 
 --- all_entities_all_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name              relative_week estimate std.error statistic p.value
   <chr>                   <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_all_events -2            -0.035   0.024     -1.488    0.142
-2 all_entities_all_events -1            -0.031   0.018     -1.723    0.090
-3 all_entities_all_events 1             0.030    0.018     1.679     0.098
-4 all_entities_all_events 2             0.060    0.022     2.688     0.009
+1 all_entities_all_events -2            -0.036   0.024     -1.494    0.140
+2 all_entities_all_events -1            -0.031   0.018     -1.727    0.089
+3 all_entities_all_events 1             0.031    0.018     1.680     0.098
+4 all_entities_all_events 2             0.060    0.022     2.687     0.009
   conf.low conf.high
   <chr>    <chr>
-1 -0.083   0.012
+1 -0.084   0.012
 2 -0.066   0.005
 3 -0.006   0.067
 4 0.015    0.104
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name              model_status input_rows used_rows r2    within_r2
   <chr>                   <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_all_events ok           9769       9767      0.303 0.001
+1 all_entities_all_events ok           9769       9767      0.300 0.001
   adjusted_r2
   <chr>
-1 0.294
+1 0.290
 
 --- political_parties_all_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                   relative_week estimate std.error statistic
   <chr>                        <chr>         <chr>    <chr>     <chr>
-1 political_parties_all_events -2            -0.079   0.053     -1.506
-2 political_parties_all_events -1            -0.053   0.051     -1.030
-3 political_parties_all_events 1             0.101    0.047     2.157
+1 political_parties_all_events -2            -0.079   0.053     -1.504
+2 political_parties_all_events -1            -0.053   0.051     -1.029
+3 political_parties_all_events 1             0.101    0.047     2.167
 4 political_parties_all_events 2             0.154    0.065     2.357
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.151   -0.191   0.032
-2 0.318   -0.162   0.056
-3 0.047   0.002    0.200
-4 0.032   0.015    0.293
+1 0.152   -0.191   0.033
+2 0.319   -0.162   0.056
+3 0.046   0.002    0.201
+4 0.031   0.016    0.293
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                   model_status input_rows used_rows r2    within_r2
   <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
 1 political_parties_all_events ok           1827       1826      0.498 0.005
@@ -562,93 +575,93 @@ Model fit:
 
 --- other_orgs_people_all_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                   relative_week estimate std.error statistic
   <chr>                        <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_all_events -2            -0.017   0.024     -0.716
-2 other_orgs_people_all_events -1            -0.019   0.017     -1.105
-3 other_orgs_people_all_events 1             0.010    0.019     0.514
-4 other_orgs_people_all_events 2             0.032    0.022     1.431
+1 other_orgs_people_all_events -2            -0.018   0.024     -0.730
+2 other_orgs_people_all_events -1            -0.019   0.017     -1.109
+3 other_orgs_people_all_events 1             0.010    0.019     0.511
+4 other_orgs_people_all_events 2             0.032    0.023     1.428
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.477   -0.065   0.031
-2 0.275   -0.052   0.015
-3 0.610   -0.029   0.049
-4 0.159   -0.013   0.077
+1 0.469   -0.066   0.031
+2 0.273   -0.053   0.015
+3 0.612   -0.029   0.049
+4 0.160   -0.013   0.077
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                   model_status input_rows used_rows r2    within_r2
   <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 other_orgs_people_all_events ok           7942       7941      0.330 0.000
+1 other_orgs_people_all_events ok           7942       7941      0.325 0.000
   adjusted_r2
   <chr>
-1 0.320
+1 0.315
 
 --- all_entities_political_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                    relative_week estimate std.error statistic
   <chr>                         <chr>         <chr>    <chr>     <chr>
-1 all_entities_political_events -2            -0.010   0.032     -0.297
-2 all_entities_political_events -1            -0.007   0.030     -0.249
-3 all_entities_political_events 1             0.037    0.031     1.188
-4 all_entities_political_events 2             0.043    0.035     1.214
+1 all_entities_political_events -2            -0.010   0.033     -0.314
+2 all_entities_political_events -1            -0.008   0.030     -0.272
+3 all_entities_political_events 1             0.037    0.031     1.192
+4 all_entities_political_events 2             0.042    0.035     1.191
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.768   -0.074   0.055
-2 0.804   -0.067   0.052
-3 0.240   -0.025   0.098
-4 0.230   -0.028   0.113
+1 0.755   -0.075   0.055
+2 0.786   -0.069   0.052
+3 0.238   -0.025   0.099
+4 0.238   -0.029   0.113
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                    model_status input_rows used_rows r2
   <chr>                         <chr>        <chr>      <chr>     <chr>
-1 all_entities_political_events ok           5209       5208      0.337
+1 all_entities_political_events ok           5209       5208      0.333
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.000     0.324
+1 0.000     0.320
 
 --- all_entities_terror_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                 relative_week estimate std.error statistic p.value
   <chr>                      <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_terror_events -2            -0.050   0.049     -1.022    0.311
-2 all_entities_terror_events -1            -0.049   0.034     -1.435    0.156
-3 all_entities_terror_events 1             0.026    0.036     0.729     0.469
-4 all_entities_terror_events 2             0.085    0.042     2.022     0.047
+1 all_entities_terror_events -2            -0.050   0.049     -1.023    0.310
+2 all_entities_terror_events -1            -0.048   0.034     -1.410    0.164
+3 all_entities_terror_events 1             0.026    0.036     0.726     0.470
+4 all_entities_terror_events 2             0.085    0.042     2.021     0.048
   conf.low conf.high
   <chr>    <chr>
 1 -0.148   0.048
-2 -0.117   0.019
+2 -0.117   0.020
 3 -0.045   0.097
-4 0.001    0.168
+4 0.001    0.170
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                 model_status input_rows used_rows r2    within_r2
   <chr>                      <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_terror_events ok           4560       4557      0.297 0.002
+1 all_entities_terror_events ok           4560       4557      0.293 0.002
   adjusted_r2
   <chr>
-1 0.282
+1 0.278
 
 --- political_parties_political_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                         relative_week estimate std.error statistic
   <chr>                              <chr>         <chr>    <chr>     <chr>
-1 political_parties_political_events -2            0.008    0.069     0.110
-2 political_parties_political_events -1            -0.051   0.068     -0.750
-3 political_parties_political_events 1             0.031    0.052     0.593
-4 political_parties_political_events 2             0.111    0.044     2.520
+1 political_parties_political_events -2            0.008    0.069     0.112
+2 political_parties_political_events -1            -0.051   0.068     -0.748
+3 political_parties_political_events 1             0.031    0.052     0.602
+4 political_parties_political_events 2             0.111    0.044     2.523
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.914   -0.143   0.158
-2 0.467   -0.198   0.097
-3 0.564   -0.082   0.144
-4 0.027   0.015    0.207
+1 0.913   -0.143   0.159
+2 0.469   -0.198   0.097
+3 0.559   -0.082   0.145
+4 0.027   0.015    0.208
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                         model_status input_rows used_rows r2
   <chr>                              <chr>        <chr>      <chr>     <chr>
 1 political_parties_political_events ok           900        900       0.515
@@ -658,119 +671,119 @@ Model fit:
 
 --- political_parties_terror_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                      relative_week estimate std.error statistic
   <chr>                           <chr>         <chr>    <chr>     <chr>
-1 political_parties_terror_events -2            -0.112   0.132     -0.847
+1 political_parties_terror_events -2            -0.112   0.133     -0.844
 2 political_parties_terror_events -1            -0.016   0.077     -0.202
-3 political_parties_terror_events 1             0.192    0.106     1.820
-4 political_parties_terror_events 2             0.213    0.129     1.653
+3 political_parties_terror_events 1             0.193    0.106     1.821
+4 political_parties_terror_events 2             0.213    0.129     1.649
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.410   -0.392   0.168
-2 0.842   -0.180   0.148
+1 0.411   -0.393   0.169
+2 0.843   -0.180   0.148
 3 0.087   -0.032   0.417
-4 0.118   -0.060   0.487
+4 0.119   -0.061   0.487
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                      model_status input_rows used_rows r2
   <chr>                           <chr>        <chr>      <chr>     <chr>
-1 political_parties_terror_events ok           927        926       0.511
+1 political_parties_terror_events ok           927        926       0.510
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.009     0.483
+1 0.009     0.482
 
 --- other_orgs_people_political_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                         relative_week estimate std.error statistic
   <chr>                              <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_political_events -2            -0.006   0.034     -0.171
-2 other_orgs_people_political_events -1            0.005    0.031     0.171
+1 other_orgs_people_political_events -2            -0.007   0.035     -0.191
+2 other_orgs_people_political_events -1            0.004    0.032     0.140
 3 other_orgs_people_political_events 1             0.031    0.035     0.900
-4 other_orgs_people_political_events 2             0.019    0.040     0.476
+4 other_orgs_people_political_events 2             0.019    0.041     0.455
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.865   -0.075   0.063
-2 0.865   -0.058   0.068
+1 0.850   -0.076   0.063
+2 0.889   -0.060   0.068
 3 0.373   -0.039   0.101
-4 0.637   -0.062   0.100
+4 0.651   -0.063   0.101
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                         model_status input_rows used_rows r2
   <chr>                              <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_political_events ok           4309       4308      0.341
+1 other_orgs_people_political_events ok           4309       4308      0.336
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.000     0.328
+1 0.000     0.323
 
 --- other_orgs_people_terror_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                      relative_week estimate std.error statistic
   <chr>                           <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_terror_events -2            -0.034   0.045     -0.741
-2 other_orgs_people_terror_events -1            -0.049   0.036     -1.358
-3 other_orgs_people_terror_events 1             -0.020   0.039     -0.501
-4 other_orgs_people_terror_events 2             0.049    0.041     1.197
+1 other_orgs_people_terror_events -2            -0.034   0.045     -0.746
+2 other_orgs_people_terror_events -1            -0.048   0.036     -1.327
+3 other_orgs_people_terror_events 1             -0.020   0.039     -0.504
+4 other_orgs_people_terror_events 2             0.049    0.041     1.201
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.463   -0.125   0.058
-2 0.181   -0.121   0.024
-3 0.619   -0.098   0.059
-4 0.238   -0.033   0.130
+1 0.459   -0.125   0.058
+2 0.191   -0.121   0.025
+3 0.617   -0.099   0.059
+4 0.236   -0.033   0.132
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                      model_status input_rows used_rows r2
   <chr>                           <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_terror_events ok           3633       3631      0.336
+1 other_orgs_people_terror_events ok           3633       3631      0.331
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.001     0.321
+1 0.001     0.316
 
 --- placebo_event_study_models_baseline_minus1 ---
 
 --- all_entities_all_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name              relative_week estimate std.error statistic p.value
   <chr>                   <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_all_events -2            -0.005   0.021     -0.236    0.814
-2 all_entities_all_events 0             0.031    0.018     1.723     0.090
-3 all_entities_all_events 1             0.061    0.025     2.437     0.018
+1 all_entities_all_events -2            -0.005   0.021     -0.249    0.804
+2 all_entities_all_events 0             0.031    0.018     1.727     0.089
+3 all_entities_all_events 1             0.061    0.025     2.439     0.018
 4 all_entities_all_events 2             0.090    0.030     2.963     0.004
   conf.low conf.high
   <chr>    <chr>
-1 -0.046   0.037
+1 -0.047   0.036
 2 -0.005   0.066
 3 0.011    0.111
 4 0.029    0.151
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name              model_status input_rows used_rows r2    within_r2
   <chr>                   <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_all_events ok           9769       9767      0.303 0.001
+1 all_entities_all_events ok           9769       9767      0.300 0.001
   adjusted_r2
   <chr>
-1 0.294
+1 0.290
 
 --- political_parties_all_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                   relative_week estimate std.error statistic
   <chr>                        <chr>         <chr>    <chr>     <chr>
-1 political_parties_all_events -2            -0.026   0.041     -0.648
-2 political_parties_all_events 0             0.053    0.051     1.030
-3 political_parties_all_events 1             0.154    0.066     2.351
+1 political_parties_all_events -2            -0.026   0.041     -0.644
+2 political_parties_all_events 0             0.053    0.051     1.029
+3 political_parties_all_events 1             0.154    0.066     2.356
 4 political_parties_all_events 2             0.207    0.088     2.361
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.526   -0.113   0.060
-2 0.318   -0.056   0.162
+1 0.529   -0.113   0.060
+2 0.319   -0.056   0.162
 3 0.032   0.015    0.293
 4 0.031   0.021    0.393
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                   model_status input_rows used_rows r2    within_r2
   <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
 1 political_parties_all_events ok           1827       1826      0.498 0.005
@@ -780,93 +793,93 @@ Model fit:
 
 --- other_orgs_people_all_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                   relative_week estimate std.error statistic
   <chr>                        <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_all_events -2            0.002    0.023     0.069
-2 other_orgs_people_all_events 0             0.019    0.017     1.105
-3 other_orgs_people_all_events 1             0.029    0.024     1.178
+1 other_orgs_people_all_events -2            0.001    0.023     0.050
+2 other_orgs_people_all_events 0             0.019    0.017     1.109
+3 other_orgs_people_all_events 1             0.029    0.024     1.179
 4 other_orgs_people_all_events 2             0.051    0.029     1.764
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.946   -0.045   0.048
-2 0.275   -0.015   0.052
-3 0.245   -0.020   0.077
+1 0.961   -0.046   0.048
+2 0.273   -0.015   0.053
+3 0.244   -0.020   0.078
 4 0.084   -0.007   0.109
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                   model_status input_rows used_rows r2    within_r2
   <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 other_orgs_people_all_events ok           7942       7941      0.330 0.000
+1 other_orgs_people_all_events ok           7942       7941      0.325 0.000
   adjusted_r2
   <chr>
-1 0.320
+1 0.315
 
 --- all_entities_political_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                    relative_week estimate std.error statistic
   <chr>                         <chr>         <chr>    <chr>     <chr>
-1 all_entities_political_events -2            -0.002   0.030     -0.070
-2 all_entities_political_events 0             0.007    0.030     0.249
-3 all_entities_political_events 1             0.044    0.040     1.096
-4 all_entities_political_events 2             0.050    0.039     1.279
+1 all_entities_political_events -2            -0.002   0.030     -0.066
+2 all_entities_political_events 0             0.008    0.030     0.272
+3 all_entities_political_events 1             0.045    0.041     1.111
+4 all_entities_political_events 2             0.050    0.039     1.285
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.945   -0.062   0.058
-2 0.804   -0.052   0.067
-3 0.278   -0.036   0.125
-4 0.206   -0.028   0.129
+1 0.948   -0.062   0.058
+2 0.786   -0.052   0.069
+3 0.271   -0.036   0.126
+4 0.204   -0.028   0.129
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                    model_status input_rows used_rows r2
   <chr>                         <chr>        <chr>      <chr>     <chr>
-1 all_entities_political_events ok           5209       5208      0.337
+1 all_entities_political_events ok           5209       5208      0.333
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.000     0.324
+1 0.000     0.320
 
 --- all_entities_terror_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                 relative_week estimate std.error statistic p.value
   <chr>                      <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_terror_events -2            -0.001   0.037     -0.033    0.974
-2 all_entities_terror_events 0             0.049    0.034     1.435     0.156
-3 all_entities_terror_events 1             0.075    0.045     1.675     0.099
-4 all_entities_terror_events 2             0.133    0.045     2.977     0.004
+1 all_entities_terror_events -2            -0.002   0.037     -0.053    0.958
+2 all_entities_terror_events 0             0.048    0.034     1.410     0.164
+3 all_entities_terror_events 1             0.074    0.045     1.658     0.102
+4 all_entities_terror_events 2             0.134    0.045     2.973     0.004
   conf.low conf.high
   <chr>    <chr>
-1 -0.075   0.072
-2 -0.019   0.117
-3 -0.014   0.164
+1 -0.076   0.072
+2 -0.020   0.117
+3 -0.015   0.164
 4 0.044    0.223
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                 model_status input_rows used_rows r2    within_r2
   <chr>                      <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_terror_events ok           4560       4557      0.297 0.002
+1 all_entities_terror_events ok           4560       4557      0.293 0.002
   adjusted_r2
   <chr>
-1 0.282
+1 0.278
 
 --- political_parties_political_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                         relative_week estimate std.error statistic
   <chr>                              <chr>         <chr>    <chr>     <chr>
-1 political_parties_political_events -2            0.058    0.048     1.218
-2 political_parties_political_events 0             0.051    0.068     0.750
-3 political_parties_political_events 1             0.081    0.074     1.101
-4 political_parties_political_events 2             0.162    0.061     2.666
+1 political_parties_political_events -2            0.059    0.048     1.217
+2 political_parties_political_events 0             0.051    0.068     0.748
+3 political_parties_political_events 1             0.082    0.074     1.107
+4 political_parties_political_events 2             0.162    0.061     2.668
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
 1 0.247   -0.046   0.163
-2 0.467   -0.097   0.198
-3 0.293   -0.080   0.243
-4 0.021   0.030    0.294
+2 0.469   -0.097   0.198
+3 0.290   -0.079   0.244
+4 0.020   0.030    0.295
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                         model_status input_rows used_rows r2
   <chr>                              <chr>        <chr>      <chr>     <chr>
 1 political_parties_political_events ok           900        900       0.515
@@ -876,151 +889,151 @@ Model fit:
 
 --- political_parties_terror_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                      relative_week estimate std.error statistic
   <chr>                           <chr>         <chr>    <chr>     <chr>
-1 political_parties_terror_events -2            -0.096   0.088     -1.094
+1 political_parties_terror_events -2            -0.096   0.088     -1.087
 2 political_parties_terror_events 0             0.016    0.077     0.202
 3 political_parties_terror_events 1             0.208    0.084     2.485
-4 political_parties_terror_events 2             0.229    0.128     1.792
+4 political_parties_terror_events 2             0.229    0.128     1.787
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.290   -0.283   0.090
-2 0.842   -0.148   0.180
+1 0.293   -0.284   0.091
+2 0.843   -0.148   0.180
 3 0.024   0.031    0.386
-4 0.092   -0.042   0.500
+4 0.093   -0.043   0.500
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                      model_status input_rows used_rows r2
   <chr>                           <chr>        <chr>      <chr>     <chr>
-1 political_parties_terror_events ok           927        926       0.511
+1 political_parties_terror_events ok           927        926       0.510
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.009     0.483
+1 0.009     0.482
 
 --- other_orgs_people_political_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                         relative_week estimate std.error statistic
   <chr>                              <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_political_events -2            -0.011   0.035     -0.320
-2 other_orgs_people_political_events 0             -0.005   0.031     -0.171
-3 other_orgs_people_political_events 1             0.026    0.044     0.594
-4 other_orgs_people_political_events 2             0.014    0.043     0.321
+1 other_orgs_people_political_events -2            -0.011   0.035     -0.316
+2 other_orgs_people_political_events 0             -0.004   0.032     -0.140
+3 other_orgs_people_political_events 1             0.027    0.044     0.610
+4 other_orgs_people_political_events 2             0.014    0.043     0.326
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.751   -0.082   0.059
-2 0.865   -0.068   0.058
-3 0.555   -0.062   0.114
-4 0.749   -0.073   0.101
+1 0.754   -0.082   0.059
+2 0.889   -0.068   0.060
+3 0.545   -0.062   0.115
+4 0.746   -0.073   0.101
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                         model_status input_rows used_rows r2
   <chr>                              <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_political_events ok           4309       4308      0.341
+1 other_orgs_people_political_events ok           4309       4308      0.336
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.000     0.328
+1 0.000     0.323
 
 --- other_orgs_people_terror_events ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name                      relative_week estimate std.error statistic
   <chr>                           <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_terror_events -2            0.015    0.038     0.409
-2 other_orgs_people_terror_events 0             0.049    0.036     1.358
-3 other_orgs_people_terror_events 1             0.029    0.051     0.570
-4 other_orgs_people_terror_events 2             0.098    0.043     2.269
+1 other_orgs_people_terror_events -2            0.014    0.038     0.377
+2 other_orgs_people_terror_events 0             0.048    0.036     1.327
+3 other_orgs_people_terror_events 1             0.028    0.052     0.551
+4 other_orgs_people_terror_events 2             0.097    0.043     2.268
   p.value conf.low conf.high
   <chr>   <chr>    <chr>
-1 0.684   -0.060   0.091
-2 0.181   -0.024   0.121
-3 0.572   -0.074   0.133
+1 0.708   -0.062   0.091
+2 0.191   -0.025   0.121
+3 0.584   -0.075   0.132
 4 0.028   0.011    0.184
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name                      model_status input_rows used_rows r2
   <chr>                           <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_terror_events ok           3633       3631      0.336
+1 other_orgs_people_terror_events ok           3633       3631      0.331
   within_r2 adjusted_r2
   <chr>     <chr>
-1 0.001     0.321
+1 0.001     0.316
 
 --- dedicated_oct7_model ---
-# A tibble: 5 × 8
+# A tibble: 5 x 8
   model_name relative_week estimate std.error statistic p.value conf.low
   <chr>      <chr>         <chr>    <chr>     <chr>     <chr>   <chr>
-1 oct7_event -2            0.461    0.288     1.601     0.119   -0.125
-2 oct7_event -1            0.375    0.325     1.154     0.257   -0.287
+1 oct7_event -2            0.463    0.288     1.604     0.119   -0.125
+2 oct7_event -1            0.375    0.326     1.153     0.258   -0.288
 3 oct7_event 0             0.000    <NA>      <NA>      <NA>    0.000
-4 oct7_event 1             0.396    0.235     1.682     0.102   -0.083
-5 oct7_event 2             0.301    0.295     1.020     0.315   -0.300
+4 oct7_event 1             0.396    0.236     1.678     0.103   -0.085
+5 oct7_event 2             0.302    0.296     1.020     0.316   -0.301
   conf.high
   <chr>
-1 1.047
-2 1.036
+1 1.050
+2 1.039
 3 0.000
-4 0.875
-5 0.903
+4 0.878
+5 0.905
 
 --- dedicated_oct7_model_baseline_minus1 ---
-# A tibble: 5 × 8
+# A tibble: 5 x 8
   model_name relative_week estimate std.error statistic p.value conf.low
   <chr>      <chr>         <chr>    <chr>     <chr>     <chr>   <chr>
-1 oct7_event -2            0.086    0.152     0.565     0.576   -0.224
+1 oct7_event -2            0.087    0.153     0.571     0.572   -0.224
 2 oct7_event -1            0.000    <NA>      <NA>      <NA>    0.000
-3 oct7_event 0             -0.375   0.325     -1.154    0.257   -1.036
-4 oct7_event 1             0.021    0.342     0.062     0.951   -0.675
-5 oct7_event 2             -0.073   0.352     -0.209    0.836   -0.791
+3 oct7_event 0             -0.375   0.326     -1.153    0.258   -1.039
+4 oct7_event 1             0.021    0.342     0.062     0.951   -0.676
+5 oct7_event 2             -0.073   0.353     -0.208    0.836   -0.793
   conf.high
   <chr>
-1 0.396
+1 0.399
 2 0.000
-3 0.287
-4 0.717
-5 0.644
+3 0.288
+4 0.719
+5 0.646
 
 --- oct7_group_models ---
 
 --- oct7_all_entities ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name        relative_week estimate std.error statistic p.value conf.low
   <chr>             <chr>         <chr>    <chr>     <chr>     <chr>   <chr>
-1 oct7_all_entities -2            0.461    0.288     1.601     0.119   -0.125
-2 oct7_all_entities -1            0.375    0.325     1.154     0.257   -0.287
-3 oct7_all_entities 1             0.396    0.235     1.682     0.102   -0.083
-4 oct7_all_entities 2             0.301    0.295     1.020     0.315   -0.300
+1 oct7_all_entities -2            0.463    0.288     1.604     0.119   -0.125
+2 oct7_all_entities -1            0.375    0.326     1.153     0.258   -0.288
+3 oct7_all_entities 1             0.396    0.236     1.678     0.103   -0.085
+4 oct7_all_entities 2             0.302    0.296     1.020     0.316   -0.301
   conf.high
   <chr>
-1 1.047
-2 1.036
-3 0.875
-4 0.903
+1 1.050
+2 1.039
+3 0.878
+4 0.905
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name        model_status input_rows used_rows r2    within_r2
   <chr>             <chr>        <chr>      <chr>     <chr> <chr>
 1 oct7_all_entities ok           146        144       0.679 0.031
   adjusted_r2
   <chr>
-1 0.567
+1 0.566
 
 --- oct7_political_parties ---
 Coefficients:
-# A tibble: 3 × 8
+# A tibble: 3 x 8
   model_name             relative_week estimate std.error statistic p.value
   <chr>                  <chr>         <chr>    <chr>     <chr>     <chr>
-1 oct7_political_parties -2            1.781    0.401     4.444     0.021
-2 oct7_political_parties -1            1.079    0.401     2.692     0.074
-3 oct7_political_parties 1             0.405    0.246     1.650     0.197
+1 oct7_political_parties -2            1.787    0.402     4.444     0.021
+2 oct7_political_parties -1            1.082    0.402     2.691     0.074
+3 oct7_political_parties 1             0.408    0.246     1.656     0.196
   conf.low conf.high
   <chr>    <chr>
-1 0.506    3.057
-2 -0.197   2.355
-3 -0.376   1.187
+1 0.507    3.067
+2 -0.198   2.362
+3 -0.376   1.192
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name             model_status input_rows used_rows r2    within_r2
   <chr>                  <chr>        <chr>      <chr>     <chr> <chr>
 1 oct7_political_parties ok           15         13        0.708 0.557
@@ -1030,69 +1043,69 @@ Model fit:
 
 --- oct7_other_orgs_people ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name             relative_week estimate std.error statistic p.value
   <chr>                  <chr>         <chr>    <chr>     <chr>     <chr>
-1 oct7_other_orgs_people -2            0.332    0.300     1.108     0.277
-2 oct7_other_orgs_people -1            0.340    0.339     1.002     0.325
-3 oct7_other_orgs_people 1             0.367    0.247     1.488     0.148
-4 oct7_other_orgs_people 2             0.251    0.299     0.841     0.408
+1 oct7_other_orgs_people -2            0.334    0.300     1.110     0.276
+2 oct7_other_orgs_people -1            0.340    0.340     1.001     0.325
+3 oct7_other_orgs_people 1             0.367    0.248     1.484     0.149
+4 oct7_other_orgs_people 2             0.252    0.300     0.840     0.408
   conf.low conf.high
   <chr>    <chr>
-1 -0.282   0.946
-2 -0.355   1.034
-3 -0.138   0.872
-4 -0.361   0.864
+1 -0.282   0.949
+2 -0.356   1.036
+3 -0.140   0.874
+4 -0.362   0.866
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name             model_status input_rows used_rows r2    within_r2
   <chr>                  <chr>        <chr>      <chr>     <chr> <chr>
 1 oct7_other_orgs_people ok           131        131       0.667 0.021
   adjusted_r2
   <chr>
-1 0.554
+1 0.553
 
 --- oct7_group_models_baseline_minus1 ---
 
 --- oct7_all_entities ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name        relative_week estimate std.error statistic p.value conf.low
   <chr>             <chr>         <chr>    <chr>     <chr>     <chr>   <chr>
-1 oct7_all_entities -2            0.086    0.152     0.565     0.576   -0.224
-2 oct7_all_entities 0             -0.375   0.325     -1.154    0.257   -1.036
-3 oct7_all_entities 1             0.021    0.342     0.062     0.951   -0.675
-4 oct7_all_entities 2             -0.073   0.352     -0.209    0.836   -0.791
+1 oct7_all_entities -2            0.087    0.153     0.571     0.572   -0.224
+2 oct7_all_entities 0             -0.375   0.326     -1.153    0.258   -1.039
+3 oct7_all_entities 1             0.021    0.342     0.062     0.951   -0.676
+4 oct7_all_entities 2             -0.073   0.353     -0.208    0.836   -0.793
   conf.high
   <chr>
-1 0.396
-2 0.287
-3 0.717
-4 0.644
+1 0.399
+2 0.288
+3 0.719
+4 0.646
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name        model_status input_rows used_rows r2    within_r2
   <chr>             <chr>        <chr>      <chr>     <chr> <chr>
 1 oct7_all_entities ok           146        144       0.679 0.031
   adjusted_r2
   <chr>
-1 0.567
+1 0.566
 
 --- oct7_political_parties ---
 Coefficients:
-# A tibble: 3 × 8
+# A tibble: 3 x 8
   model_name             relative_week estimate std.error statistic p.value
   <chr>                  <chr>         <chr>    <chr>     <chr>     <chr>
-1 oct7_political_parties -2            0.702    0.802     0.876     0.446
-2 oct7_political_parties 0             -1.079   0.401     -2.692    0.074
-3 oct7_political_parties 1             -0.674   0.328     -2.057    0.132
+1 oct7_political_parties -2            0.705    0.804     0.876     0.445
+2 oct7_political_parties 0             -1.082   0.402     -2.691    0.074
+3 oct7_political_parties 1             -0.674   0.329     -2.051    0.133
   conf.low conf.high
   <chr>    <chr>
-1 -1.849   3.254
-2 -2.355   0.197
-3 -1.717   0.369
+1 -1.855   3.264
+2 -2.362   0.198
+3 -1.720   0.372
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name             model_status input_rows used_rows r2    within_r2
   <chr>                  <chr>        <chr>      <chr>     <chr> <chr>
 1 oct7_political_parties ok           15         13        0.708 0.557
@@ -1102,24 +1115,24 @@ Model fit:
 
 --- oct7_other_orgs_people ---
 Coefficients:
-# A tibble: 4 × 8
+# A tibble: 4 x 8
   model_name             relative_week estimate std.error statistic p.value
   <chr>                  <chr>         <chr>    <chr>     <chr>     <chr>
-1 oct7_other_orgs_people -2            -0.008   0.150     -0.051    0.959
-2 oct7_other_orgs_people 0             -0.340   0.339     -1.002    0.325
-3 oct7_other_orgs_people 1             0.027    0.356     0.076     0.940
-4 oct7_other_orgs_people 2             -0.088   0.360     -0.246    0.808
+1 oct7_other_orgs_people -2            -0.007   0.150     -0.045    0.964
+2 oct7_other_orgs_people 0             -0.340   0.340     -1.001    0.325
+3 oct7_other_orgs_people 1             0.027    0.357     0.076     0.940
+4 oct7_other_orgs_people 2             -0.088   0.360     -0.245    0.808
   conf.low conf.high
   <chr>    <chr>
-1 -0.314   0.299
-2 -1.034   0.355
-3 -0.701   0.756
-4 -0.825   0.648
+1 -0.315   0.301
+2 -1.036   0.356
+3 -0.703   0.758
+4 -0.826   0.650
 Model fit:
-# A tibble: 1 × 7
+# A tibble: 1 x 7
   model_name             model_status input_rows used_rows r2    within_r2
   <chr>                  <chr>        <chr>      <chr>     <chr> <chr>
 1 oct7_other_orgs_people ok           131        131       0.667 0.021
   adjusted_r2
   <chr>
-1 0.554
+1 0.553
