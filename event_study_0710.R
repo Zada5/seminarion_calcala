@@ -98,6 +98,24 @@ safe_fitstat <- function(model_object, stat_name) {
   as.numeric(stat_value)[1]
 }
 
+# Convert a log-scale coefficient to its multiplicative percent change.
+# Estimates are log-differences; the actual effect on weekly_spend_ils is
+# exp(estimate). pct_change = (exp(estimate) - 1) * 100.
+percent_change_from_log <- function(estimate_values) {
+  ifelse(is.na(estimate_values), NA_real_, (exp(estimate_values) - 1) * 100)
+}
+
+# Standard significance stars used in applied papers.
+significance_stars <- function(p_values) {
+  dplyr::case_when(
+    is.na(p_values) ~ "",
+    p_values < 0.01 ~ "***",
+    p_values < 0.05 ~ "**",
+    p_values < 0.10 ~ "*",
+    TRUE ~ ""
+  )
+}
+
 round_numeric_columns <- function(dataframe, digits = 3L) {
   dataframe %>%
     dplyr::mutate(
@@ -113,6 +131,15 @@ format_output_column <- function(values, column_name, digits = 3L) {
   formatted_values <- rep(NA_character_, length(numeric_values))
   finite_values <- is.finite(numeric_values)
   p_value_threshold <- 10^-digits
+
+  if (column_name == "pct_change") {
+    formatted_values[finite_values] <- paste0(
+      ifelse(numeric_values[finite_values] >= 0, "+", ""),
+      formatC(numeric_values[finite_values], format = "f", digits = 1),
+      "%"
+    )
+    return(formatted_values)
+  }
 
   if (column_name == "p.value") {
     tiny_values <- finite_values & numeric_values < p_value_threshold
@@ -203,6 +230,209 @@ write_model_summary_sections <- function(model_names, coefficients_table, fit_ta
   }
 }
 
+# Format a single number for a paper-style cell (fixed decimal width, NA -> "").
+.fmt_paper_number <- function(x, digits = 3L) {
+  if (is.null(x) || length(x) == 0 || is.na(x) || !is.finite(x)) return("")
+  formatC(x, format = "f", digits = digits)
+}
+
+# Render one model as a paper-style block:
+#
+#   (k) <model_label>
+#   ---------------------------------------------------------------------
+#                            Estimate    Std. Err.   pct change   p-value sig
+#   relative_week = -2          0.071        0.031        +7.4%     0.023  **
+#   ...
+#   ---------------------------------------------------------------------
+#   N (used): 10,038    R^2: 0.370    Adj. R^2: 0.349    Within R^2: 0.000
+#
+# Works for event-study coefficients (rows keyed by `relative_week`) and DiD
+# coefficients (rows keyed by `term`).
+write_paper_style_model_section <- function(model_label,
+                                            coefficients_table,
+                                            fit_table,
+                                            summary_connection,
+                                            model_index = NULL,
+                                            include_baseline_marker = NULL) {
+  rule_width <- 73L
+  header <- if (is.null(model_index)) {
+    sprintf("%s", model_label)
+  } else {
+    sprintf("(%d) %s", model_index, model_label)
+  }
+  writeLines("", con = summary_connection)
+  writeLines(header, con = summary_connection)
+  writeLines(strrep("-", rule_width), con = summary_connection)
+
+  column_header <- sprintf(
+    "%-22s %10s %10s %12s %9s %4s",
+    "Variable", "Estimate", "Std. Err.", "Pct change", "p-value", "sig"
+  )
+  writeLines(column_header, con = summary_connection)
+
+  if (is.null(coefficients_table) || nrow(coefficients_table) == 0) {
+    writeLines("(no coefficients available)", con = summary_connection)
+  } else {
+    coef_rows <- coefficients_table
+
+    if ("relative_week" %in% names(coef_rows)) {
+      coef_rows <- coef_rows %>% dplyr::arrange(relative_week)
+    }
+
+    if (!is.null(include_baseline_marker) && "relative_week" %in% names(coef_rows)) {
+      baseline_label <- sprintf("relative_week = %+d   (baseline, omitted; estimate fixed at 0)", include_baseline_marker)
+    } else {
+      baseline_label <- NULL
+    }
+
+    rendered_baseline <- FALSE
+    for (row_index in seq_len(nrow(coef_rows))) {
+      row <- coef_rows[row_index, ]
+
+      variable_label <- if ("relative_week" %in% names(row)) {
+        sprintf("relative_week = %+d", as.integer(row$relative_week))
+      } else if ("term" %in% names(row)) {
+        as.character(row$term)
+      } else {
+        "(unknown)"
+      }
+
+      if (!rendered_baseline && !is.null(baseline_label) && "relative_week" %in% names(row)) {
+        if (as.integer(row$relative_week) > include_baseline_marker) {
+          writeLines(baseline_label, con = summary_connection)
+          rendered_baseline <- TRUE
+        }
+      }
+
+      pct_text <- if (!is.null(row$pct_change) && is.finite(row$pct_change)) {
+        sign_prefix <- if (row$pct_change >= 0) "+" else ""
+        paste0(sign_prefix, formatC(row$pct_change, format = "f", digits = 1), "%")
+      } else {
+        ""
+      }
+
+      p_value_text <- if (is.finite(row$p.value)) {
+        if (row$p.value < 0.001) "<0.001" else formatC(row$p.value, format = "f", digits = 3)
+      } else {
+        ""
+      }
+
+      signif_text <- if (is.null(row$signif) || is.na(row$signif)) "" else as.character(row$signif)
+
+      writeLines(
+        sprintf("%-22s %10s %10s %12s %9s %4s",
+                variable_label,
+                .fmt_paper_number(row$estimate, 3L),
+                .fmt_paper_number(row$std.error, 3L),
+                pct_text,
+                p_value_text,
+                signif_text),
+        con = summary_connection
+      )
+    }
+  }
+
+  writeLines(strrep("-", rule_width), con = summary_connection)
+
+  if (!is.null(fit_table) && nrow(fit_table) > 0) {
+    fit_row <- fit_table[1, ]
+    n_used_text <- if (is.numeric(fit_row$used_rows) && is.finite(fit_row$used_rows)) {
+      format(round(fit_row$used_rows), big.mark = ",")
+    } else {
+      "NA"
+    }
+    writeLines(
+      sprintf("N (used): %s    R^2: %s    Adj. R^2: %s    Within R^2: %s",
+              n_used_text,
+              .fmt_paper_number(fit_row$r2, 3L),
+              .fmt_paper_number(fit_row$adjusted_r2, 3L),
+              .fmt_paper_number(fit_row$within_r2, 3L)),
+      con = summary_connection
+    )
+  }
+  invisible(NULL)
+}
+
+write_paper_style_summary <- function(model_names,
+                                      coefficients_table,
+                                      fit_table,
+                                      summary_connection,
+                                      include_baseline_marker = NULL) {
+  for (model_index in seq_along(model_names)) {
+    current_model_name <- model_names[model_index]
+
+    current_coefficients <- if ("model_name" %in% names(coefficients_table)) {
+      coefficients_table %>% dplyr::filter(model_name == current_model_name)
+    } else {
+      tibble::tibble()
+    }
+    current_fit <- if ("model_name" %in% names(fit_table)) {
+      fit_table %>% dplyr::filter(model_name == current_model_name)
+    } else {
+      tibble::tibble()
+    }
+
+    write_paper_style_model_section(
+      model_label = current_model_name,
+      coefficients_table = current_coefficients,
+      fit_table = current_fit,
+      summary_connection = summary_connection,
+      model_index = model_index,
+      include_baseline_marker = include_baseline_marker
+    )
+  }
+}
+
+# Common header and reading-instructions block written at the top of every
+# regression_summary.txt produced by the scripts.
+write_paper_style_header <- function(summary_connection,
+                                     title,
+                                     spec_lines,
+                                     dependent_variable_note,
+                                     extra_notes = character()) {
+  rule_width <- 73L
+  writeLines(strrep("=", rule_width), con = summary_connection)
+  writeLines(title, con = summary_connection)
+  writeLines(strrep("=", rule_width), con = summary_connection)
+  writeLines(sprintf("Generated: %s", as.character(Sys.time())), con = summary_connection)
+  writeLines("", con = summary_connection)
+
+  writeLines("Specification", con = summary_connection)
+  writeLines(strrep("-", rule_width), con = summary_connection)
+  for (line in spec_lines) writeLines(line, con = summary_connection)
+  writeLines("", con = summary_connection)
+
+  writeLines("How to read the coefficients", con = summary_connection)
+  writeLines(strrep("-", rule_width), con = summary_connection)
+  writeLines("Estimates are reported in LOG-units (the dependent variable is log(spend)).", con = summary_connection)
+  writeLines("A coefficient beta corresponds to a multiplicative effect of exp(beta) on", con = summary_connection)
+  writeLines("weekly spend. The 'pct change' column is exactly (exp(beta) - 1) * 100, i.e.", con = summary_connection)
+  writeLines("the percent change in weekly spend implied by the coefficient.", con = summary_connection)
+  writeLines("", con = summary_connection)
+  writeLines("Examples (so the magnitudes are unambiguous):", con = summary_connection)
+  writeLines("    beta = +0.10  ->  +10.5%   (= exp(+0.10) - 1)", con = summary_connection)
+  writeLines("    beta = -0.10  ->   -9.5%   (= exp(-0.10) - 1)", con = summary_connection)
+  writeLines("    beta = -1.00  ->  -63.2%   (= exp(-1.00) - 1)", con = summary_connection)
+  writeLines("    beta = -1.31  ->  -73.0%   (= exp(-1.31) - 1)", con = summary_connection)
+  writeLines("Coefficients are NOT bounded by [-1, +1] -- a value of -1.31 means a 73%", con = summary_connection)
+  writeLines("reduction in spend, not a 131% reduction (which would be impossible).", con = summary_connection)
+  writeLines("", con = summary_connection)
+
+  writeLines("Significance markers", con = summary_connection)
+  writeLines(strrep("-", rule_width), con = summary_connection)
+  writeLines("    ***  p < 0.01    **  p < 0.05    *  p < 0.10", con = summary_connection)
+  writeLines("Standard errors are clustered by entity_name. p-values < 0.001 are shown as", con = summary_connection)
+  writeLines("'<0.001' rather than rounded to 0.000.", con = summary_connection)
+  writeLines("", con = summary_connection)
+
+  writeLines("Dependent variable / sample notes", con = summary_connection)
+  writeLines(strrep("-", rule_width), con = summary_connection)
+  for (line in c(dependent_variable_note, extra_notes)) {
+    writeLines(line, con = summary_connection)
+  }
+  writeLines("", con = summary_connection)
+}
+
 add_baseline_coefficient_row <- function(coefficients_table, model_name_label, baseline_relative_week = 0L) {
   baseline_row <- tibble::tibble(
     model_name = model_name_label,
@@ -212,7 +442,9 @@ add_baseline_coefficient_row <- function(coefficients_table, model_name_label, b
     statistic = NA_real_,
     p.value = NA_real_,
     conf.low = 0,
-    conf.high = 0
+    conf.high = 0,
+    pct_change = 0,
+    signif = ""
   )
 
   dplyr::bind_rows(coefficients_table, baseline_row) %>%
@@ -298,7 +530,9 @@ extract_relative_week_coefficients <- function(model_object, model_name_label) {
     dplyr::filter(stringr::str_detect(term, "^relative_week::")) %>%
     dplyr::mutate(
       relative_week = as.integer(stringr::str_extract(term, "-?\\d+$")),
-      model_name = model_name_label
+      model_name = model_name_label,
+      pct_change = percent_change_from_log(estimate),
+      signif = significance_stars(p.value)
     ) %>%
     dplyr::select(
       model_name,
@@ -308,7 +542,9 @@ extract_relative_week_coefficients <- function(model_object, model_name_label) {
       statistic,
       p.value,
       conf.low,
-      conf.high
+      conf.high,
+      pct_change,
+      signif
     ) %>%
     dplyr::arrange(relative_week)
 }
@@ -1665,91 +1901,142 @@ summary_file_path <- file.path(output_paths$summaries, "regression_summary.txt")
 summary_connection <- file(summary_file_path, open = "wt")
 on.exit(close(summary_connection), add = TRUE)
 
-writeLines("Event-Study Regression Summary", con = summary_connection)
-writeLines("================================", con = summary_connection)
-writeLines(sprintf("Generated: %s", as.character(Sys.time())), con = summary_connection)
-writeLines("Effective spec used here: log(Spending_{i,t}) = alpha_i + sum_k beta_k * D_{i,k} + u_{i,t}", con = summary_connection)
-writeLines("alpha_i = entity FE (entity_name + data_source); multi-event panels also add event_id FE.", con = summary_connection)
-writeLines("Single-event runs (Oct 7) use entity FE only.", con = summary_connection)
-writeLines("Dependent variable: log(weekly_spend_ils). Weeks with spend <= 0 are dropped (log undefined).", con = summary_connection)
-writeLines("", con = summary_connection)
-writeLines("Note on gamma_t: the textbook canonical spec adds calendar-week FE", con = summary_connection)
-writeLines("(gamma_t, i.e. week_start_sunday FE). In our stacked design every entity is", con = summary_connection)
-writeLines("inside the +/-W window of every event, so calendar-week FE absorbs the", con = summary_connection)
-writeLines("variation that identifies beta_k -- standard errors blow up ~300x and the", con = summary_connection)
-writeLines("relative-week coefficients collapse to a linear-in-k pattern. We therefore", con = summary_connection)
-writeLines("omit gamma_t for stacked specs (standard stacked-event-study practice).", con = summary_connection)
-writeLines("A single demonstration run with gamma_t included is preserved in", con = summary_connection)
-writeLines("event_study/gamma_t_demonstration/ for the paper.", con = summary_connection)
-writeLines("", con = summary_connection)
+write_paper_style_header(
+  summary_connection = summary_connection,
+  title = "Event-Study Regression Summary",
+  spec_lines = c(
+    "log(Spending_{i,t}) = alpha_i + sum_k beta_k * D_{i,k} + u_{i,t}",
+    "",
+    "  alpha_i  : entity_name FE (and data_source FE for platform shifts)",
+    "  D_{i,k}  : relative-week dummy (relative_week == k); baseline week omitted",
+    "  Multi-event (stacked) panels also add event_id FE.",
+    "  Single-event runs (Oct 7) use entity_name + data_source FE only.",
+    "  Standard errors clustered by entity_name."
+  ),
+  dependent_variable_note = "Dependent variable: log(weekly_spend_ils). Weeks with spend <= 0 are dropped (log undefined).",
+  extra_notes = c(
+    "Note on gamma_t: the textbook canonical spec adds calendar-week FE",
+    "(gamma_t = week_start_sunday FE). In our stacked design every entity is",
+    "inside the +/-W window of every event, so calendar-week FE absorbs the",
+    "variation that identifies beta_k -- SEs inflate ~300x and the",
+    "relative-week coefficients collapse to a linear-in-k pattern. We therefore",
+    "omit gamma_t for stacked specs (standard stacked-event-study practice).",
+    "A single demonstration run with gamma_t is preserved under",
+    "event_study/gamma_t_demonstration/ for the paper."
+  )
+)
 
-writeLines("--- correlation_summary ---", con = summary_connection)
+writeLines("Correlations (real events)", con = summary_connection)
+writeLines(strrep("-", 73L), con = summary_connection)
 write_formatted_table(correlation_summary, summary_connection)
 writeLines("", con = summary_connection)
 
-writeLines("--- placebo_correlation_summary ---", con = summary_connection)
+writeLines("Correlations (placebo events)", con = summary_connection)
+writeLines(strrep("-", 73L), con = summary_connection)
 write_formatted_table(placebo_correlation_summary, summary_connection)
 writeLines("", con = summary_connection)
 
-writeLines("--- event_study_models_baseline_0 ---", con = summary_connection)
-write_model_summary_sections(
+writeLines("", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("Event-study models -- baseline reference week = 0", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+write_paper_style_summary(
   model_names = model_results$model_name,
   coefficients_table = all_model_coefficients,
   fit_table = all_model_fit,
-  summary_connection = summary_connection
+  summary_connection = summary_connection,
+  include_baseline_marker = 0L
 )
 
-writeLines("\n--- event_study_models_baseline_minus1 ---", con = summary_connection)
-write_model_summary_sections(
+writeLines("", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("Event-study models -- baseline reference week = -1 (robustness)", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+write_paper_style_summary(
   model_names = model_results_ref_minus1$model_name,
   coefficients_table = all_model_coefficients_ref_minus1,
   fit_table = all_model_fit_ref_minus1,
-  summary_connection = summary_connection
+  summary_connection = summary_connection,
+  include_baseline_marker = -1L
 )
 
-writeLines("\n--- placebo_event_study_models_baseline_0 ---", con = summary_connection)
-write_model_summary_sections(
+writeLines("", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("Placebo event-study models -- baseline reference week = 0", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+write_paper_style_summary(
   model_names = placebo_model_results$model_name,
   coefficients_table = placebo_model_coefficients,
   fit_table = placebo_model_fit,
-  summary_connection = summary_connection
+  summary_connection = summary_connection,
+  include_baseline_marker = 0L
 )
 
-writeLines("\n--- placebo_event_study_models_baseline_minus1 ---", con = summary_connection)
-write_model_summary_sections(
+writeLines("", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("Placebo event-study models -- baseline reference week = -1 (robustness)", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+write_paper_style_summary(
   model_names = placebo_model_results_ref_minus1$model_name,
   coefficients_table = placebo_model_coefficients_ref_minus1,
   fit_table = placebo_model_fit_ref_minus1,
-  summary_connection = summary_connection
+  summary_connection = summary_connection,
+  include_baseline_marker = -1L
 )
 
 if (nrow(oct7_coefficients_for_plot) > 0) {
-  writeLines("\n--- dedicated_oct7_model ---", con = summary_connection)
-  write_formatted_table(oct7_coefficients_for_plot, summary_connection)
+  writeLines("", con = summary_connection)
+  writeLines(strrep("=", 73L), con = summary_connection)
+  writeLines("Dedicated October 7 model (single event) -- baseline 0", con = summary_connection)
+  writeLines(strrep("=", 73L), con = summary_connection)
+  write_paper_style_model_section(
+    model_label = "oct7_event",
+    coefficients_table = oct7_coefficients_for_plot %>% dplyr::filter(relative_week != 0L),
+    fit_table = if (!is.null(oct7_model)) extract_model_fit(oct7_model, "oct7_event", nrow(oct7_event_window)) else tibble::tibble(),
+    summary_connection = summary_connection,
+    include_baseline_marker = 0L
+  )
 }
 
 if (nrow(oct7_coefficients_ref_minus1_for_plot) > 0) {
-  writeLines("\n--- dedicated_oct7_model_baseline_minus1 ---", con = summary_connection)
-  write_formatted_table(oct7_coefficients_ref_minus1_for_plot, summary_connection)
+  writeLines("", con = summary_connection)
+  writeLines(strrep("=", 73L), con = summary_connection)
+  writeLines("Dedicated October 7 model (single event) -- baseline -1 (robustness)", con = summary_connection)
+  writeLines(strrep("=", 73L), con = summary_connection)
+  write_paper_style_model_section(
+    model_label = "oct7_event",
+    coefficients_table = oct7_coefficients_ref_minus1_for_plot %>% dplyr::filter(relative_week != -1L),
+    fit_table = if (!is.null(oct7_model_ref_minus1)) extract_model_fit(oct7_model_ref_minus1, "oct7_event", nrow(oct7_event_window)) else tibble::tibble(),
+    summary_connection = summary_connection,
+    include_baseline_marker = -1L
+  )
 }
 
 if (nrow(oct7_group_results) > 0) {
-  writeLines("\n--- oct7_group_models ---", con = summary_connection)
-  write_model_summary_sections(
+  writeLines("", con = summary_connection)
+  writeLines(strrep("=", 73L), con = summary_connection)
+  writeLines("October 7 by entity group -- baseline 0", con = summary_connection)
+  writeLines(strrep("=", 73L), con = summary_connection)
+  write_paper_style_summary(
     model_names = oct7_group_results$model_name,
     coefficients_table = oct7_group_coefficients,
     fit_table = oct7_group_fit,
-    summary_connection = summary_connection
+    summary_connection = summary_connection,
+    include_baseline_marker = 0L
   )
 }
 
 if (nrow(oct7_group_results_ref_minus1) > 0) {
-  writeLines("\n--- oct7_group_models_baseline_minus1 ---", con = summary_connection)
-  write_model_summary_sections(
+  writeLines("", con = summary_connection)
+  writeLines(strrep("=", 73L), con = summary_connection)
+  writeLines("October 7 by entity group -- baseline -1 (robustness)", con = summary_connection)
+  writeLines(strrep("=", 73L), con = summary_connection)
+  write_paper_style_summary(
     model_names = oct7_group_results_ref_minus1$model_name,
     coefficients_table = oct7_group_coefficients_ref_minus1,
     fit_table = oct7_group_fit_ref_minus1,
-    summary_connection = summary_connection
+    summary_connection = summary_connection,
+    include_baseline_marker = -1L
   )
 }
 
