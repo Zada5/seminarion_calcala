@@ -1,21 +1,53 @@
+=========================================================================
 Event-Study Regression Summary
-================================
-Generated: 2026-04-29 16:23:17.478762
-Effective spec used here: log(Spending_{i,t}) = alpha_i + sum_k beta_k * D_{i,k} + u_{i,t}
-alpha_i = entity FE (entity_name + data_source); multi-event panels also add event_id FE.
-Single-event runs (Oct 7) use entity FE only.
-Dependent variable: log(weekly_spend_ils). Weeks with spend <= 0 are dropped (log undefined).
+=========================================================================
+Generated: 2026-04-29 17:01:05.936139
 
+Specification
+-------------------------------------------------------------------------
+log(Spending_{i,t}) = alpha_i + sum_k beta_k * D_{i,k} + u_{i,t}
+
+  alpha_i  : entity_name FE (and data_source FE for platform shifts)
+  D_{i,k}  : relative-week dummy (relative_week == k); baseline week omitted
+  Multi-event (stacked) panels also add event_id FE.
+  Single-event runs (Oct 7) use entity_name + data_source FE only.
+  Standard errors clustered by entity_name.
+
+How to read the coefficients
+-------------------------------------------------------------------------
+Estimates are reported in LOG-units (the dependent variable is log(spend)).
+A coefficient beta corresponds to a multiplicative effect of exp(beta) on
+weekly spend. The 'pct change' column is exactly (exp(beta) - 1) * 100, i.e.
+the percent change in weekly spend implied by the coefficient.
+
+Examples (so the magnitudes are unambiguous):
+    beta = +0.10  ->  +10.5%   (= exp(+0.10) - 1)
+    beta = -0.10  ->   -9.5%   (= exp(-0.10) - 1)
+    beta = -1.00  ->  -63.2%   (= exp(-1.00) - 1)
+    beta = -1.31  ->  -73.0%   (= exp(-1.31) - 1)
+Coefficients are NOT bounded by [-1, +1] -- a value of -1.31 means a 73%
+reduction in spend, not a 131% reduction (which would be impossible).
+
+Significance markers
+-------------------------------------------------------------------------
+    ***  p < 0.01    **  p < 0.05    *  p < 0.10
+Standard errors are clustered by entity_name. p-values < 0.001 are shown as
+'<0.001' rather than rounded to 0.000.
+
+Dependent variable / sample notes
+-------------------------------------------------------------------------
+Dependent variable: log(weekly_spend_ils). Weeks with spend <= 0 are dropped (log undefined).
 Note on gamma_t: the textbook canonical spec adds calendar-week FE
-(gamma_t, i.e. week_start_sunday FE). In our stacked design every entity is
+(gamma_t = week_start_sunday FE). In our stacked design every entity is
 inside the +/-W window of every event, so calendar-week FE absorbs the
-variation that identifies beta_k -- standard errors blow up ~300x and the
+variation that identifies beta_k -- SEs inflate ~300x and the
 relative-week coefficients collapse to a linear-in-k pattern. We therefore
 omit gamma_t for stacked specs (standard stacked-event-study practice).
-A single demonstration run with gamma_t included is preserved in
+A single demonstration run with gamma_t is preserved under
 event_study/gamma_t_demonstration/ for the paper.
 
---- correlation_summary ---
+Correlations (real events)
+-------------------------------------------------------------------------
 # A tibble: 9 x 7
   entity_group        event_scope correlation_weekly_spend_vs_event_count
   <chr>               <chr>       <chr>
@@ -51,7 +83,8 @@ event_study/gamma_t_demonstration/ for the paper.
 8 0.101
 9 0.084
 
---- placebo_correlation_summary ---
+Correlations (placebo events)
+-------------------------------------------------------------------------
 # A tibble: 9 x 7
   entity_group        event_scope correlation_weekly_spend_vs_event_count
   <chr>               <chr>       <chr>
@@ -87,1052 +120,517 @@ event_study/gamma_t_demonstration/ for the paper.
 8 0.098
 9 0.084
 
---- event_study_models_baseline_0 ---
 
---- all_entities_all_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name              relative_week estimate std.error statistic p.value
-  <chr>                   <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_all_events -2            0.071    0.031     2.328     0.023
-2 all_entities_all_events -1            0.056    0.026     2.113     0.039
-3 all_entities_all_events 1             -0.025   0.025     -1.012    0.315
-4 all_entities_all_events 2             -0.044   0.026     -1.714    0.091
-  conf.low conf.high
-  <chr>    <chr>
-1 0.010    0.132
-2 0.003    0.108
-3 -0.075   0.024
-4 -0.096   0.007
-Model fit:
-# A tibble: 1 x 7
-  model_name              model_status input_rows used_rows r2    within_r2
-  <chr>                   <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_all_events ok           10040      10038     0.347 0.001
-  adjusted_r2
-  <chr>
-1 0.338
+=========================================================================
+Event-study models -- baseline reference week = 0
+=========================================================================
 
---- political_parties_all_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                   relative_week estimate std.error statistic
-  <chr>                        <chr>         <chr>    <chr>     <chr>
-1 political_parties_all_events -2            0.162    0.093     1.742
-2 political_parties_all_events -1            0.091    0.086     1.062
-3 political_parties_all_events 1             0.000    0.057     0.003
-4 political_parties_all_events 2             -0.041   0.063     -0.647
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.102   -0.036   0.360
-2 0.305   -0.092   0.274
-3 0.997   -0.122   0.123
-4 0.527   -0.176   0.094
-Model fit:
-# A tibble: 1 x 7
-  model_name                   model_status input_rows used_rows r2    within_r2
-  <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 political_parties_all_events ok           1412       1411      0.436 0.004
-  adjusted_r2
-  <chr>
-1 0.400
+(1) all_entities_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.071      0.031        +7.4%     0.023   **
+relative_week = -1          0.056      0.026        +5.7%     0.039   **
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1         -0.025      0.025        -2.5%     0.315     
+relative_week = +2         -0.044      0.026        -4.3%     0.091    *
+-------------------------------------------------------------------------
+N (used): 10,038    R^2: 0.347    Adj. R^2: 0.338    Within R^2: 0.001
 
---- other_orgs_people_all_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                   relative_week estimate std.error statistic
-  <chr>                        <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_all_events -2            0.042    0.032     1.328
-2 other_orgs_people_all_events -1            0.034    0.027     1.228
-3 other_orgs_people_all_events 1             -0.023   0.027     -0.838
-4 other_orgs_people_all_events 2             -0.042   0.027     -1.562
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.190   -0.022   0.106
-2 0.226   -0.021   0.089
-3 0.406   -0.078   0.032
-4 0.125   -0.096   0.012
-Model fit:
-# A tibble: 1 x 7
-  model_name                   model_status input_rows used_rows r2    within_r2
-  <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 other_orgs_people_all_events ok           8628       8627      0.362 0.001
-  adjusted_r2
-  <chr>
-1 0.353
+(2) political_parties_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.162      0.093       +17.6%     0.102     
+relative_week = -1          0.091      0.086        +9.6%     0.305     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.000      0.057        +0.0%     0.997     
+relative_week = +2         -0.041      0.063        -4.0%     0.527     
+-------------------------------------------------------------------------
+N (used): 1,411    R^2: 0.436    Adj. R^2: 0.400    Within R^2: 0.004
 
---- all_entities_political_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                    relative_week estimate std.error statistic
-  <chr>                         <chr>         <chr>    <chr>     <chr>
-1 all_entities_political_events -2            0.114    0.040     2.865
-2 all_entities_political_events -1            0.149    0.035     4.293
-3 all_entities_political_events 1             -0.066   0.033     -1.978
-4 all_entities_political_events 2             -0.068   0.037     -1.828
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.006   0.034    0.193
-2 <0.001  0.080    0.218
-3 0.052   -0.132   0.001
-4 0.072   -0.143   0.006
-Model fit:
-# A tibble: 1 x 7
-  model_name                    model_status input_rows used_rows r2
-  <chr>                         <chr>        <chr>      <chr>     <chr>
-1 all_entities_political_events ok           5325       5323      0.329
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.006     0.316
+(3) other_orgs_people_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.042      0.032        +4.3%     0.190     
+relative_week = -1          0.034      0.027        +3.4%     0.226     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1         -0.023      0.027        -2.3%     0.406     
+relative_week = +2         -0.042      0.027        -4.1%     0.125     
+-------------------------------------------------------------------------
+N (used): 8,627    R^2: 0.362    Adj. R^2: 0.353    Within R^2: 0.001
 
---- all_entities_terror_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                 relative_week estimate std.error statistic p.value
-  <chr>                      <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_terror_events -2            0.025    0.044     0.553     0.582
-2 all_entities_terror_events -1            -0.059   0.043     -1.382    0.172
-3 all_entities_terror_events 1             0.016    0.030     0.543     0.589
-4 all_entities_terror_events 2             -0.019   0.041     -0.465    0.644
-  conf.low conf.high
-  <chr>    <chr>
-1 -0.064   0.113
-2 -0.144   0.026
-3 -0.044   0.076
-4 -0.102   0.063
-Model fit:
-# A tibble: 1 x 7
-  model_name                 model_status input_rows used_rows r2    within_r2
-  <chr>                      <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_terror_events ok           4715       4714      0.407 0.001
-  adjusted_r2
-  <chr>
-1 0.395
+(4) all_entities_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.114      0.040       +12.0%     0.006  ***
+relative_week = -1          0.149      0.035       +16.1%    <0.001  ***
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1         -0.066      0.033        -6.4%     0.052    *
+relative_week = +2         -0.068      0.037        -6.6%     0.072    *
+-------------------------------------------------------------------------
+N (used): 5,323    R^2: 0.329    Adj. R^2: 0.316    Within R^2: 0.006
 
---- political_parties_political_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                         relative_week estimate std.error statistic
-  <chr>                              <chr>         <chr>    <chr>     <chr>
-1 political_parties_political_events -2            0.233    0.157     1.489
-2 political_parties_political_events -1            0.174    0.156     1.114
-3 political_parties_political_events 1             -0.185   0.124     -1.493
-4 political_parties_political_events 2             -0.194   0.099     -1.970
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.157   -0.101   0.568
-2 0.283   -0.159   0.506
-3 0.156   -0.450   0.079
-4 0.068   -0.405   0.016
-Model fit:
-# A tibble: 1 x 7
-  model_name                         model_status input_rows used_rows r2
-  <chr>                              <chr>        <chr>      <chr>     <chr>
-1 political_parties_political_events ok           755        755       0.454
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.021     0.411
+(5) all_entities_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.025      0.044        +2.5%     0.582     
+relative_week = -1         -0.059      0.043        -5.7%     0.172     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.016      0.030        +1.6%     0.589     
+relative_week = +2         -0.019      0.041        -1.9%     0.644     
+-------------------------------------------------------------------------
+N (used): 4,714    R^2: 0.407    Adj. R^2: 0.395    Within R^2: 0.001
 
---- political_parties_terror_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                      relative_week estimate std.error statistic
-  <chr>                           <chr>         <chr>    <chr>     <chr>
-1 political_parties_terror_events -2            0.094    0.082     1.144
-2 political_parties_terror_events -1            0.002    0.079     0.023
-3 political_parties_terror_events 1             0.175    0.039     4.447
-4 political_parties_terror_events 2             0.119    0.079     1.502
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.273   -0.083   0.271
-2 0.982   -0.169   0.173
-3 <0.001  0.090    0.261
-4 0.157   -0.052   0.291
-Model fit:
-# A tibble: 1 x 7
-  model_name                      model_status input_rows used_rows r2
-  <chr>                           <chr>        <chr>      <chr>     <chr>
-1 political_parties_terror_events ok           657        656       0.483
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.005     0.443
+(6) political_parties_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.233      0.157       +26.3%     0.157     
+relative_week = -1          0.174      0.156       +19.0%     0.283     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1         -0.185      0.124       -16.9%     0.156     
+relative_week = +2         -0.194      0.099       -17.7%     0.068    *
+-------------------------------------------------------------------------
+N (used): 755    R^2: 0.454    Adj. R^2: 0.411    Within R^2: 0.021
 
---- other_orgs_people_political_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                         relative_week estimate std.error statistic
-  <chr>                              <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_political_events -2            0.071    0.041     1.728
-2 other_orgs_people_political_events -1            0.122    0.035     3.519
-3 other_orgs_people_political_events 1             -0.042   0.034     -1.256
-4 other_orgs_people_political_events 2             -0.044   0.037     -1.187
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.091   -0.012   0.153
-2 <0.001  0.052    0.192
-3 0.215   -0.110   0.025
-4 0.241   -0.117   0.030
-Model fit:
-# A tibble: 1 x 7
-  model_name                         model_status input_rows used_rows r2
-  <chr>                              <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_political_events ok           4570       4568      0.342
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.003     0.329
+(7) political_parties_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.094      0.082        +9.8%     0.273     
+relative_week = -1          0.002      0.079        +0.2%     0.982     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.175      0.039       +19.2%    <0.001  ***
+relative_week = +2          0.119      0.079       +12.7%     0.157     
+-------------------------------------------------------------------------
+N (used): 656    R^2: 0.483    Adj. R^2: 0.443    Within R^2: 0.005
 
---- other_orgs_people_terror_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                      relative_week estimate std.error statistic
-  <chr>                           <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_terror_events -2            0.012    0.049     0.245
-2 other_orgs_people_terror_events -1            -0.072   0.047     -1.541
-3 other_orgs_people_terror_events 1             -0.003   0.032     -0.087
-4 other_orgs_people_terror_events 2             -0.039   0.044     -0.867
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.808   -0.086   0.110
-2 0.130   -0.167   0.022
-3 0.931   -0.068   0.063
-4 0.390   -0.128   0.051
-Model fit:
-# A tibble: 1 x 7
-  model_name                      model_status input_rows used_rows r2
-  <chr>                           <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_terror_events ok           4058       4058      0.415
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.001     0.403
+(8) other_orgs_people_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.071      0.041        +7.3%     0.091    *
+relative_week = -1          0.122      0.035       +13.0%    <0.001  ***
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1         -0.042      0.034        -4.1%     0.215     
+relative_week = +2         -0.044      0.037        -4.3%     0.241     
+-------------------------------------------------------------------------
+N (used): 4,568    R^2: 0.342    Adj. R^2: 0.329    Within R^2: 0.003
 
---- event_study_models_baseline_minus1 ---
+(9) other_orgs_people_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.012      0.049        +1.2%     0.808     
+relative_week = -1         -0.072      0.047        -7.0%     0.130     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1         -0.003      0.032        -0.3%     0.931     
+relative_week = +2         -0.039      0.044        -3.8%     0.390     
+-------------------------------------------------------------------------
+N (used): 4,058    R^2: 0.415    Adj. R^2: 0.403    Within R^2: 0.001
 
---- all_entities_all_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name              relative_week estimate std.error statistic p.value
-  <chr>                   <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_all_events -2            0.015    0.023     0.683     0.497
-2 all_entities_all_events 0             -0.056   0.026     -2.113    0.039
-3 all_entities_all_events 1             -0.081   0.027     -3.043    0.003
-4 all_entities_all_events 2             -0.100   0.030     -3.335    0.001
-  conf.low conf.high
-  <chr>    <chr>
-1 -0.030   0.061
-2 -0.108   -0.003
-3 -0.134   -0.028
-4 -0.160   -0.040
-Model fit:
-# A tibble: 1 x 7
-  model_name              model_status input_rows used_rows r2    within_r2
-  <chr>                   <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_all_events ok           10040      10038     0.347 0.001
-  adjusted_r2
-  <chr>
-1 0.338
+=========================================================================
+Event-study models -- baseline reference week = -1 (robustness)
+=========================================================================
 
---- political_parties_all_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                   relative_week estimate std.error statistic
-  <chr>                        <chr>         <chr>    <chr>     <chr>
-1 political_parties_all_events -2            0.071    0.094     0.757
-2 political_parties_all_events 0             -0.091   0.086     -1.062
-3 political_parties_all_events 1             -0.091   0.101     -0.904
-4 political_parties_all_events 2             -0.132   0.112     -1.176
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.461   -0.129   0.270
-2 0.305   -0.274   0.092
-3 0.380   -0.306   0.124
-4 0.258   -0.372   0.107
-Model fit:
-# A tibble: 1 x 7
-  model_name                   model_status input_rows used_rows r2    within_r2
-  <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 political_parties_all_events ok           1412       1411      0.436 0.004
-  adjusted_r2
-  <chr>
-1 0.400
+(1) all_entities_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.015      0.023        +1.6%     0.497     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0         -0.056      0.026        -5.4%     0.039   **
+relative_week = +1         -0.081      0.027        -7.8%     0.003  ***
+relative_week = +2         -0.100      0.030        -9.5%     0.001  ***
+-------------------------------------------------------------------------
+N (used): 10,038    R^2: 0.347    Adj. R^2: 0.338    Within R^2: 0.001
 
---- other_orgs_people_all_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                   relative_week estimate std.error statistic
-  <chr>                        <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_all_events -2            0.008    0.021     0.397
-2 other_orgs_people_all_events 0             -0.034   0.027     -1.228
-3 other_orgs_people_all_events 1             -0.057   0.027     -2.110
-4 other_orgs_people_all_events 2             -0.076   0.028     -2.684
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.693   -0.034   0.050
-2 0.226   -0.089   0.021
-3 0.040   -0.110   -0.003
-4 0.010   -0.132   -0.019
-Model fit:
-# A tibble: 1 x 7
-  model_name                   model_status input_rows used_rows r2    within_r2
-  <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 other_orgs_people_all_events ok           8628       8627      0.362 0.001
-  adjusted_r2
-  <chr>
-1 0.353
+(2) political_parties_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.071      0.094        +7.3%     0.461     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0         -0.091      0.086        -8.7%     0.305     
+relative_week = +1         -0.091      0.101        -8.7%     0.380     
+relative_week = +2         -0.132      0.112       -12.4%     0.258     
+-------------------------------------------------------------------------
+N (used): 1,411    R^2: 0.436    Adj. R^2: 0.400    Within R^2: 0.004
 
---- all_entities_political_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                    relative_week estimate std.error statistic
-  <chr>                         <chr>         <chr>    <chr>     <chr>
-1 all_entities_political_events -2            -0.035   0.038     -0.919
-2 all_entities_political_events 0             -0.149   0.035     -4.293
-3 all_entities_political_events 1             -0.215   0.047     -4.526
-4 all_entities_political_events 2             -0.217   0.052     -4.143
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.362   -0.112   0.042
-2 <0.001  -0.218   -0.080
-3 <0.001  -0.310   -0.120
-4 <0.001  -0.322   -0.112
-Model fit:
-# A tibble: 1 x 7
-  model_name                    model_status input_rows used_rows r2
-  <chr>                         <chr>        <chr>      <chr>     <chr>
-1 all_entities_political_events ok           5325       5323      0.329
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.006     0.316
+(3) other_orgs_people_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.008      0.021        +0.8%     0.693     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0         -0.034      0.027        -3.3%     0.226     
+relative_week = +1         -0.057      0.027        -5.5%     0.040   **
+relative_week = +2         -0.076      0.028        -7.3%     0.010  ***
+-------------------------------------------------------------------------
+N (used): 8,627    R^2: 0.362    Adj. R^2: 0.353    Within R^2: 0.001
 
---- all_entities_terror_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                 relative_week estimate std.error statistic p.value
-  <chr>                      <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_terror_events -2            0.083    0.036     2.306     0.025
-2 all_entities_terror_events 0             0.059    0.043     1.382     0.172
-3 all_entities_terror_events 1             0.075    0.038     1.971     0.053
-4 all_entities_terror_events 2             0.040    0.047     0.843     0.403
-  conf.low conf.high
-  <chr>    <chr>
-1 0.011    0.156
-2 -0.026   0.144
-3 -0.001   0.152
-4 -0.055   0.134
-Model fit:
-# A tibble: 1 x 7
-  model_name                 model_status input_rows used_rows r2    within_r2
-  <chr>                      <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_terror_events ok           4715       4714      0.407 0.001
-  adjusted_r2
-  <chr>
-1 0.395
+(4) all_entities_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.035      0.038        -3.5%     0.362     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0         -0.149      0.035       -13.8%    <0.001  ***
+relative_week = +1         -0.215      0.047       -19.3%    <0.001  ***
+relative_week = +2         -0.217      0.052       -19.5%    <0.001  ***
+-------------------------------------------------------------------------
+N (used): 5,323    R^2: 0.329    Adj. R^2: 0.316    Within R^2: 0.006
 
---- political_parties_political_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                         relative_week estimate std.error statistic
-  <chr>                              <chr>         <chr>    <chr>     <chr>
-1 political_parties_political_events -2            0.060    0.123     0.484
-2 political_parties_political_events 0             -0.174   0.156     -1.114
-3 political_parties_political_events 1             -0.359   0.228     -1.576
-4 political_parties_political_events 2             -0.368   0.197     -1.866
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.635   -0.203   0.323
-2 0.283   -0.506   0.159
-3 0.136   -0.845   0.127
-4 0.082   -0.789   0.052
-Model fit:
-# A tibble: 1 x 7
-  model_name                         model_status input_rows used_rows r2
-  <chr>                              <chr>        <chr>      <chr>     <chr>
-1 political_parties_political_events ok           755        755       0.454
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.021     0.411
+(5) all_entities_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.083      0.036        +8.7%     0.025   **
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0          0.059      0.043        +6.1%     0.172     
+relative_week = +1          0.075      0.038        +7.8%     0.053    *
+relative_week = +2          0.040      0.047        +4.1%     0.403     
+-------------------------------------------------------------------------
+N (used): 4,714    R^2: 0.407    Adj. R^2: 0.395    Within R^2: 0.001
 
---- political_parties_terror_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                      relative_week estimate std.error statistic
-  <chr>                           <chr>         <chr>    <chr>     <chr>
-1 political_parties_terror_events -2            0.092    0.086     1.068
-2 political_parties_terror_events 0             -0.002   0.079     -0.023
-3 political_parties_terror_events 1             0.174    0.085     2.047
-4 political_parties_terror_events 2             0.118    0.109     1.079
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.305   -0.094   0.278
-2 0.982   -0.173   0.169
-3 0.061   -0.010   0.357
-4 0.300   -0.118   0.353
-Model fit:
-# A tibble: 1 x 7
-  model_name                      model_status input_rows used_rows r2
-  <chr>                           <chr>        <chr>      <chr>     <chr>
-1 political_parties_terror_events ok           657        656       0.483
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.005     0.443
+(6) political_parties_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.060      0.123        +6.2%     0.635     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0         -0.174      0.156       -15.9%     0.283     
+relative_week = +1         -0.359      0.228       -30.2%     0.136     
+relative_week = +2         -0.368      0.197       -30.8%     0.082    *
+-------------------------------------------------------------------------
+N (used): 755    R^2: 0.454    Adj. R^2: 0.411    Within R^2: 0.021
 
---- other_orgs_people_political_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                         relative_week estimate std.error statistic
-  <chr>                              <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_political_events -2            -0.052   0.040     -1.301
-2 other_orgs_people_political_events 0             -0.122   0.035     -3.519
-3 other_orgs_people_political_events 1             -0.164   0.044     -3.776
-4 other_orgs_people_political_events 2             -0.166   0.050     -3.319
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.200   -0.132   0.028
-2 <0.001  -0.192   -0.052
-3 <0.001  -0.252   -0.077
-4 0.002   -0.266   -0.065
-Model fit:
-# A tibble: 1 x 7
-  model_name                         model_status input_rows used_rows r2
-  <chr>                              <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_political_events ok           4570       4568      0.342
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.003     0.329
+(7) political_parties_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.092      0.086        +9.6%     0.305     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0         -0.002      0.079        -0.2%     0.982     
+relative_week = +1          0.174      0.085       +19.0%     0.061    *
+relative_week = +2          0.118      0.109       +12.5%     0.300     
+-------------------------------------------------------------------------
+N (used): 656    R^2: 0.483    Adj. R^2: 0.443    Within R^2: 0.005
 
---- other_orgs_people_terror_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                      relative_week estimate std.error statistic
-  <chr>                           <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_terror_events -2            0.084    0.039     2.168
-2 other_orgs_people_terror_events 0             0.072    0.047     1.541
-3 other_orgs_people_terror_events 1             0.069    0.039     1.766
-4 other_orgs_people_terror_events 2             0.034    0.049     0.689
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.035   0.006    0.163
-2 0.130   -0.022   0.167
-3 0.084   -0.010   0.149
-4 0.494   -0.065   0.132
-Model fit:
-# A tibble: 1 x 7
-  model_name                      model_status input_rows used_rows r2
-  <chr>                           <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_terror_events ok           4058       4058      0.415
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.001     0.403
+(8) other_orgs_people_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.052      0.040        -5.0%     0.200     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0         -0.122      0.035       -11.5%    <0.001  ***
+relative_week = +1         -0.164      0.044       -15.2%    <0.001  ***
+relative_week = +2         -0.166      0.050       -15.3%     0.002  ***
+-------------------------------------------------------------------------
+N (used): 4,568    R^2: 0.342    Adj. R^2: 0.329    Within R^2: 0.003
 
---- placebo_event_study_models_baseline_0 ---
+(9) other_orgs_people_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.084      0.039        +8.8%     0.035   **
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0          0.072      0.047        +7.5%     0.130     
+relative_week = +1          0.069      0.039        +7.2%     0.084    *
+relative_week = +2          0.034      0.049        +3.4%     0.494     
+-------------------------------------------------------------------------
+N (used): 4,058    R^2: 0.415    Adj. R^2: 0.403    Within R^2: 0.001
 
---- all_entities_all_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name              relative_week estimate std.error statistic p.value
-  <chr>                   <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_all_events -2            -0.036   0.024     -1.494    0.140
-2 all_entities_all_events -1            -0.031   0.018     -1.727    0.089
-3 all_entities_all_events 1             0.031    0.018     1.680     0.098
-4 all_entities_all_events 2             0.060    0.022     2.687     0.009
-  conf.low conf.high
-  <chr>    <chr>
-1 -0.084   0.012
-2 -0.066   0.005
-3 -0.006   0.067
-4 0.015    0.104
-Model fit:
-# A tibble: 1 x 7
-  model_name              model_status input_rows used_rows r2    within_r2
-  <chr>                   <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_all_events ok           9769       9767      0.300 0.001
-  adjusted_r2
-  <chr>
-1 0.290
+=========================================================================
+Placebo event-study models -- baseline reference week = 0
+=========================================================================
 
---- political_parties_all_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                   relative_week estimate std.error statistic
-  <chr>                        <chr>         <chr>    <chr>     <chr>
-1 political_parties_all_events -2            -0.079   0.053     -1.504
-2 political_parties_all_events -1            -0.053   0.051     -1.029
-3 political_parties_all_events 1             0.101    0.047     2.167
-4 political_parties_all_events 2             0.154    0.065     2.357
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.152   -0.191   0.033
-2 0.319   -0.162   0.056
-3 0.046   0.002    0.201
-4 0.031   0.016    0.293
-Model fit:
-# A tibble: 1 x 7
-  model_name                   model_status input_rows used_rows r2    within_r2
-  <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 political_parties_all_events ok           1827       1826      0.498 0.005
-  adjusted_r2
-  <chr>
-1 0.473
+(1) all_entities_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.036      0.024        -3.5%     0.140     
+relative_week = -1         -0.031      0.018        -3.0%     0.089    *
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.031      0.018        +3.1%     0.098    *
+relative_week = +2          0.060      0.022        +6.1%     0.009  ***
+-------------------------------------------------------------------------
+N (used): 9,767    R^2: 0.300    Adj. R^2: 0.290    Within R^2: 0.001
 
---- other_orgs_people_all_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                   relative_week estimate std.error statistic
-  <chr>                        <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_all_events -2            -0.018   0.024     -0.730
-2 other_orgs_people_all_events -1            -0.019   0.017     -1.109
-3 other_orgs_people_all_events 1             0.010    0.019     0.511
-4 other_orgs_people_all_events 2             0.032    0.023     1.428
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.469   -0.066   0.031
-2 0.273   -0.053   0.015
-3 0.612   -0.029   0.049
-4 0.160   -0.013   0.077
-Model fit:
-# A tibble: 1 x 7
-  model_name                   model_status input_rows used_rows r2    within_r2
-  <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 other_orgs_people_all_events ok           7942       7941      0.325 0.000
-  adjusted_r2
-  <chr>
-1 0.315
+(2) political_parties_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.079      0.053        -7.6%     0.152     
+relative_week = -1         -0.053      0.051        -5.2%     0.319     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.101      0.047       +10.7%     0.046   **
+relative_week = +2          0.154      0.065       +16.7%     0.031   **
+-------------------------------------------------------------------------
+N (used): 1,826    R^2: 0.498    Adj. R^2: 0.473    Within R^2: 0.005
 
---- all_entities_political_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                    relative_week estimate std.error statistic
-  <chr>                         <chr>         <chr>    <chr>     <chr>
-1 all_entities_political_events -2            -0.010   0.033     -0.314
-2 all_entities_political_events -1            -0.008   0.030     -0.272
-3 all_entities_political_events 1             0.037    0.031     1.192
-4 all_entities_political_events 2             0.042    0.035     1.191
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.755   -0.075   0.055
-2 0.786   -0.069   0.052
-3 0.238   -0.025   0.099
-4 0.238   -0.029   0.113
-Model fit:
-# A tibble: 1 x 7
-  model_name                    model_status input_rows used_rows r2
-  <chr>                         <chr>        <chr>      <chr>     <chr>
-1 all_entities_political_events ok           5209       5208      0.333
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.000     0.320
+(3) other_orgs_people_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.018      0.024        -1.7%     0.469     
+relative_week = -1         -0.019      0.017        -1.9%     0.273     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.010      0.019        +1.0%     0.612     
+relative_week = +2          0.032      0.023        +3.3%     0.160     
+-------------------------------------------------------------------------
+N (used): 7,941    R^2: 0.325    Adj. R^2: 0.315    Within R^2: 0.000
 
---- all_entities_terror_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                 relative_week estimate std.error statistic p.value
-  <chr>                      <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_terror_events -2            -0.050   0.049     -1.023    0.310
-2 all_entities_terror_events -1            -0.048   0.034     -1.410    0.164
-3 all_entities_terror_events 1             0.026    0.036     0.726     0.470
-4 all_entities_terror_events 2             0.085    0.042     2.021     0.048
-  conf.low conf.high
-  <chr>    <chr>
-1 -0.148   0.048
-2 -0.117   0.020
-3 -0.045   0.097
-4 0.001    0.170
-Model fit:
-# A tibble: 1 x 7
-  model_name                 model_status input_rows used_rows r2    within_r2
-  <chr>                      <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_terror_events ok           4560       4557      0.293 0.002
-  adjusted_r2
-  <chr>
-1 0.278
+(4) all_entities_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.010      0.033        -1.0%     0.755     
+relative_week = -1         -0.008      0.030        -0.8%     0.786     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.037      0.031        +3.8%     0.238     
+relative_week = +2          0.042      0.035        +4.3%     0.238     
+-------------------------------------------------------------------------
+N (used): 5,208    R^2: 0.333    Adj. R^2: 0.320    Within R^2: 0.000
 
---- political_parties_political_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                         relative_week estimate std.error statistic
-  <chr>                              <chr>         <chr>    <chr>     <chr>
-1 political_parties_political_events -2            0.008    0.069     0.112
-2 political_parties_political_events -1            -0.051   0.068     -0.748
-3 political_parties_political_events 1             0.031    0.052     0.602
-4 political_parties_political_events 2             0.111    0.044     2.523
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.913   -0.143   0.159
-2 0.469   -0.198   0.097
-3 0.559   -0.082   0.145
-4 0.027   0.015    0.208
-Model fit:
-# A tibble: 1 x 7
-  model_name                         model_status input_rows used_rows r2
-  <chr>                              <chr>        <chr>      <chr>     <chr>
-1 political_parties_political_events ok           900        900       0.515
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.002     0.485
+(5) all_entities_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.050      0.049        -4.9%     0.310     
+relative_week = -1         -0.048      0.034        -4.7%     0.164     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.026      0.036        +2.6%     0.470     
+relative_week = +2          0.085      0.042        +8.9%     0.048   **
+-------------------------------------------------------------------------
+N (used): 4,557    R^2: 0.293    Adj. R^2: 0.278    Within R^2: 0.002
 
---- political_parties_terror_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                      relative_week estimate std.error statistic
-  <chr>                           <chr>         <chr>    <chr>     <chr>
-1 political_parties_terror_events -2            -0.112   0.133     -0.844
-2 political_parties_terror_events -1            -0.016   0.077     -0.202
-3 political_parties_terror_events 1             0.193    0.106     1.821
-4 political_parties_terror_events 2             0.213    0.129     1.649
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.411   -0.393   0.169
-2 0.843   -0.180   0.148
-3 0.087   -0.032   0.417
-4 0.119   -0.061   0.487
-Model fit:
-# A tibble: 1 x 7
-  model_name                      model_status input_rows used_rows r2
-  <chr>                           <chr>        <chr>      <chr>     <chr>
-1 political_parties_terror_events ok           927        926       0.510
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.009     0.482
+(6) political_parties_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.008      0.069        +0.8%     0.913     
+relative_week = -1         -0.051      0.068        -4.9%     0.469     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.031      0.052        +3.2%     0.559     
+relative_week = +2          0.111      0.044       +11.8%     0.027   **
+-------------------------------------------------------------------------
+N (used): 900    R^2: 0.515    Adj. R^2: 0.485    Within R^2: 0.002
 
---- other_orgs_people_political_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                         relative_week estimate std.error statistic
-  <chr>                              <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_political_events -2            -0.007   0.035     -0.191
-2 other_orgs_people_political_events -1            0.004    0.032     0.140
-3 other_orgs_people_political_events 1             0.031    0.035     0.900
-4 other_orgs_people_political_events 2             0.019    0.041     0.455
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.850   -0.076   0.063
-2 0.889   -0.060   0.068
-3 0.373   -0.039   0.101
-4 0.651   -0.063   0.101
-Model fit:
-# A tibble: 1 x 7
-  model_name                         model_status input_rows used_rows r2
-  <chr>                              <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_political_events ok           4309       4308      0.336
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.000     0.323
+(7) political_parties_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.112      0.133       -10.6%     0.411     
+relative_week = -1         -0.016      0.077        -1.6%     0.843     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.193      0.106       +21.2%     0.087    *
+relative_week = +2          0.213      0.129       +23.8%     0.119     
+-------------------------------------------------------------------------
+N (used): 926    R^2: 0.510    Adj. R^2: 0.482    Within R^2: 0.009
 
---- other_orgs_people_terror_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                      relative_week estimate std.error statistic
-  <chr>                           <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_terror_events -2            -0.034   0.045     -0.746
-2 other_orgs_people_terror_events -1            -0.048   0.036     -1.327
-3 other_orgs_people_terror_events 1             -0.020   0.039     -0.504
-4 other_orgs_people_terror_events 2             0.049    0.041     1.201
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.459   -0.125   0.058
-2 0.191   -0.121   0.025
-3 0.617   -0.099   0.059
-4 0.236   -0.033   0.132
-Model fit:
-# A tibble: 1 x 7
-  model_name                      model_status input_rows used_rows r2
-  <chr>                           <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_terror_events ok           3633       3631      0.331
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.001     0.316
+(8) other_orgs_people_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.007      0.035        -0.7%     0.850     
+relative_week = -1          0.004      0.032        +0.4%     0.889     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.031      0.035        +3.2%     0.373     
+relative_week = +2          0.019      0.041        +1.9%     0.651     
+-------------------------------------------------------------------------
+N (used): 4,308    R^2: 0.336    Adj. R^2: 0.323    Within R^2: 0.000
 
---- placebo_event_study_models_baseline_minus1 ---
+(9) other_orgs_people_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.034      0.045        -3.3%     0.459     
+relative_week = -1         -0.048      0.036        -4.7%     0.191     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1         -0.020      0.039        -2.0%     0.617     
+relative_week = +2          0.049      0.041        +5.1%     0.236     
+-------------------------------------------------------------------------
+N (used): 3,631    R^2: 0.331    Adj. R^2: 0.316    Within R^2: 0.001
 
---- all_entities_all_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name              relative_week estimate std.error statistic p.value
-  <chr>                   <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_all_events -2            -0.005   0.021     -0.249    0.804
-2 all_entities_all_events 0             0.031    0.018     1.727     0.089
-3 all_entities_all_events 1             0.061    0.025     2.439     0.018
-4 all_entities_all_events 2             0.090    0.030     2.963     0.004
-  conf.low conf.high
-  <chr>    <chr>
-1 -0.047   0.036
-2 -0.005   0.066
-3 0.011    0.111
-4 0.029    0.151
-Model fit:
-# A tibble: 1 x 7
-  model_name              model_status input_rows used_rows r2    within_r2
-  <chr>                   <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_all_events ok           9769       9767      0.300 0.001
-  adjusted_r2
-  <chr>
-1 0.290
+=========================================================================
+Placebo event-study models -- baseline reference week = -1 (robustness)
+=========================================================================
 
---- political_parties_all_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                   relative_week estimate std.error statistic
-  <chr>                        <chr>         <chr>    <chr>     <chr>
-1 political_parties_all_events -2            -0.026   0.041     -0.644
-2 political_parties_all_events 0             0.053    0.051     1.029
-3 political_parties_all_events 1             0.154    0.066     2.356
-4 political_parties_all_events 2             0.207    0.088     2.361
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.529   -0.113   0.060
-2 0.319   -0.056   0.162
-3 0.032   0.015    0.293
-4 0.031   0.021    0.393
-Model fit:
-# A tibble: 1 x 7
-  model_name                   model_status input_rows used_rows r2    within_r2
-  <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 political_parties_all_events ok           1827       1826      0.498 0.005
-  adjusted_r2
-  <chr>
-1 0.473
+(1) all_entities_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.005      0.021        -0.5%     0.804     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0          0.031      0.018        +3.1%     0.089    *
+relative_week = +1          0.061      0.025        +6.3%     0.018   **
+relative_week = +2          0.090      0.030        +9.5%     0.004  ***
+-------------------------------------------------------------------------
+N (used): 9,767    R^2: 0.300    Adj. R^2: 0.290    Within R^2: 0.001
 
---- other_orgs_people_all_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                   relative_week estimate std.error statistic
-  <chr>                        <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_all_events -2            0.001    0.023     0.050
-2 other_orgs_people_all_events 0             0.019    0.017     1.109
-3 other_orgs_people_all_events 1             0.029    0.024     1.179
-4 other_orgs_people_all_events 2             0.051    0.029     1.764
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.961   -0.046   0.048
-2 0.273   -0.015   0.053
-3 0.244   -0.020   0.078
-4 0.084   -0.007   0.109
-Model fit:
-# A tibble: 1 x 7
-  model_name                   model_status input_rows used_rows r2    within_r2
-  <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 other_orgs_people_all_events ok           7942       7941      0.325 0.000
-  adjusted_r2
-  <chr>
-1 0.315
+(2) political_parties_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.026      0.041        -2.6%     0.529     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0          0.053      0.051        +5.4%     0.319     
+relative_week = +1          0.154      0.066       +16.7%     0.032   **
+relative_week = +2          0.207      0.088       +23.0%     0.031   **
+-------------------------------------------------------------------------
+N (used): 1,826    R^2: 0.498    Adj. R^2: 0.473    Within R^2: 0.005
 
---- all_entities_political_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                    relative_week estimate std.error statistic
-  <chr>                         <chr>         <chr>    <chr>     <chr>
-1 all_entities_political_events -2            -0.002   0.030     -0.066
-2 all_entities_political_events 0             0.008    0.030     0.272
-3 all_entities_political_events 1             0.045    0.041     1.111
-4 all_entities_political_events 2             0.050    0.039     1.285
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.948   -0.062   0.058
-2 0.786   -0.052   0.069
-3 0.271   -0.036   0.126
-4 0.204   -0.028   0.129
-Model fit:
-# A tibble: 1 x 7
-  model_name                    model_status input_rows used_rows r2
-  <chr>                         <chr>        <chr>      <chr>     <chr>
-1 all_entities_political_events ok           5209       5208      0.333
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.000     0.320
+(3) other_orgs_people_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.001      0.023        +0.1%     0.961     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0          0.019      0.017        +1.9%     0.273     
+relative_week = +1          0.029      0.024        +2.9%     0.244     
+relative_week = +2          0.051      0.029        +5.2%     0.084    *
+-------------------------------------------------------------------------
+N (used): 7,941    R^2: 0.325    Adj. R^2: 0.315    Within R^2: 0.000
 
---- all_entities_terror_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                 relative_week estimate std.error statistic p.value
-  <chr>                      <chr>         <chr>    <chr>     <chr>     <chr>
-1 all_entities_terror_events -2            -0.002   0.037     -0.053    0.958
-2 all_entities_terror_events 0             0.048    0.034     1.410     0.164
-3 all_entities_terror_events 1             0.074    0.045     1.658     0.102
-4 all_entities_terror_events 2             0.134    0.045     2.973     0.004
-  conf.low conf.high
-  <chr>    <chr>
-1 -0.076   0.072
-2 -0.020   0.117
-3 -0.015   0.164
-4 0.044    0.223
-Model fit:
-# A tibble: 1 x 7
-  model_name                 model_status input_rows used_rows r2    within_r2
-  <chr>                      <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_terror_events ok           4560       4557      0.293 0.002
-  adjusted_r2
-  <chr>
-1 0.278
+(4) all_entities_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.002      0.030        -0.2%     0.948     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0          0.008      0.030        +0.8%     0.786     
+relative_week = +1          0.045      0.041        +4.6%     0.271     
+relative_week = +2          0.050      0.039        +5.2%     0.204     
+-------------------------------------------------------------------------
+N (used): 5,208    R^2: 0.333    Adj. R^2: 0.320    Within R^2: 0.000
 
---- political_parties_political_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                         relative_week estimate std.error statistic
-  <chr>                              <chr>         <chr>    <chr>     <chr>
-1 political_parties_political_events -2            0.059    0.048     1.217
-2 political_parties_political_events 0             0.051    0.068     0.748
-3 political_parties_political_events 1             0.082    0.074     1.107
-4 political_parties_political_events 2             0.162    0.061     2.668
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.247   -0.046   0.163
-2 0.469   -0.097   0.198
-3 0.290   -0.079   0.244
-4 0.020   0.030    0.295
-Model fit:
-# A tibble: 1 x 7
-  model_name                         model_status input_rows used_rows r2
-  <chr>                              <chr>        <chr>      <chr>     <chr>
-1 political_parties_political_events ok           900        900       0.515
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.002     0.485
+(5) all_entities_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.002      0.037        -0.2%     0.958     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0          0.048      0.034        +4.9%     0.164     
+relative_week = +1          0.074      0.045        +7.7%     0.102     
+relative_week = +2          0.134      0.045       +14.3%     0.004  ***
+-------------------------------------------------------------------------
+N (used): 4,557    R^2: 0.293    Adj. R^2: 0.278    Within R^2: 0.002
 
---- political_parties_terror_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                      relative_week estimate std.error statistic
-  <chr>                           <chr>         <chr>    <chr>     <chr>
-1 political_parties_terror_events -2            -0.096   0.088     -1.087
-2 political_parties_terror_events 0             0.016    0.077     0.202
-3 political_parties_terror_events 1             0.208    0.084     2.485
-4 political_parties_terror_events 2             0.229    0.128     1.787
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.293   -0.284   0.091
-2 0.843   -0.148   0.180
-3 0.024   0.031    0.386
-4 0.093   -0.043   0.500
-Model fit:
-# A tibble: 1 x 7
-  model_name                      model_status input_rows used_rows r2
-  <chr>                           <chr>        <chr>      <chr>     <chr>
-1 political_parties_terror_events ok           927        926       0.510
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.009     0.482
+(6) political_parties_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.059      0.048        +6.0%     0.247     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0          0.051      0.068        +5.2%     0.469     
+relative_week = +1          0.082      0.074        +8.5%     0.290     
+relative_week = +2          0.162      0.061       +17.6%     0.020   **
+-------------------------------------------------------------------------
+N (used): 900    R^2: 0.515    Adj. R^2: 0.485    Within R^2: 0.002
 
---- other_orgs_people_political_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                         relative_week estimate std.error statistic
-  <chr>                              <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_political_events -2            -0.011   0.035     -0.316
-2 other_orgs_people_political_events 0             -0.004   0.032     -0.140
-3 other_orgs_people_political_events 1             0.027    0.044     0.610
-4 other_orgs_people_political_events 2             0.014    0.043     0.326
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.754   -0.082   0.059
-2 0.889   -0.068   0.060
-3 0.545   -0.062   0.115
-4 0.746   -0.073   0.101
-Model fit:
-# A tibble: 1 x 7
-  model_name                         model_status input_rows used_rows r2
-  <chr>                              <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_political_events ok           4309       4308      0.336
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.000     0.323
+(7) political_parties_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.096      0.088        -9.2%     0.293     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0          0.016      0.077        +1.6%     0.843     
+relative_week = +1          0.208      0.084       +23.1%     0.024   **
+relative_week = +2          0.229      0.128       +25.7%     0.093    *
+-------------------------------------------------------------------------
+N (used): 926    R^2: 0.510    Adj. R^2: 0.482    Within R^2: 0.009
 
---- other_orgs_people_terror_events ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name                      relative_week estimate std.error statistic
-  <chr>                           <chr>         <chr>    <chr>     <chr>
-1 other_orgs_people_terror_events -2            0.014    0.038     0.377
-2 other_orgs_people_terror_events 0             0.048    0.036     1.327
-3 other_orgs_people_terror_events 1             0.028    0.052     0.551
-4 other_orgs_people_terror_events 2             0.097    0.043     2.268
-  p.value conf.low conf.high
-  <chr>   <chr>    <chr>
-1 0.708   -0.062   0.091
-2 0.191   -0.025   0.121
-3 0.584   -0.075   0.132
-4 0.028   0.011    0.184
-Model fit:
-# A tibble: 1 x 7
-  model_name                      model_status input_rows used_rows r2
-  <chr>                           <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_terror_events ok           3633       3631      0.331
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.001     0.316
+(8) other_orgs_people_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.011      0.035        -1.1%     0.754     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0         -0.004      0.032        -0.4%     0.889     
+relative_week = +1          0.027      0.044        +2.7%     0.545     
+relative_week = +2          0.014      0.043        +1.4%     0.746     
+-------------------------------------------------------------------------
+N (used): 4,308    R^2: 0.336    Adj. R^2: 0.323    Within R^2: 0.000
 
---- dedicated_oct7_model ---
-# A tibble: 5 x 8
-  model_name relative_week estimate std.error statistic p.value conf.low
-  <chr>      <chr>         <chr>    <chr>     <chr>     <chr>   <chr>
-1 oct7_event -2            0.463    0.288     1.604     0.119   -0.125
-2 oct7_event -1            0.375    0.326     1.153     0.258   -0.288
-3 oct7_event 0             0.000    <NA>      <NA>      <NA>    0.000
-4 oct7_event 1             0.396    0.236     1.678     0.103   -0.085
-5 oct7_event 2             0.302    0.296     1.020     0.316   -0.301
-  conf.high
-  <chr>
-1 1.050
-2 1.039
-3 0.000
-4 0.878
-5 0.905
+(9) other_orgs_people_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.014      0.038        +1.4%     0.708     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0          0.048      0.036        +4.9%     0.191     
+relative_week = +1          0.028      0.052        +2.9%     0.584     
+relative_week = +2          0.097      0.043       +10.2%     0.028   **
+-------------------------------------------------------------------------
+N (used): 3,631    R^2: 0.331    Adj. R^2: 0.316    Within R^2: 0.001
 
---- dedicated_oct7_model_baseline_minus1 ---
-# A tibble: 5 x 8
-  model_name relative_week estimate std.error statistic p.value conf.low
-  <chr>      <chr>         <chr>    <chr>     <chr>     <chr>   <chr>
-1 oct7_event -2            0.087    0.153     0.571     0.572   -0.224
-2 oct7_event -1            0.000    <NA>      <NA>      <NA>    0.000
-3 oct7_event 0             -0.375   0.326     -1.153    0.258   -1.039
-4 oct7_event 1             0.021    0.342     0.062     0.951   -0.676
-5 oct7_event 2             -0.073   0.353     -0.208    0.836   -0.793
-  conf.high
-  <chr>
-1 0.399
-2 0.000
-3 0.288
-4 0.719
-5 0.646
+=========================================================================
+Dedicated October 7 model (single event) -- baseline 0
+=========================================================================
 
---- oct7_group_models ---
+oct7_event
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.463      0.288       +58.8%     0.119     
+relative_week = -1          0.375      0.326       +45.5%     0.258     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.396      0.236       +48.7%     0.103     
+relative_week = +2          0.302      0.296       +35.2%     0.316     
+-------------------------------------------------------------------------
+N (used): 144    R^2: 0.679    Adj. R^2: 0.566    Within R^2: 0.031
 
---- oct7_all_entities ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name        relative_week estimate std.error statistic p.value conf.low
-  <chr>             <chr>         <chr>    <chr>     <chr>     <chr>   <chr>
-1 oct7_all_entities -2            0.463    0.288     1.604     0.119   -0.125
-2 oct7_all_entities -1            0.375    0.326     1.153     0.258   -0.288
-3 oct7_all_entities 1             0.396    0.236     1.678     0.103   -0.085
-4 oct7_all_entities 2             0.302    0.296     1.020     0.316   -0.301
-  conf.high
-  <chr>
-1 1.050
-2 1.039
-3 0.878
-4 0.905
-Model fit:
-# A tibble: 1 x 7
-  model_name        model_status input_rows used_rows r2    within_r2
-  <chr>             <chr>        <chr>      <chr>     <chr> <chr>
-1 oct7_all_entities ok           146        144       0.679 0.031
-  adjusted_r2
-  <chr>
-1 0.566
+=========================================================================
+Dedicated October 7 model (single event) -- baseline -1 (robustness)
+=========================================================================
 
---- oct7_political_parties ---
-Coefficients:
-# A tibble: 3 x 8
-  model_name             relative_week estimate std.error statistic p.value
-  <chr>                  <chr>         <chr>    <chr>     <chr>     <chr>
-1 oct7_political_parties -2            1.787    0.402     4.444     0.021
-2 oct7_political_parties -1            1.082    0.402     2.691     0.074
-3 oct7_political_parties 1             0.408    0.246     1.656     0.196
-  conf.low conf.high
-  <chr>    <chr>
-1 0.507    3.067
-2 -0.198   2.362
-3 -0.376   1.192
-Model fit:
-# A tibble: 1 x 7
-  model_name             model_status input_rows used_rows r2    within_r2
-  <chr>                  <chr>        <chr>      <chr>     <chr> <chr>
-1 oct7_political_parties ok           15         13        0.708 0.557
-  adjusted_r2
-  <chr>
-1 0.299
+oct7_event
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.087      0.153        +9.1%     0.572     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0         -0.375      0.326       -31.3%     0.258     
+relative_week = +1          0.021      0.342        +2.1%     0.951     
+relative_week = +2         -0.073      0.353        -7.1%     0.836     
+-------------------------------------------------------------------------
+N (used): 144    R^2: 0.679    Adj. R^2: 0.566    Within R^2: 0.031
 
---- oct7_other_orgs_people ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name             relative_week estimate std.error statistic p.value
-  <chr>                  <chr>         <chr>    <chr>     <chr>     <chr>
-1 oct7_other_orgs_people -2            0.334    0.300     1.110     0.276
-2 oct7_other_orgs_people -1            0.340    0.340     1.001     0.325
-3 oct7_other_orgs_people 1             0.367    0.248     1.484     0.149
-4 oct7_other_orgs_people 2             0.252    0.300     0.840     0.408
-  conf.low conf.high
-  <chr>    <chr>
-1 -0.282   0.949
-2 -0.356   1.036
-3 -0.140   0.874
-4 -0.362   0.866
-Model fit:
-# A tibble: 1 x 7
-  model_name             model_status input_rows used_rows r2    within_r2
-  <chr>                  <chr>        <chr>      <chr>     <chr> <chr>
-1 oct7_other_orgs_people ok           131        131       0.667 0.021
-  adjusted_r2
-  <chr>
-1 0.553
+=========================================================================
+October 7 by entity group -- baseline 0
+=========================================================================
 
---- oct7_group_models_baseline_minus1 ---
+(1) oct7_all_entities
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.463      0.288       +58.8%     0.119     
+relative_week = -1          0.375      0.326       +45.5%     0.258     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.396      0.236       +48.7%     0.103     
+relative_week = +2          0.302      0.296       +35.2%     0.316     
+-------------------------------------------------------------------------
+N (used): 144    R^2: 0.679    Adj. R^2: 0.566    Within R^2: 0.031
 
---- oct7_all_entities ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name        relative_week estimate std.error statistic p.value conf.low
-  <chr>             <chr>         <chr>    <chr>     <chr>     <chr>   <chr>
-1 oct7_all_entities -2            0.087    0.153     0.571     0.572   -0.224
-2 oct7_all_entities 0             -0.375   0.326     -1.153    0.258   -1.039
-3 oct7_all_entities 1             0.021    0.342     0.062     0.951   -0.676
-4 oct7_all_entities 2             -0.073   0.353     -0.208    0.836   -0.793
-  conf.high
-  <chr>
-1 0.399
-2 0.288
-3 0.719
-4 0.646
-Model fit:
-# A tibble: 1 x 7
-  model_name        model_status input_rows used_rows r2    within_r2
-  <chr>             <chr>        <chr>      <chr>     <chr> <chr>
-1 oct7_all_entities ok           146        144       0.679 0.031
-  adjusted_r2
-  <chr>
-1 0.566
+(2) oct7_political_parties
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          1.787      0.402      +497.0%     0.021   **
+relative_week = -1          1.082      0.402      +195.1%     0.074    *
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.408      0.246       +50.4%     0.196     
+-------------------------------------------------------------------------
+N (used): 13    R^2: 0.708    Adj. R^2: 0.299    Within R^2: 0.557
 
---- oct7_political_parties ---
-Coefficients:
-# A tibble: 3 x 8
-  model_name             relative_week estimate std.error statistic p.value
-  <chr>                  <chr>         <chr>    <chr>     <chr>     <chr>
-1 oct7_political_parties -2            0.705    0.804     0.876     0.445
-2 oct7_political_parties 0             -1.082   0.402     -2.691    0.074
-3 oct7_political_parties 1             -0.674   0.329     -2.051    0.133
-  conf.low conf.high
-  <chr>    <chr>
-1 -1.855   3.264
-2 -2.362   0.198
-3 -1.720   0.372
-Model fit:
-# A tibble: 1 x 7
-  model_name             model_status input_rows used_rows r2    within_r2
-  <chr>                  <chr>        <chr>      <chr>     <chr> <chr>
-1 oct7_political_parties ok           15         13        0.708 0.557
-  adjusted_r2
-  <chr>
-1 0.299
+(3) oct7_other_orgs_people
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.334      0.300       +39.6%     0.276     
+relative_week = -1          0.340      0.340       +40.5%     0.325     
+relative_week = +0   (baseline, omitted; estimate fixed at 0)
+relative_week = +1          0.367      0.248       +44.4%     0.149     
+relative_week = +2          0.252      0.300       +28.6%     0.408     
+-------------------------------------------------------------------------
+N (used): 131    R^2: 0.667    Adj. R^2: 0.553    Within R^2: 0.021
 
---- oct7_other_orgs_people ---
-Coefficients:
-# A tibble: 4 x 8
-  model_name             relative_week estimate std.error statistic p.value
-  <chr>                  <chr>         <chr>    <chr>     <chr>     <chr>
-1 oct7_other_orgs_people -2            -0.007   0.150     -0.045    0.964
-2 oct7_other_orgs_people 0             -0.340   0.340     -1.001    0.325
-3 oct7_other_orgs_people 1             0.027    0.357     0.076     0.940
-4 oct7_other_orgs_people 2             -0.088   0.360     -0.245    0.808
-  conf.low conf.high
-  <chr>    <chr>
-1 -0.315   0.301
-2 -1.036   0.356
-3 -0.703   0.758
-4 -0.826   0.650
-Model fit:
-# A tibble: 1 x 7
-  model_name             model_status input_rows used_rows r2    within_r2
-  <chr>                  <chr>        <chr>      <chr>     <chr> <chr>
-1 oct7_other_orgs_people ok           131        131       0.667 0.021
-  adjusted_r2
-  <chr>
-1 0.553
+=========================================================================
+October 7 by entity group -- baseline -1 (robustness)
+=========================================================================
+
+(1) oct7_all_entities
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.087      0.153        +9.1%     0.572     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0         -0.375      0.326       -31.3%     0.258     
+relative_week = +1          0.021      0.342        +2.1%     0.951     
+relative_week = +2         -0.073      0.353        -7.1%     0.836     
+-------------------------------------------------------------------------
+N (used): 144    R^2: 0.679    Adj. R^2: 0.566    Within R^2: 0.031
+
+(2) oct7_political_parties
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2          0.705      0.804      +102.3%     0.445     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0         -1.082      0.402       -66.1%     0.074    *
+relative_week = +1         -0.674      0.329       -49.0%     0.133     
+-------------------------------------------------------------------------
+N (used): 13    R^2: 0.708    Adj. R^2: 0.299    Within R^2: 0.557
+
+(3) oct7_other_orgs_people
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+relative_week = -2         -0.007      0.150        -0.7%     0.964     
+relative_week = -1   (baseline, omitted; estimate fixed at 0)
+relative_week = +0         -0.340      0.340       -28.8%     0.325     
+relative_week = +1          0.027      0.357        +2.7%     0.940     
+relative_week = +2         -0.088      0.360        -8.5%     0.808     
+-------------------------------------------------------------------------
+N (used): 131    R^2: 0.667    Adj. R^2: 0.553    Within R^2: 0.021
