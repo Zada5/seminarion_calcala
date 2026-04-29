@@ -1,4 +1,4 @@
-model_name,term,estimate,std.error,statistic,p.value,conf.low,conf.high
-oct7_all_entities,post_event,-0.191,0.278,-0.688,0.497,-0.758,0.375
-oct7_political_parties,post_event,-1.309,0.063,-20.617,<0.001,-1.511,-1.107
-oct7_other_orgs_people,post_event,-0.129,0.288,-0.447,0.658,-0.718,0.461
+model_name,term,estimate,std.error,statistic,p.value,conf.low,conf.high,pct_change,signif
+oct7_all_entities,post_event,-0.191,0.278,-0.688,0.497,-0.758,0.375,-17.4%,
+oct7_political_parties,post_event,-1.309,0.063,-20.617,<0.001,-1.511,-1.107,-73.0%,***
+oct7_other_orgs_people,post_event,-0.129,0.288,-0.447,0.658,-0.718,0.461,-12.1%,
