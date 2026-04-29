@@ -1,6 +1,6 @@
-model_name,relative_week,estimate,std.error,statistic,p.value,conf.low,conf.high
-oct7_event,-2,0.087,0.153,0.571,0.572,-0.224,0.399
-oct7_event,-1,0.000,,,,0.000,0.000
-oct7_event,0,-0.375,0.326,-1.153,0.258,-1.039,0.288
-oct7_event,1,0.021,0.342,0.062,0.951,-0.676,0.719
-oct7_event,2,-0.073,0.353,-0.208,0.836,-0.793,0.646
+model_name,relative_week,estimate,std.error,statistic,p.value,conf.low,conf.high,pct_change,signif
+oct7_event,-2,0.087,0.153,0.571,0.572,-0.224,0.399,+9.1%,
+oct7_event,-1,0.000,,,,0.000,0.000,+0.0%,
+oct7_event,0,-0.375,0.326,-1.153,0.258,-1.039,0.288,-31.3%,
+oct7_event,1,0.021,0.342,0.062,0.951,-0.676,0.719,+2.1%,
+oct7_event,2,-0.073,0.353,-0.208,0.836,-0.793,0.646,-7.1%,
