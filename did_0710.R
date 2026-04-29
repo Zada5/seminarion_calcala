@@ -339,6 +339,47 @@ if (is.na(analysis_window_weeks) || analysis_window_weeks < 1L) {
 
 dir.create(output_directory, showWarnings = FALSE, recursive = TRUE)
 
+output_paths <- list(
+  summaries = file.path(output_directory, "summaries"),
+  post_from_0 = file.path(output_directory, "post_from_0"),
+  post_from_minus1 = file.path(output_directory, "post_from_minus1"),
+  oct7_post_from_0 = file.path(output_directory, "oct7", "post_from_0"),
+  oct7_post_from_minus1 = file.path(output_directory, "oct7", "post_from_minus1")
+)
+invisible(lapply(output_paths, dir.create, showWarnings = FALSE, recursive = TRUE))
+
+legacy_output_paths <- file.path(
+  output_directory,
+  c(
+    "did_design_overview.csv",
+    "did_sample_summary_by_model.csv",
+    "did_coefficients_by_model.csv",
+    "did_model_fit.csv",
+    "did_coefficients_by_model.png",
+    "did_design_overview_post_from_minus1.csv",
+    "did_sample_summary_by_model_post_from_minus1.csv",
+    "did_coefficients_by_model_post_from_minus1.csv",
+    "did_model_fit_post_from_minus1.csv",
+    "did_coefficients_by_model_post_from_minus1.png",
+    "did_coefs_0710.csv",
+    "did_sample_summary_0710.csv",
+    "did_coefs_0710_by_group.csv",
+    "did_model_fit_0710_by_group.csv",
+    "did_sample_summary_0710_by_group.csv",
+    "did_coefficients_0710_by_group.png",
+    "did_coefs_0710_all_party_org.csv",
+    "did_coefs_0710_post_from_minus1.csv",
+    "did_sample_summary_0710_post_from_minus1.csv",
+    "did_coefs_0710_by_group_post_from_minus1.csv",
+    "did_model_fit_0710_by_group_post_from_minus1.csv",
+    "did_sample_summary_0710_by_group_post_from_minus1.csv",
+    "did_coefficients_0710_by_group_post_from_minus1.png",
+    "did_regression_summary.txt"
+  )
+)
+legacy_output_paths <- c(legacy_output_paths, file.path(output_paths$summaries, "did_regression_summary.txt"))
+unlink(legacy_output_paths[file.exists(legacy_output_paths)], recursive = TRUE)
+
 print_section("Input Files")
 cat("Google weekly data: ", google_data_path, "\n", sep = "")
 cat("Meta weekly data  : ", meta_data_path, "\n", sep = "")
@@ -526,11 +567,6 @@ all_model_sample_summary_post_from_minus1 <- dplyr::bind_rows(
   model_results_post_from_minus1$sample_summary
 )
 
-legacy_duplicate_oct7_outputs <- c(
-  file.path(output_directory, "did_coefs_0710_all_party_org.csv")
-)
-unlink(legacy_duplicate_oct7_outputs[file.exists(legacy_duplicate_oct7_outputs)])
-
 if (nrow(all_model_coefficients) > 0) {
   combined_did_plot <- plot_did_coefficients(
     coefficients_table = all_model_coefficients,
@@ -539,7 +575,7 @@ if (nrow(all_model_coefficients) > 0) {
   )
 
   ggplot2::ggsave(
-    filename = file.path(output_directory, "did_coefficients_by_model.png"),
+    filename = file.path(output_paths$post_from_0, "did_coefficients_by_model.png"),
     plot = combined_did_plot,
     width = 11,
     height = 6.5,
@@ -555,7 +591,7 @@ if (nrow(all_model_coefficients_post_from_minus1) > 0) {
   )
 
   ggplot2::ggsave(
-    filename = file.path(output_directory, "did_coefficients_by_model_post_from_minus1.png"),
+    filename = file.path(output_paths$post_from_minus1, "did_coefficients_by_model.png"),
     plot = combined_did_post_from_minus1_plot,
     width = 11,
     height = 6.5,
@@ -646,7 +682,7 @@ if (nrow(oct7_event) == 1) {
     )
 
     ggplot2::ggsave(
-      filename = file.path(output_directory, "did_coefficients_0710_by_group.png"),
+      filename = file.path(output_paths$oct7_post_from_0, "did_coefficients_0710_by_group.png"),
       plot = oct7_group_plot,
       width = 8.5,
       height = 4.5,
@@ -686,7 +722,7 @@ if (nrow(oct7_event) == 1) {
     )
 
     ggplot2::ggsave(
-      filename = file.path(output_directory, "did_coefficients_0710_by_group_post_from_minus1.png"),
+      filename = file.path(output_paths$oct7_post_from_minus1, "did_coefficients_0710_by_group.png"),
       plot = oct7_group_post_from_minus1_plot,
       width = 8.5,
       height = 4.5,
@@ -698,74 +734,74 @@ if (nrow(oct7_event) == 1) {
 # -------------------------
 # Save outputs
 # -------------------------
-write_clean_csv(did_design_overview, file.path(output_directory, "did_design_overview.csv"))
-write_clean_csv(all_model_sample_summary, file.path(output_directory, "did_sample_summary_by_model.csv"))
-write_clean_csv(all_model_coefficients, file.path(output_directory, "did_coefficients_by_model.csv"))
-write_clean_csv(all_model_fit, file.path(output_directory, "did_model_fit.csv"))
+write_clean_csv(did_design_overview, file.path(output_paths$post_from_0, "did_design_overview.csv"))
+write_clean_csv(all_model_sample_summary, file.path(output_paths$post_from_0, "did_sample_summary_by_model.csv"))
+write_clean_csv(all_model_coefficients, file.path(output_paths$post_from_0, "did_coefficients_by_model.csv"))
+write_clean_csv(all_model_fit, file.path(output_paths$post_from_0, "did_model_fit.csv"))
 write_clean_csv(
   did_design_overview_post_from_minus1,
-  file.path(output_directory, "did_design_overview_post_from_minus1.csv")
+  file.path(output_paths$post_from_minus1, "did_design_overview.csv")
 )
 write_clean_csv(
   all_model_sample_summary_post_from_minus1,
-  file.path(output_directory, "did_sample_summary_by_model_post_from_minus1.csv")
+  file.path(output_paths$post_from_minus1, "did_sample_summary_by_model.csv")
 )
 write_clean_csv(
   all_model_coefficients_post_from_minus1,
-  file.path(output_directory, "did_coefficients_by_model_post_from_minus1.csv")
+  file.path(output_paths$post_from_minus1, "did_coefficients_by_model.csv")
 )
 write_clean_csv(
   all_model_fit_post_from_minus1,
-  file.path(output_directory, "did_model_fit_post_from_minus1.csv")
+  file.path(output_paths$post_from_minus1, "did_model_fit.csv")
 )
 
 if (nrow(oct7_coefficient) > 0) {
-  write_clean_csv(oct7_coefficient, file.path(output_directory, "did_coefs_0710.csv"))
+  write_clean_csv(oct7_coefficient, file.path(output_paths$oct7_post_from_0, "did_coefs_0710.csv"))
 }
 if (nrow(oct7_coefficient_post_from_minus1) > 0) {
   write_clean_csv(
     oct7_coefficient_post_from_minus1,
-    file.path(output_directory, "did_coefs_0710_post_from_minus1.csv")
+    file.path(output_paths$oct7_post_from_minus1, "did_coefs_0710.csv")
   )
 }
 if (nrow(oct7_sample_summary) > 0) {
-  write_clean_csv(oct7_sample_summary, file.path(output_directory, "did_sample_summary_0710.csv"))
+  write_clean_csv(oct7_sample_summary, file.path(output_paths$oct7_post_from_0, "did_sample_summary_0710.csv"))
 }
 if (nrow(oct7_sample_summary_post_from_minus1) > 0) {
   write_clean_csv(
     oct7_sample_summary_post_from_minus1,
-    file.path(output_directory, "did_sample_summary_0710_post_from_minus1.csv")
+    file.path(output_paths$oct7_post_from_minus1, "did_sample_summary_0710.csv")
   )
 }
 if (nrow(oct7_group_coefficients) > 0) {
-  write_clean_csv(oct7_group_coefficients, file.path(output_directory, "did_coefs_0710_by_group.csv"))
+  write_clean_csv(oct7_group_coefficients, file.path(output_paths$oct7_post_from_0, "did_coefs_0710_by_group.csv"))
 }
 if (nrow(oct7_group_fit) > 0) {
-  write_clean_csv(oct7_group_fit, file.path(output_directory, "did_model_fit_0710_by_group.csv"))
+  write_clean_csv(oct7_group_fit, file.path(output_paths$oct7_post_from_0, "did_model_fit_0710_by_group.csv"))
 }
 if (nrow(oct7_group_sample_summary) > 0) {
-  write_clean_csv(oct7_group_sample_summary, file.path(output_directory, "did_sample_summary_0710_by_group.csv"))
+  write_clean_csv(oct7_group_sample_summary, file.path(output_paths$oct7_post_from_0, "did_sample_summary_0710_by_group.csv"))
 }
 if (nrow(oct7_group_coefficients_post_from_minus1) > 0) {
   write_clean_csv(
     oct7_group_coefficients_post_from_minus1,
-    file.path(output_directory, "did_coefs_0710_by_group_post_from_minus1.csv")
+    file.path(output_paths$oct7_post_from_minus1, "did_coefs_0710_by_group.csv")
   )
 }
 if (nrow(oct7_group_fit_post_from_minus1) > 0) {
   write_clean_csv(
     oct7_group_fit_post_from_minus1,
-    file.path(output_directory, "did_model_fit_0710_by_group_post_from_minus1.csv")
+    file.path(output_paths$oct7_post_from_minus1, "did_model_fit_0710_by_group.csv")
   )
 }
 if (nrow(oct7_group_sample_summary_post_from_minus1) > 0) {
   write_clean_csv(
     oct7_group_sample_summary_post_from_minus1,
-    file.path(output_directory, "did_sample_summary_0710_by_group_post_from_minus1.csv")
+    file.path(output_paths$oct7_post_from_minus1, "did_sample_summary_0710_by_group.csv")
   )
 }
 
-summary_file_path <- file.path(output_directory, "did_regression_summary.txt")
+summary_file_path <- file.path(output_paths$summaries, "regression_summary.txt")
 summary_connection <- file(summary_file_path, open = "wt")
 on.exit(close(summary_connection), add = TRUE)
 
@@ -870,38 +906,32 @@ if (nrow(oct7_group_fit) > 0) {
 
 print_section("Output Files")
 cat("Saved DiD-style outputs to: ", normalizePath(output_directory), "\n", sep = "")
-cat("- did_design_overview.csv\n")
-cat("- did_sample_summary_by_model.csv\n")
-cat("- did_coefficients_by_model.csv\n")
-cat("- did_model_fit.csv\n")
-cat("- did_design_overview_post_from_minus1.csv\n")
-cat("- did_sample_summary_by_model_post_from_minus1.csv\n")
-cat("- did_coefficients_by_model_post_from_minus1.csv\n")
-cat("- did_model_fit_post_from_minus1.csv\n")
-cat("- did_regression_summary.txt\n")
+cat("- summaries/regression_summary.txt\n")
+cat("- post_from_0/*\n")
+cat("- post_from_minus1/*\n")
 if (nrow(all_model_coefficients) > 0) {
-  cat("- did_coefficients_by_model.png\n")
+  cat("- post_from_0/did_coefficients_by_model.png\n")
 }
 if (nrow(all_model_coefficients_post_from_minus1) > 0) {
-  cat("- did_coefficients_by_model_post_from_minus1.png\n")
+  cat("- post_from_minus1/did_coefficients_by_model.png\n")
 }
 if (nrow(oct7_coefficient) > 0) {
-  cat("- did_coefs_0710.csv\n")
-  cat("- did_sample_summary_0710.csv\n")
+  cat("- oct7/post_from_0/did_coefs_0710.csv\n")
+  cat("- oct7/post_from_0/did_sample_summary_0710.csv\n")
 }
 if (nrow(oct7_coefficient_post_from_minus1) > 0) {
-  cat("- did_coefs_0710_post_from_minus1.csv\n")
-  cat("- did_sample_summary_0710_post_from_minus1.csv\n")
+  cat("- oct7/post_from_minus1/did_coefs_0710.csv\n")
+  cat("- oct7/post_from_minus1/did_sample_summary_0710.csv\n")
 }
 if (nrow(oct7_group_coefficients) > 0) {
-  cat("- did_coefs_0710_by_group.csv\n")
-  cat("- did_model_fit_0710_by_group.csv\n")
-  cat("- did_sample_summary_0710_by_group.csv\n")
-  cat("- did_coefficients_0710_by_group.png\n")
+  cat("- oct7/post_from_0/did_coefs_0710_by_group.csv\n")
+  cat("- oct7/post_from_0/did_model_fit_0710_by_group.csv\n")
+  cat("- oct7/post_from_0/did_sample_summary_0710_by_group.csv\n")
+  cat("- oct7/post_from_0/did_coefficients_0710_by_group.png\n")
 }
 if (nrow(oct7_group_coefficients_post_from_minus1) > 0) {
-  cat("- did_coefs_0710_by_group_post_from_minus1.csv\n")
-  cat("- did_model_fit_0710_by_group_post_from_minus1.csv\n")
-  cat("- did_sample_summary_0710_by_group_post_from_minus1.csv\n")
-  cat("- did_coefficients_0710_by_group_post_from_minus1.png\n")
+  cat("- oct7/post_from_minus1/did_coefs_0710_by_group.csv\n")
+  cat("- oct7/post_from_minus1/did_model_fit_0710_by_group.csv\n")
+  cat("- oct7/post_from_minus1/did_sample_summary_0710_by_group.csv\n")
+  cat("- oct7/post_from_minus1/did_coefficients_0710_by_group.png\n")
 }

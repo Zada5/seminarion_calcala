@@ -62,17 +62,22 @@ Rscript did_0710.R
 
 `event_study_0710.R` now writes:
 
-* Real-event correlation tables and graphs (`correlation_summary.csv`, `correlation_coefficients_heatmap.png`, `correlation_scatter_panels.png`)
-* Placebo event dates + placebo correlations (`placebo_events_dates.csv`, `placebo_correlation_summary.csv`, placebo correlation graphs)
-* Real and placebo event-study model outputs (CSV + per-model/combined figures)
-* Additional event-study outputs with `relative_week = -1` as the reference week (`*_ref_minus1.csv`, `*_ref_minus1.png`, and `*_figures_ref_minus1/`)
-* Dedicated 2023-10-07 outputs split as all / political parties / other organizations (`event_study_coefs_0710_by_group.csv`)
+* `analysis_outputs/summaries/regression_summary.txt`: readable regression summary covering real event-study, placebo event-study, October 7, and the `baseline_minus1` robustness outputs
+* `analysis_outputs/descriptive/`: descriptive CSV tables
+* `analysis_outputs/correlations/real_events/`: real-event correlation CSV + graphs
+* `analysis_outputs/correlations/placebo_events/`: placebo-event correlation CSV + graphs
+* `analysis_outputs/event_study/baseline_0/`: main event-study CSVs + figures
+* `analysis_outputs/event_study/baseline_minus1/`: event-study robustness outputs where `relative_week = -1` is the reference week
+* `analysis_outputs/placebo_event_study/baseline_0/` and `analysis_outputs/placebo_event_study/baseline_minus1/`: placebo event-study outputs
+* `analysis_outputs/oct7_event_study/baseline_0/` and `analysis_outputs/oct7_event_study/baseline_minus1/`: dedicated 2023-10-07 outputs split as all / political parties / other organizations
 * Uses the repository placebo list file `placebo_events_2020_2025.csv` (if present) so placebo dates are explicit and shared across collaborators
 
-`did_0710.R` writes DiD outputs into `analysis_outputs_did/`, including dedicated 2023-10-07 all / political parties / other organizations coefficients in:
+`did_0710.R` writes DiD outputs into:
 
-* `did_coefs_0710_by_group.csv`
-* `did_coefs_0710_by_group_post_from_minus1.csv`
+* `analysis_outputs_did/summaries/regression_summary.txt`: readable summary covering the main DiD, `post_from_minus1`, and October 7 split models
+* `analysis_outputs_did/post_from_0/`: main DiD design, sample, coefficient, fit, and graph outputs
+* `analysis_outputs_did/post_from_minus1/`: robustness version where `PostEvent = 1` starts at `relative_week >= -1`
+* `analysis_outputs_did/oct7/post_from_0/` and `analysis_outputs_did/oct7/post_from_minus1/`: dedicated 2023-10-07 DiD outputs
 
 Numeric outputs in generated CSV and summary text files are formatted to 3 decimal places where relevant, without scientific notation. Very small p-values are displayed as `<0.001` rather than `0.000`.
 
