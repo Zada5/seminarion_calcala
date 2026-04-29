@@ -1,2 +1,2 @@
 model_name,term,estimate,std.error,statistic,p.value,conf.low,conf.high
-oct7_event,post_event,-0.191,0.278,-0.686,0.497,-0.756,0.375
+oct7_event,post_event,-0.191,0.278,-0.688,0.497,-0.758,0.375

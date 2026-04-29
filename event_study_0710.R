@@ -11,6 +11,35 @@ cat("\014")
 #    - political parties vs. other organizations/people
 #    - political events vs. terror events
 #
+# Effective event-study specification used for the seminar paper:
+#   log(Spending_{i,t}) = alpha_i + sum_k beta_k * D_{i,k} + u_{i,t}
+#
+# alpha_i  -> entity FE (entity_name; data_source FE absorbs platform shifts)
+# D_{i,k}  -> relative-week dummies around the event week (k = -W..W),
+#             baseline week omitted (default k = 0; robustness uses k = -1).
+# Multi-event (stacked) panels also add event_id FE.
+#
+# Note on gamma_t (calendar-week FE): the original textbook spec written in
+# the seminar plan was
+#   log(Spending_{i,t}) = alpha_i + gamma_t + sum_k beta_k * D_{i,k} + u_{i,t}
+# We empirically established that in our stacked design (every entity is in
+# the +/-W window of every event) week_start_sunday FE absorbs the variation
+# that identifies beta_k -- standard errors blow up by ~300x, fixest warns
+# the VCOV is not positive semi-definite, and the relative-week coefficients
+# collapse to a single linear-in-k pattern (e.g., -0.193, -0.097, +0.097,
+# +0.193) which is uninformative. Following standard practice in the stacked
+# event-study literature, we therefore omit gamma_t for the stacked specs.
+#
+# A dedicated demonstration regression that DOES include gamma_t is computed
+# once in this script and saved under
+#   analysis_outputs/event_study/gamma_t_demonstration/
+# so the paper can show the broken output that motivated dropping gamma_t.
+#
+# Note on the dependent variable: the model uses log(Spending), not
+# log(1 + Spending). Weeks with zero spend are filtered out before estimation
+# (log(0) is undefined). This is a deliberate spec change from the earlier
+# log1p() version; row counts dropped per panel are reported on stdout.
+#
 # Run in RStudio or command line:
 # Rscript event_study_0710.R [google_csv] [meta_csv] [events_csv] [output_dir] [window_weeks]
 
@@ -207,7 +236,7 @@ plot_event_study_coefficients <- function(coefficients_table, plot_title, plot_s
     ggplot2::theme_minimal(base_size = 12)
 }
 
-run_event_study_model <- function(model_data, reference_week = 0L) {
+run_event_study_model <- function(model_data, reference_week = 0L, include_gamma_t = FALSE) {
   if (nrow(model_data) < 10) {
     return(NULL)
   }
@@ -215,17 +244,41 @@ run_event_study_model <- function(model_data, reference_week = 0L) {
     return(NULL)
   }
 
-  model_formula <- if (dplyr::n_distinct(model_data$event_id) > 1) {
-    as.formula(sprintf(
-      "log_weekly_spend ~ i(relative_week, ref = %s) | entity_name + data_source + event_id",
-      reference_week
-    ))
+  # Effective specification used in this project:
+  #   log(Spending_{i,t}) = alpha_i + sum_k beta_k * D_{i,k} + u_{i,t}
+  # alpha_i  -> entity_name FE (and data_source FE to absorb platform-level shifts)
+  # Multi-event (stacked) panels also add event_id FE.
+  #
+  # Why we DO NOT include gamma_t (calendar-week FE) in the stacked specs:
+  # In our design every entity is observed in the +/-W window of every event
+  # (the panel is built by crossing(spend, events)), so on any calendar week
+  # the relative-week dummies are nearly collinear with calendar-week FE.
+  # Adding week_start_sunday FE absorbs the variation that identifies beta_k:
+  # standard errors blow up ~300x, fixest reports a non-positive-semi-definite
+  # VCOV, and the four event-study coefficients collapse to a single linear-in-k
+  # direction (e.g., -0.193, -0.097, +0.097, +0.193). The 'with gamma_t'
+  # demonstration regression in this script reproduces that breakdown for the
+  # paper.
+  #
+  # Single-event runs always drop gamma_t (calendar week is one-to-one with
+  # relative week within one event window).
+  use_gamma_t <- include_gamma_t && dplyr::n_distinct(model_data$event_id) > 1
+
+  fe_terms <- if (dplyr::n_distinct(model_data$event_id) > 1) {
+    if (use_gamma_t) {
+      "entity_name + data_source + event_id + week_start_sunday"
+    } else {
+      "entity_name + data_source + event_id"
+    }
   } else {
-    as.formula(sprintf(
-      "log_weekly_spend ~ i(relative_week, ref = %s) | entity_name + data_source",
-      reference_week
-    ))
+    "entity_name + data_source"
   }
+
+  model_formula <- as.formula(sprintf(
+    "log_weekly_spend ~ i(relative_week, ref = %s) | %s",
+    reference_week,
+    fe_terms
+  ))
 
   tryCatch(
     fixest::feols(model_formula, data = model_data, vcov = ~ entity_name),
@@ -541,7 +594,8 @@ output_paths <- list(
   placebo_event_study_baseline_minus1 = file.path(output_directory, "placebo_event_study", "baseline_minus1"),
   placebo_event_study_baseline_minus1_figures = file.path(output_directory, "placebo_event_study", "baseline_minus1", "figures_by_model"),
   oct7_baseline_0 = file.path(output_directory, "oct7_event_study", "baseline_0"),
-  oct7_baseline_minus1 = file.path(output_directory, "oct7_event_study", "baseline_minus1")
+  oct7_baseline_minus1 = file.path(output_directory, "oct7_event_study", "baseline_minus1"),
+  gamma_t_demonstration = file.path(output_directory, "event_study", "gamma_t_demonstration")
 )
 invisible(lapply(output_paths, dir.create, showWarnings = FALSE, recursive = TRUE))
 
@@ -796,10 +850,21 @@ event_window_panel <- tidyr::crossing(
     dplyr::select(event_id, event_date, event_week_start_sunday, event_type_group, event_name)
 ) %>%
   dplyr::mutate(
-    relative_week = as.integer((week_start_sunday - event_week_start_sunday) / 7),
-    log_weekly_spend = log1p(weekly_spend_ils)
+    relative_week = as.integer((week_start_sunday - event_week_start_sunday) / 7)
   ) %>%
   dplyr::filter(relative_week >= -analysis_window_weeks, relative_week <= analysis_window_weeks)
+
+# Dependent variable matches the agreed spec: log(Spending), not log(1 + Spending).
+# log(0) is undefined, so weeks with zero spend are dropped before estimation.
+event_window_zero_or_negative_rows <- sum(event_window_panel$weekly_spend_ils <= 0, na.rm = TRUE)
+event_window_panel <- event_window_panel %>%
+  dplyr::filter(weekly_spend_ils > 0) %>%
+  dplyr::mutate(log_weekly_spend = log(weekly_spend_ils))
+
+cat(sprintf(
+  "Real-events panel: dropped %s rows with weekly_spend_ils <= 0 (log undefined).\n",
+  format(event_window_zero_or_negative_rows, big.mark = ",")
+))
 
 if (nrow(event_window_panel) == 0) {
   stop("No rows in event window panel. Check event dates and weekly dates.")
@@ -858,6 +923,38 @@ model_results_ref_minus1 <- fit_event_study_specs(
 all_model_coefficients <- dplyr::bind_rows(model_results$coefficients)
 all_model_fit <- dplyr::bind_rows(model_results$fit)
 
+# -------------------------
+# gamma_t demonstration regression (kept for the seminar paper)
+# -------------------------
+# This intentionally fits the canonical TWFE event-study spec WITH calendar-week
+# FE on the all_entities_all_events panel:
+#   log_y ~ i(relative_week, ref = 0) | entity + data_source + event_id + week_start_sunday
+# It is preserved so the paper can show the broken output that motivated dropping
+# gamma_t for the stacked specs (Option 2 design decision).
+gamma_t_demo_model <- run_event_study_model(
+  event_window_panel,
+  reference_week = 0L,
+  include_gamma_t = TRUE
+)
+gamma_t_demo_coefficients <- extract_relative_week_coefficients(
+  gamma_t_demo_model,
+  "all_entities_all_events__with_gamma_t"
+)
+gamma_t_demo_fit <- extract_model_fit(
+  gamma_t_demo_model,
+  "all_entities_all_events__with_gamma_t",
+  nrow(event_window_panel)
+)
+
+gamma_t_baseline_compare <- all_model_coefficients %>%
+  dplyr::filter(model_name == "all_entities_all_events") %>%
+  dplyr::mutate(model_name = "all_entities_all_events__without_gamma_t (paper baseline)")
+
+gamma_t_compare_table <- dplyr::bind_rows(
+  gamma_t_baseline_compare,
+  gamma_t_demo_coefficients
+)
+
 all_model_coefficients_ref_minus1 <- dplyr::bind_rows(model_results_ref_minus1$coefficients)
 all_model_fit_ref_minus1 <- dplyr::bind_rows(model_results_ref_minus1$fit)
 
@@ -883,7 +980,7 @@ for (row_index in seq_len(nrow(model_results))) {
   current_plot <- plot_event_study_coefficients(
     coefficients_table = current_coefficients,
     plot_title = paste("Event Study:", current_model_name),
-    plot_subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = 0"
+    plot_subtitle = "DV: log(weekly spend). Baseline: relative_week = 0"
   )
 
   ggplot2::ggsave(
@@ -908,7 +1005,7 @@ if (nrow(event_study_coefficients_for_plot) > 0) {
     ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
     ggplot2::labs(
       title = "Event-Study Coefficients Across All Model Splits",
-      subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = 0",
+      subtitle = "DV: log(weekly spend). Baseline: relative_week = 0",
       x = "Weeks relative to event week",
       y = "Estimated change vs baseline week (95% CI)"
     ) +
@@ -944,7 +1041,7 @@ if (nrow(all_model_coefficients_ref_minus1) > 0) {
     current_plot <- plot_event_study_coefficients(
       coefficients_table = current_coefficients,
       plot_title = paste("Event Study:", current_model_name),
-      plot_subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = -1"
+      plot_subtitle = "DV: log(weekly spend). Baseline: relative_week = -1"
     )
 
     ggplot2::ggsave(
@@ -968,7 +1065,7 @@ if (nrow(all_model_coefficients_ref_minus1) > 0) {
     ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
     ggplot2::labs(
       title = "Event-Study Coefficients Across All Model Splits",
-      subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = -1",
+      subtitle = "DV: log(weekly spend). Baseline: relative_week = -1",
       x = "Weeks relative to event week",
       y = "Estimated change vs baseline week (95% CI)"
     ) +
@@ -1053,10 +1150,19 @@ placebo_event_window_panel <- tidyr::crossing(
     dplyr::select(event_id, event_date, event_week_start_sunday, event_type_group, event_name)
 ) %>%
   dplyr::mutate(
-    relative_week = as.integer((week_start_sunday - event_week_start_sunday) / 7),
-    log_weekly_spend = log1p(weekly_spend_ils)
+    relative_week = as.integer((week_start_sunday - event_week_start_sunday) / 7)
   ) %>%
   dplyr::filter(relative_week >= -analysis_window_weeks, relative_week <= analysis_window_weeks)
+
+placebo_window_zero_or_negative_rows <- sum(placebo_event_window_panel$weekly_spend_ils <= 0, na.rm = TRUE)
+placebo_event_window_panel <- placebo_event_window_panel %>%
+  dplyr::filter(weekly_spend_ils > 0) %>%
+  dplyr::mutate(log_weekly_spend = log(weekly_spend_ils))
+
+cat(sprintf(
+  "Placebo-events panel: dropped %s rows with weekly_spend_ils <= 0 (log undefined).\n",
+  format(placebo_window_zero_or_negative_rows, big.mark = ",")
+))
 
 placebo_model_results <- fit_event_study_specs(
   input_panel = placebo_event_window_panel,
@@ -1096,7 +1202,7 @@ if (nrow(placebo_model_coefficients) > 0) {
     current_plot <- plot_event_study_coefficients(
       coefficients_table = current_coefficients,
       plot_title = paste("Placebo Event Study:", current_model_name),
-      plot_subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = 0"
+      plot_subtitle = "DV: log(weekly spend). Baseline: relative_week = 0"
     )
 
     ggplot2::ggsave(
@@ -1120,7 +1226,7 @@ if (nrow(placebo_model_coefficients) > 0) {
     ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
     ggplot2::labs(
       title = "Placebo Event-Study Coefficients Across All Model Splits",
-      subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = 0",
+      subtitle = "DV: log(weekly spend). Baseline: relative_week = 0",
       x = "Weeks relative to placebo event week",
       y = "Estimated change vs baseline week (95% CI)"
     ) +
@@ -1156,7 +1262,7 @@ if (nrow(placebo_model_coefficients_ref_minus1) > 0) {
     current_plot <- plot_event_study_coefficients(
       coefficients_table = current_coefficients,
       plot_title = paste("Placebo Event Study:", current_model_name),
-      plot_subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = -1"
+      plot_subtitle = "DV: log(weekly spend). Baseline: relative_week = -1"
     )
 
     ggplot2::ggsave(
@@ -1180,7 +1286,7 @@ if (nrow(placebo_model_coefficients_ref_minus1) > 0) {
     ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
     ggplot2::labs(
       title = "Placebo Event-Study Coefficients Across All Model Splits",
-      subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = -1",
+      subtitle = "DV: log(weekly spend). Baseline: relative_week = -1",
       x = "Weeks relative to placebo event week",
       y = "Estimated change vs baseline week (95% CI)"
     ) +
@@ -1250,7 +1356,7 @@ if (nrow(oct7_event) == 1) {
     oct7_plot <- plot_event_study_coefficients(
       coefficients_table = oct7_coefficients_for_plot,
       plot_title = "Event Study Around 2023-10-07",
-      plot_subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = 0 (week starts 2023-10-08)"
+      plot_subtitle = "DV: log(weekly spend). Baseline: relative_week = 0 (week starts 2023-10-08)"
     )
 
     ggplot2::ggsave(
@@ -1278,7 +1384,7 @@ if (nrow(oct7_event) == 1) {
     oct7_ref_minus1_plot <- plot_event_study_coefficients(
       coefficients_table = oct7_coefficients_ref_minus1_for_plot,
       plot_title = "Event Study Around 2023-10-07",
-      plot_subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = -1"
+      plot_subtitle = "DV: log(weekly spend). Baseline: relative_week = -1"
     )
 
     ggplot2::ggsave(
@@ -1354,7 +1460,7 @@ if (nrow(oct7_event) == 1) {
       ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
       ggplot2::labs(
         title = "Event Study Around 2023-10-07 by Entity Group",
-        subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = 0 (week starts 2023-10-08)",
+        subtitle = "DV: log(weekly spend). Baseline: relative_week = 0 (week starts 2023-10-08)",
         x = "Weeks relative to event week",
         y = "Estimated change vs baseline week (95% CI)",
         color = "Entity group"
@@ -1416,7 +1522,7 @@ if (nrow(oct7_event) == 1) {
       ggplot2::scale_x_continuous(breaks = seq(-analysis_window_weeks, analysis_window_weeks, by = 1)) +
       ggplot2::labs(
         title = "Event Study Around 2023-10-07 by Entity Group",
-        subtitle = "DV: log(1 + weekly spend). Baseline: relative_week = -1",
+        subtitle = "DV: log(weekly spend). Baseline: relative_week = -1",
         x = "Weeks relative to event week",
         y = "Estimated change vs baseline week (95% CI)",
         color = "Entity group"
@@ -1466,6 +1572,66 @@ write_clean_csv(
   file.path(output_paths$placebo_event_study_baseline_minus1, "placebo_event_study_model_fit.csv")
 )
 
+# Save the gamma_t demonstration outputs (kept for the seminar paper).
+write_clean_csv(
+  gamma_t_demo_coefficients,
+  file.path(output_paths$gamma_t_demonstration, "event_study_coefficients_with_gamma_t.csv")
+)
+write_clean_csv(
+  gamma_t_demo_fit,
+  file.path(output_paths$gamma_t_demonstration, "event_study_model_fit_with_gamma_t.csv")
+)
+write_clean_csv(
+  gamma_t_compare_table,
+  file.path(output_paths$gamma_t_demonstration, "event_study_coefficients_comparison.csv")
+)
+writeLines(
+  c(
+    "gamma_t demonstration -- event study",
+    "====================================",
+    "",
+    "Panel: all_entities_all_events, +/- 2 weeks around every political/terror event.",
+    "",
+    "Two regressions are reported here side-by-side in",
+    "event_study_coefficients_comparison.csv:",
+    "",
+    "  (A) without_gamma_t  (the spec used in the rest of analysis_outputs/)",
+    "      log_y ~ i(relative_week, ref = 0) | entity_name + data_source + event_id",
+    "",
+    "  (B) with_gamma_t     (the textbook canonical TWFE spec we tried first)",
+    "      log_y ~ i(relative_week, ref = 0) |",
+    "          entity_name + data_source + event_id + week_start_sunday",
+    "",
+    "What to point at in the paper:",
+    "",
+    "  * In (B) the four relative-week coefficients are forced into a single",
+    "    linear-in-k pattern: beta_{-2} = -beta_{+2} and beta_{-1} = -beta_{+1},",
+    "    with |beta_{+-2}| = 2 |beta_{+-1}|. This is the regression telling us",
+    "    only one direction of variation (the linear trend in k) survives the FE",
+    "    structure.",
+    "  * Standard errors in (B) are inflated by ~300x relative to (A), and",
+    "    fixest emits a 'VCOV matrix is not positive semi-definite' warning.",
+    "  * In (A) the coefficients are not constrained to be linear in k and the",
+    "    standard errors are well-behaved (~0.025-0.030).",
+    "",
+    "Why this happens:",
+    "",
+    "  In our stacked design every entity is observed inside the +/-W window of",
+    "  every event (the panel is built by crossing(spend, events)), so on any",
+    "  given calendar week the relative-week dummies and week_start_sunday FE",
+    "  are nearly collinear. Calendar-week FE absorbs the variation that would",
+    "  otherwise identify beta_k. Standard practice in the stacked-event-study",
+    "  literature is to omit gamma_t in this case, which is what the rest of",
+    "  the script does. The single-event October 7 models drop gamma_t for a",
+    "  related but stricter reason: with one event, calendar week is one-to-one",
+    "  with relative week.",
+    "",
+    "This folder is a record of the design decision and the empirical",
+    "evidence behind it. Do not delete."
+  ),
+  con = file.path(output_paths$gamma_t_demonstration, "README.txt")
+)
+
 if (nrow(oct7_coefficients_for_plot) > 0) {
   write_clean_csv(oct7_coefficients_for_plot, file.path(output_paths$oct7_baseline_0, "event_study_coefs_0710.csv"))
 }
@@ -1502,6 +1668,19 @@ on.exit(close(summary_connection), add = TRUE)
 writeLines("Event-Study Regression Summary", con = summary_connection)
 writeLines("================================", con = summary_connection)
 writeLines(sprintf("Generated: %s", as.character(Sys.time())), con = summary_connection)
+writeLines("Effective spec used here: log(Spending_{i,t}) = alpha_i + sum_k beta_k * D_{i,k} + u_{i,t}", con = summary_connection)
+writeLines("alpha_i = entity FE (entity_name + data_source); multi-event panels also add event_id FE.", con = summary_connection)
+writeLines("Single-event runs (Oct 7) use entity FE only.", con = summary_connection)
+writeLines("Dependent variable: log(weekly_spend_ils). Weeks with spend <= 0 are dropped (log undefined).", con = summary_connection)
+writeLines("", con = summary_connection)
+writeLines("Note on gamma_t: the textbook canonical spec adds calendar-week FE", con = summary_connection)
+writeLines("(gamma_t, i.e. week_start_sunday FE). In our stacked design every entity is", con = summary_connection)
+writeLines("inside the +/-W window of every event, so calendar-week FE absorbs the", con = summary_connection)
+writeLines("variation that identifies beta_k -- standard errors blow up ~300x and the", con = summary_connection)
+writeLines("relative-week coefficients collapse to a linear-in-k pattern. We therefore", con = summary_connection)
+writeLines("omit gamma_t for stacked specs (standard stacked-event-study practice).", con = summary_connection)
+writeLines("A single demonstration run with gamma_t included is preserved in", con = summary_connection)
+writeLines("event_study/gamma_t_demonstration/ for the paper.", con = summary_connection)
 writeLines("", con = summary_connection)
 
 writeLines("--- correlation_summary ---", con = summary_connection)
