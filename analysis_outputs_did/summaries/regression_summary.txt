@@ -1,6 +1,6 @@
 DiD-Style Post-Event Regression Summary
 =======================================
-Generated: 2026-04-28 16:20:17.214369
+Generated: 2026-04-29 14:59:18.796182
 Event window: +/- 2 weeks
 PostEvent definition: 1 if relative_week >= 0, else 0
 

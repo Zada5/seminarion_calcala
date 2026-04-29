@@ -526,6 +526,72 @@ if (is.na(analysis_window_weeks) || analysis_window_weeks < 1L) {
 
 dir.create(output_directory, showWarnings = FALSE, recursive = TRUE)
 
+output_paths <- list(
+  summaries = file.path(output_directory, "summaries"),
+  descriptive = file.path(output_directory, "descriptive"),
+  correlations_real = file.path(output_directory, "correlations", "real_events"),
+  correlations_placebo = file.path(output_directory, "correlations", "placebo_events"),
+  placebo_events = file.path(output_directory, "placebo_events"),
+  event_study_baseline_0 = file.path(output_directory, "event_study", "baseline_0"),
+  event_study_baseline_0_figures = file.path(output_directory, "event_study", "baseline_0", "figures_by_model"),
+  event_study_baseline_minus1 = file.path(output_directory, "event_study", "baseline_minus1"),
+  event_study_baseline_minus1_figures = file.path(output_directory, "event_study", "baseline_minus1", "figures_by_model"),
+  placebo_event_study_baseline_0 = file.path(output_directory, "placebo_event_study", "baseline_0"),
+  placebo_event_study_baseline_0_figures = file.path(output_directory, "placebo_event_study", "baseline_0", "figures_by_model"),
+  placebo_event_study_baseline_minus1 = file.path(output_directory, "placebo_event_study", "baseline_minus1"),
+  placebo_event_study_baseline_minus1_figures = file.path(output_directory, "placebo_event_study", "baseline_minus1", "figures_by_model"),
+  oct7_baseline_0 = file.path(output_directory, "oct7_event_study", "baseline_0"),
+  oct7_baseline_minus1 = file.path(output_directory, "oct7_event_study", "baseline_minus1")
+)
+invisible(lapply(output_paths, dir.create, showWarnings = FALSE, recursive = TRUE))
+
+legacy_output_paths <- file.path(
+  output_directory,
+  c(
+    "descriptive_overall.csv",
+    "descriptive_by_group.csv",
+    "descriptive_by_year.csv",
+    "descriptive_by_year_and_group.csv",
+    "descriptive_pre_post_oct7.csv",
+    "correlation_summary.csv",
+    "correlation_coefficients_heatmap.png",
+    "correlation_scatter_panels.png",
+    "placebo_events_dates.csv",
+    "placebo_correlation_summary.csv",
+    "placebo_correlation_coefficients_heatmap.png",
+    "placebo_correlation_scatter_panels.png",
+    "event_study_coefficients_by_model.csv",
+    "event_study_model_fit.csv",
+    "event_study_coefficients_by_model_ref_minus1.csv",
+    "event_study_model_fit_ref_minus1.csv",
+    "placebo_event_study_coefficients_by_model.csv",
+    "placebo_event_study_model_fit.csv",
+    "placebo_event_study_coefficients_by_model_ref_minus1.csv",
+    "placebo_event_study_model_fit_ref_minus1.csv",
+    "regression_summary.txt",
+    "event_study_figure_all_models.png",
+    "event_study_figure_all_models_ref_minus1.png",
+    "placebo_event_study_figure_all_models.png",
+    "placebo_event_study_figure_all_models_ref_minus1.png",
+    "event_study_coefs_0710.csv",
+    "event_study_coefs_0710_by_group.csv",
+    "event_study_coefs_0710_ref_minus1.csv",
+    "event_study_coefs_0710_by_group_ref_minus1.csv",
+    "event_study_coefs_0710_all_party_org.csv",
+    "event_study_model_fit_0710_by_group.csv",
+    "event_study_model_fit_0710_by_group_ref_minus1.csv",
+    "event_study_figure_0710.png",
+    "event_study_figure_0710_by_group.png",
+    "event_study_figure_0710_ref_minus1.png",
+    "event_study_figure_0710_by_group_ref_minus1.png",
+    "event_study_figures",
+    "event_study_figures_ref_minus1",
+    "placebo_event_study_figures",
+    "placebo_event_study_figures_ref_minus1"
+  )
+)
+unlink(legacy_output_paths[file.exists(legacy_output_paths)], recursive = TRUE)
+
 print_section("Input Files")
 cat("Google weekly data: ", google_data_path, "\n", sep = "")
 cat("Meta weekly data  : ", meta_data_path, "\n", sep = "")
@@ -795,16 +861,10 @@ all_model_fit <- dplyr::bind_rows(model_results$fit)
 all_model_coefficients_ref_minus1 <- dplyr::bind_rows(model_results_ref_minus1$coefficients)
 all_model_fit_ref_minus1 <- dplyr::bind_rows(model_results_ref_minus1$fit)
 
-legacy_duplicate_oct7_outputs <- c(
-  file.path(output_directory, "event_study_coefs_0710_all_party_org.csv")
-)
-unlink(legacy_duplicate_oct7_outputs[file.exists(legacy_duplicate_oct7_outputs)])
-
 # -------------------------
 # Save event-study figures for every model split
 # -------------------------
-event_study_figures_directory <- file.path(output_directory, "event_study_figures")
-dir.create(event_study_figures_directory, showWarnings = FALSE, recursive = TRUE)
+event_study_figures_directory <- output_paths$event_study_baseline_0_figures
 
 event_study_coefficients_for_plot <- purrr::map_dfr(
   split(all_model_coefficients, all_model_coefficients$model_name),
@@ -855,7 +915,7 @@ if (nrow(event_study_coefficients_for_plot) > 0) {
     ggplot2::theme_minimal(base_size = 11)
 
   ggplot2::ggsave(
-    filename = file.path(output_directory, "event_study_figure_all_models.png"),
+    filename = file.path(output_paths$event_study_baseline_0, "event_study_figure_all_models.png"),
     plot = combined_event_study_plot,
     width = 14,
     height = 10,
@@ -863,8 +923,7 @@ if (nrow(event_study_coefficients_for_plot) > 0) {
   )
 }
 
-event_study_figures_ref_minus1_directory <- file.path(output_directory, "event_study_figures_ref_minus1")
-dir.create(event_study_figures_ref_minus1_directory, showWarnings = FALSE, recursive = TRUE)
+event_study_figures_ref_minus1_directory <- output_paths$event_study_baseline_minus1_figures
 
 event_study_coefficients_ref_minus1_for_plot <- tibble::tibble()
 if (nrow(all_model_coefficients_ref_minus1) > 0) {
@@ -916,7 +975,7 @@ if (nrow(all_model_coefficients_ref_minus1) > 0) {
     ggplot2::theme_minimal(base_size = 11)
 
   ggplot2::ggsave(
-    filename = file.path(output_directory, "event_study_figure_all_models_ref_minus1.png"),
+    filename = file.path(output_paths$event_study_baseline_minus1, "event_study_figure_all_models.png"),
     plot = combined_event_study_ref_minus1_plot,
     width = 14,
     height = 10,
@@ -931,7 +990,7 @@ if (nrow(correlation_summary) > 0) {
     plot_subtitle = "Pearson correlation by entity group and event scope"
   )
   ggplot2::ggsave(
-    filename = file.path(output_directory, "correlation_coefficients_heatmap.png"),
+    filename = file.path(output_paths$correlations_real, "correlation_coefficients_heatmap.png"),
     plot = correlation_coefficient_plot,
     width = 8.5,
     height = 4.8,
@@ -944,7 +1003,7 @@ if (nrow(correlation_summary) > 0) {
     plot_subtitle = "Points are weeks; line is OLS fit with 95% CI"
   )
   ggplot2::ggsave(
-    filename = file.path(output_directory, "correlation_scatter_panels.png"),
+    filename = file.path(output_paths$correlations_real, "correlation_scatter_panels.png"),
     plot = correlation_scatter_plot,
     width = 11.5,
     height = 6.2,
@@ -1017,8 +1076,7 @@ placebo_model_fit <- dplyr::bind_rows(placebo_model_results$fit)
 placebo_model_coefficients_ref_minus1 <- dplyr::bind_rows(placebo_model_results_ref_minus1$coefficients)
 placebo_model_fit_ref_minus1 <- dplyr::bind_rows(placebo_model_results_ref_minus1$fit)
 
-placebo_figures_directory <- file.path(output_directory, "placebo_event_study_figures")
-dir.create(placebo_figures_directory, showWarnings = FALSE, recursive = TRUE)
+placebo_figures_directory <- output_paths$placebo_event_study_baseline_0_figures
 
 if (nrow(placebo_model_coefficients) > 0) {
   placebo_coefficients_for_plot <- purrr::map_dfr(
@@ -1069,7 +1127,7 @@ if (nrow(placebo_model_coefficients) > 0) {
     ggplot2::theme_minimal(base_size = 11)
 
   ggplot2::ggsave(
-    filename = file.path(output_directory, "placebo_event_study_figure_all_models.png"),
+    filename = file.path(output_paths$placebo_event_study_baseline_0, "placebo_event_study_figure_all_models.png"),
     plot = combined_placebo_plot,
     width = 14,
     height = 10,
@@ -1077,8 +1135,7 @@ if (nrow(placebo_model_coefficients) > 0) {
   )
 }
 
-placebo_figures_ref_minus1_directory <- file.path(output_directory, "placebo_event_study_figures_ref_minus1")
-dir.create(placebo_figures_ref_minus1_directory, showWarnings = FALSE, recursive = TRUE)
+placebo_figures_ref_minus1_directory <- output_paths$placebo_event_study_baseline_minus1_figures
 
 placebo_coefficients_ref_minus1_for_plot <- tibble::tibble()
 if (nrow(placebo_model_coefficients_ref_minus1) > 0) {
@@ -1130,7 +1187,7 @@ if (nrow(placebo_model_coefficients_ref_minus1) > 0) {
     ggplot2::theme_minimal(base_size = 11)
 
   ggplot2::ggsave(
-    filename = file.path(output_directory, "placebo_event_study_figure_all_models_ref_minus1.png"),
+    filename = file.path(output_paths$placebo_event_study_baseline_minus1, "placebo_event_study_figure_all_models.png"),
     plot = combined_placebo_ref_minus1_plot,
     width = 14,
     height = 10,
@@ -1146,7 +1203,7 @@ if (nrow(placebo_correlation_summary) > 0) {
   )
 
   ggplot2::ggsave(
-    filename = file.path(output_directory, "placebo_correlation_coefficients_heatmap.png"),
+    filename = file.path(output_paths$correlations_placebo, "placebo_correlation_coefficients_heatmap.png"),
     plot = placebo_correlation_heatmap,
     width = 8.5,
     height = 4.8,
@@ -1160,7 +1217,7 @@ if (nrow(placebo_correlation_summary) > 0) {
   )
 
   ggplot2::ggsave(
-    filename = file.path(output_directory, "placebo_correlation_scatter_panels.png"),
+    filename = file.path(output_paths$correlations_placebo, "placebo_correlation_scatter_panels.png"),
     plot = placebo_correlation_scatter,
     width = 11.5,
     height = 6.2,
@@ -1197,7 +1254,7 @@ if (nrow(oct7_event) == 1) {
     )
 
     ggplot2::ggsave(
-      filename = file.path(output_directory, "event_study_figure_0710.png"),
+      filename = file.path(output_paths$oct7_baseline_0, "event_study_figure_0710.png"),
       plot = oct7_plot,
       width = 9,
       height = 5,
@@ -1225,7 +1282,7 @@ if (nrow(oct7_event) == 1) {
     )
 
     ggplot2::ggsave(
-      filename = file.path(output_directory, "event_study_figure_0710_ref_minus1.png"),
+      filename = file.path(output_paths$oct7_baseline_minus1, "event_study_figure_0710.png"),
       plot = oct7_ref_minus1_plot,
       width = 9,
       height = 5,
@@ -1305,7 +1362,7 @@ if (nrow(oct7_event) == 1) {
       ggplot2::theme_minimal(base_size = 12)
 
     ggplot2::ggsave(
-      filename = file.path(output_directory, "event_study_figure_0710_by_group.png"),
+      filename = file.path(output_paths$oct7_baseline_0, "event_study_figure_0710_by_group.png"),
       plot = oct7_group_plot,
       width = 9,
       height = 5,
@@ -1367,7 +1424,7 @@ if (nrow(oct7_event) == 1) {
       ggplot2::theme_minimal(base_size = 12)
 
     ggplot2::ggsave(
-      filename = file.path(output_directory, "event_study_figure_0710_by_group_ref_minus1.png"),
+      filename = file.path(output_paths$oct7_baseline_minus1, "event_study_figure_0710_by_group.png"),
       plot = oct7_group_ref_minus1_plot,
       width = 9,
       height = 5,
@@ -1379,66 +1436,66 @@ if (nrow(oct7_event) == 1) {
 # -------------------------
 # Save outputs
 # -------------------------
-write_clean_csv(overall_spend_stats, file.path(output_directory, "descriptive_overall.csv"))
-write_clean_csv(spend_stats_by_group, file.path(output_directory, "descriptive_by_group.csv"))
-write_clean_csv(yearly_spend_stats, file.path(output_directory, "descriptive_by_year.csv"))
-write_clean_csv(yearly_spend_stats_by_group, file.path(output_directory, "descriptive_by_year_and_group.csv"))
-write_clean_csv(pre_post_oct7_stats, file.path(output_directory, "descriptive_pre_post_oct7.csv"))
-write_clean_csv(correlation_summary, file.path(output_directory, "correlation_summary.csv"))
-write_clean_csv(placebo_events_table, file.path(output_directory, "placebo_events_dates.csv"))
-write_clean_csv(placebo_correlation_summary, file.path(output_directory, "placebo_correlation_summary.csv"))
+write_clean_csv(overall_spend_stats, file.path(output_paths$descriptive, "descriptive_overall.csv"))
+write_clean_csv(spend_stats_by_group, file.path(output_paths$descriptive, "descriptive_by_group.csv"))
+write_clean_csv(yearly_spend_stats, file.path(output_paths$descriptive, "descriptive_by_year.csv"))
+write_clean_csv(yearly_spend_stats_by_group, file.path(output_paths$descriptive, "descriptive_by_year_and_group.csv"))
+write_clean_csv(pre_post_oct7_stats, file.path(output_paths$descriptive, "descriptive_pre_post_oct7.csv"))
+write_clean_csv(correlation_summary, file.path(output_paths$correlations_real, "correlation_summary.csv"))
+write_clean_csv(placebo_events_table, file.path(output_paths$placebo_events, "placebo_events_dates.csv"))
+write_clean_csv(placebo_correlation_summary, file.path(output_paths$correlations_placebo, "placebo_correlation_summary.csv"))
 
-write_clean_csv(all_model_coefficients, file.path(output_directory, "event_study_coefficients_by_model.csv"))
-write_clean_csv(all_model_fit, file.path(output_directory, "event_study_model_fit.csv"))
+write_clean_csv(all_model_coefficients, file.path(output_paths$event_study_baseline_0, "event_study_coefficients_by_model.csv"))
+write_clean_csv(all_model_fit, file.path(output_paths$event_study_baseline_0, "event_study_model_fit.csv"))
 write_clean_csv(
   all_model_coefficients_ref_minus1,
-  file.path(output_directory, "event_study_coefficients_by_model_ref_minus1.csv")
+  file.path(output_paths$event_study_baseline_minus1, "event_study_coefficients_by_model.csv")
 )
 write_clean_csv(
   all_model_fit_ref_minus1,
-  file.path(output_directory, "event_study_model_fit_ref_minus1.csv")
+  file.path(output_paths$event_study_baseline_minus1, "event_study_model_fit.csv")
 )
-write_clean_csv(placebo_model_coefficients, file.path(output_directory, "placebo_event_study_coefficients_by_model.csv"))
-write_clean_csv(placebo_model_fit, file.path(output_directory, "placebo_event_study_model_fit.csv"))
+write_clean_csv(placebo_model_coefficients, file.path(output_paths$placebo_event_study_baseline_0, "placebo_event_study_coefficients_by_model.csv"))
+write_clean_csv(placebo_model_fit, file.path(output_paths$placebo_event_study_baseline_0, "placebo_event_study_model_fit.csv"))
 write_clean_csv(
   placebo_model_coefficients_ref_minus1,
-  file.path(output_directory, "placebo_event_study_coefficients_by_model_ref_minus1.csv")
+  file.path(output_paths$placebo_event_study_baseline_minus1, "placebo_event_study_coefficients_by_model.csv")
 )
 write_clean_csv(
   placebo_model_fit_ref_minus1,
-  file.path(output_directory, "placebo_event_study_model_fit_ref_minus1.csv")
+  file.path(output_paths$placebo_event_study_baseline_minus1, "placebo_event_study_model_fit.csv")
 )
 
 if (nrow(oct7_coefficients_for_plot) > 0) {
-  write_clean_csv(oct7_coefficients_for_plot, file.path(output_directory, "event_study_coefs_0710.csv"))
+  write_clean_csv(oct7_coefficients_for_plot, file.path(output_paths$oct7_baseline_0, "event_study_coefs_0710.csv"))
 }
 if (nrow(oct7_coefficients_ref_minus1_for_plot) > 0) {
   write_clean_csv(
     oct7_coefficients_ref_minus1_for_plot,
-    file.path(output_directory, "event_study_coefs_0710_ref_minus1.csv")
+    file.path(output_paths$oct7_baseline_minus1, "event_study_coefs_0710.csv")
   )
 }
 if (nrow(oct7_group_coefficients) > 0) {
-  write_clean_csv(oct7_group_coefficients, file.path(output_directory, "event_study_coefs_0710_by_group.csv"))
+  write_clean_csv(oct7_group_coefficients, file.path(output_paths$oct7_baseline_0, "event_study_coefs_0710_by_group.csv"))
 }
 if (nrow(oct7_group_fit) > 0) {
-  write_clean_csv(oct7_group_fit, file.path(output_directory, "event_study_model_fit_0710_by_group.csv"))
+  write_clean_csv(oct7_group_fit, file.path(output_paths$oct7_baseline_0, "event_study_model_fit_0710_by_group.csv"))
 }
 if (nrow(oct7_group_coefficients_ref_minus1) > 0) {
   write_clean_csv(
     oct7_group_coefficients_ref_minus1,
-    file.path(output_directory, "event_study_coefs_0710_by_group_ref_minus1.csv")
+    file.path(output_paths$oct7_baseline_minus1, "event_study_coefs_0710_by_group.csv")
   )
 }
 if (nrow(oct7_group_fit_ref_minus1) > 0) {
   write_clean_csv(
     oct7_group_fit_ref_minus1,
-    file.path(output_directory, "event_study_model_fit_0710_by_group_ref_minus1.csv")
+    file.path(output_paths$oct7_baseline_minus1, "event_study_model_fit_0710_by_group.csv")
   )
 }
 
 # Write textual summaries for easy reading in RStudio and externally
-summary_file_path <- file.path(output_directory, "regression_summary.txt")
+summary_file_path <- file.path(output_paths$summaries, "regression_summary.txt")
 summary_connection <- file(summary_file_path, open = "wt")
 on.exit(close(summary_connection), add = TRUE)
 
@@ -1468,6 +1525,22 @@ write_model_summary_sections(
   model_names = model_results_ref_minus1$model_name,
   coefficients_table = all_model_coefficients_ref_minus1,
   fit_table = all_model_fit_ref_minus1,
+  summary_connection = summary_connection
+)
+
+writeLines("\n--- placebo_event_study_models_baseline_0 ---", con = summary_connection)
+write_model_summary_sections(
+  model_names = placebo_model_results$model_name,
+  coefficients_table = placebo_model_coefficients,
+  fit_table = placebo_model_fit,
+  summary_connection = summary_connection
+)
+
+writeLines("\n--- placebo_event_study_models_baseline_minus1 ---", con = summary_connection)
+write_model_summary_sections(
+  model_names = placebo_model_results_ref_minus1$model_name,
+  coefficients_table = placebo_model_coefficients_ref_minus1,
+  fit_table = placebo_model_fit_ref_minus1,
   summary_connection = summary_connection
 )
 
@@ -1532,50 +1605,34 @@ if (nrow(oct7_group_fit) > 0) {
 
 print_section("Output Files")
 cat("Saved descriptive stats and regressions to: ", normalizePath(output_directory), "\n", sep = "")
-cat("- descriptive_overall.csv\n")
-cat("- descriptive_by_group.csv\n")
-cat("- descriptive_by_year.csv\n")
-cat("- descriptive_by_year_and_group.csv\n")
-cat("- descriptive_pre_post_oct7.csv\n")
-cat("- correlation_summary.csv\n")
-cat("- correlation_coefficients_heatmap.png\n")
-cat("- correlation_scatter_panels.png\n")
-cat("- placebo_events_dates.csv\n")
-cat("- placebo_correlation_summary.csv\n")
-cat("- placebo_correlation_coefficients_heatmap.png\n")
-cat("- placebo_correlation_scatter_panels.png\n")
-cat("- event_study_coefficients_by_model.csv\n")
-cat("- event_study_model_fit.csv\n")
-cat("- event_study_coefficients_by_model_ref_minus1.csv\n")
-cat("- event_study_model_fit_ref_minus1.csv\n")
-cat("- placebo_event_study_coefficients_by_model.csv\n")
-cat("- placebo_event_study_model_fit.csv\n")
-cat("- placebo_event_study_coefficients_by_model_ref_minus1.csv\n")
-cat("- placebo_event_study_model_fit_ref_minus1.csv\n")
-cat("- regression_summary.txt\n")
-cat("- event_study_figure_all_models.png\n")
-cat("- event_study_figures/*.png\n")
-cat("- event_study_figure_all_models_ref_minus1.png\n")
-cat("- event_study_figures_ref_minus1/*.png\n")
-cat("- placebo_event_study_figure_all_models.png\n")
-cat("- placebo_event_study_figures/*.png\n")
-cat("- placebo_event_study_figure_all_models_ref_minus1.png\n")
-cat("- placebo_event_study_figures_ref_minus1/*.png\n")
+cat("- summaries/regression_summary.txt\n")
+cat("- descriptive/*.csv\n")
+cat("- correlations/real_events/*\n")
+cat("- correlations/placebo_events/*\n")
+cat("- placebo_events/placebo_events_dates.csv\n")
+cat("- event_study/baseline_0/*\n")
+cat("- event_study/baseline_0/figures_by_model/*.png\n")
+cat("- event_study/baseline_minus1/*\n")
+cat("- event_study/baseline_minus1/figures_by_model/*.png\n")
+cat("- placebo_event_study/baseline_0/*\n")
+cat("- placebo_event_study/baseline_0/figures_by_model/*.png\n")
+cat("- placebo_event_study/baseline_minus1/*\n")
+cat("- placebo_event_study/baseline_minus1/figures_by_model/*.png\n")
 if (nrow(oct7_coefficients_for_plot) > 0) {
-  cat("- event_study_coefs_0710.csv\n")
-  cat("- event_study_figure_0710.png\n")
+  cat("- oct7_event_study/baseline_0/event_study_coefs_0710.csv\n")
+  cat("- oct7_event_study/baseline_0/event_study_figure_0710.png\n")
 }
 if (nrow(oct7_coefficients_ref_minus1_for_plot) > 0) {
-  cat("- event_study_coefs_0710_ref_minus1.csv\n")
-  cat("- event_study_figure_0710_ref_minus1.png\n")
+  cat("- oct7_event_study/baseline_minus1/event_study_coefs_0710.csv\n")
+  cat("- oct7_event_study/baseline_minus1/event_study_figure_0710.png\n")
 }
 if (nrow(oct7_group_coefficients) > 0) {
-  cat("- event_study_coefs_0710_by_group.csv\n")
-  cat("- event_study_model_fit_0710_by_group.csv\n")
-  cat("- event_study_figure_0710_by_group.png\n")
+  cat("- oct7_event_study/baseline_0/event_study_coefs_0710_by_group.csv\n")
+  cat("- oct7_event_study/baseline_0/event_study_model_fit_0710_by_group.csv\n")
+  cat("- oct7_event_study/baseline_0/event_study_figure_0710_by_group.png\n")
 }
 if (nrow(oct7_group_coefficients_ref_minus1) > 0) {
-  cat("- event_study_coefs_0710_by_group_ref_minus1.csv\n")
-  cat("- event_study_model_fit_0710_by_group_ref_minus1.csv\n")
-  cat("- event_study_figure_0710_by_group_ref_minus1.png\n")
+  cat("- oct7_event_study/baseline_minus1/event_study_coefs_0710_by_group.csv\n")
+  cat("- oct7_event_study/baseline_minus1/event_study_model_fit_0710_by_group.csv\n")
+  cat("- oct7_event_study/baseline_minus1/event_study_figure_0710_by_group.png\n")
 }
