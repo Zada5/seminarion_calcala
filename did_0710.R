@@ -10,11 +10,29 @@ cat("\014")
 # 2) Estimate a stacked post-vs-pre specification around events
 # 3) Save outputs to a separate directory for review
 #
-# Requested core specification:
-# log(1 + Spending[i,t]) = alpha(i) + beta * PostEvent(i,t) + u(i,t)
+# Effective specification used in this project:
+#   log(Spending[i,t]) = alpha_i + beta * PostEvent[i,t] + u[i,t]
 #
-# When pooling multiple events, this script also adds event fixed effects so the
-# post-event estimate is identified within each event window.
+# alpha_i  -> entity FE (entity_name; data_source FE absorbs platform shifts)
+# Multi-event (stacked) panels also add event_id FE.
+#
+# Note on gamma_t (calendar-week FE): the textbook canonical TWFE-DiD spec is
+#   log(Spending[i,t]) = alpha_i + gamma_t + beta * PostEvent[i,t] + u[i,t]
+# In our stacked design every entity in every event window is treated by that
+# event; there is no never-treated control at the same calendar week. Inside
+# each window PostEvent is a deterministic function of (event_id, calendar
+# week), so adding week_start_sunday FE on top of event_id FE absorbs PostEvent
+# entirely (beta -> ~1e-11, VCOV not positive semi-definite). Following standard
+# practice in the stacked-DiD literature, we omit gamma_t for stacked specs.
+# A dedicated demonstration regression that DOES include gamma_t is computed
+# once in this script and saved under
+#   analysis_outputs_did/gamma_t_demonstration/
+# so the paper can show the broken output that motivated dropping gamma_t.
+#
+# Note on the dependent variable: the model uses log(Spending), not
+# log(1 + Spending). Weeks with zero spend are filtered out before estimation
+# (log(0) is undefined). This is a deliberate spec change from the earlier
+# log1p() version; row counts dropped per panel are reported on stdout.
 #
 # Run in RStudio or command line:
 # Rscript did_0710.R [google_csv] [meta_csv] [events_csv] [output_dir] [window_weeks]
@@ -185,7 +203,7 @@ read_weekly_spend_file <- function(file_path) {
   dataset
 }
 
-run_did_model <- function(model_data) {
+run_did_model <- function(model_data, include_gamma_t = FALSE) {
   if (nrow(model_data) < 10) {
     return(NULL)
   }
@@ -196,11 +214,36 @@ run_did_model <- function(model_data) {
     return(NULL)
   }
 
-  model_formula <- if (dplyr::n_distinct(model_data$event_id) > 1) {
-    as.formula("log_weekly_spend ~ post_event | entity_name + data_source + event_id")
+  # Effective specification used in this project:
+  #   log(Spending_{i,t}) = alpha_i + beta * PostEvent_{i,t} + u_{i,t}
+  # alpha_i  -> entity_name FE (and data_source FE for platform-level shifts)
+  # Multi-event (stacked) panels also add event_id FE.
+  #
+  # Why we DO NOT include gamma_t (calendar-week FE) in the stacked specs:
+  # In our stacked design every entity in every event window is treated by that
+  # event; there is no never-treated control group at the same calendar week.
+  # Within each event window PostEvent = 1[relative_week >= 0] is a deterministic
+  # function of (event_id, week_start_sunday), so adding week_start_sunday FE on
+  # top of event_id FE absorbs PostEvent entirely: beta is driven to ~1e-11 and
+  # fixest reports a 'VCOV matrix is not positive semi-definite' warning. The
+  # 'with gamma_t' demonstration regression in this script reproduces that
+  # breakdown for the paper.
+  #
+  # Single-event runs always drop gamma_t (PostEvent is a function of calendar
+  # week alone within one event window, so calendar-week FE absorbs it).
+  use_gamma_t <- include_gamma_t && dplyr::n_distinct(model_data$event_id) > 1
+
+  fe_terms <- if (dplyr::n_distinct(model_data$event_id) > 1) {
+    if (use_gamma_t) {
+      "entity_name + data_source + event_id + week_start_sunday"
+    } else {
+      "entity_name + data_source + event_id"
+    }
   } else {
-    as.formula("log_weekly_spend ~ post_event | entity_name + data_source")
+    "entity_name + data_source"
   }
+
+  model_formula <- as.formula(sprintf("log_weekly_spend ~ post_event | %s", fe_terms))
 
   tryCatch(
     fixest::feols(model_formula, data = model_data, vcov = ~ entity_name),
@@ -344,7 +387,8 @@ output_paths <- list(
   post_from_0 = file.path(output_directory, "post_from_0"),
   post_from_minus1 = file.path(output_directory, "post_from_minus1"),
   oct7_post_from_0 = file.path(output_directory, "oct7", "post_from_0"),
-  oct7_post_from_minus1 = file.path(output_directory, "oct7", "post_from_minus1")
+  oct7_post_from_minus1 = file.path(output_directory, "oct7", "post_from_minus1"),
+  gamma_t_demonstration = file.path(output_directory, "gamma_t_demonstration")
 )
 invisible(lapply(output_paths, dir.create, showWarnings = FALSE, recursive = TRUE))
 
@@ -470,10 +514,21 @@ event_window_panel <- tidyr::crossing(
 ) %>%
   dplyr::mutate(
     relative_week = as.integer((week_start_sunday - event_week_start_sunday) / 7),
-    post_event = dplyr::if_else(relative_week >= 0L, 1L, 0L),
-    log_weekly_spend = log1p(weekly_spend_ils)
+    post_event = dplyr::if_else(relative_week >= 0L, 1L, 0L)
   ) %>%
   dplyr::filter(relative_week >= -analysis_window_weeks, relative_week <= analysis_window_weeks)
+
+# Dependent variable matches the agreed spec: log(Spending), not log(1 + Spending).
+# log(0) is undefined, so weeks with zero spend are dropped before estimation.
+event_window_zero_or_negative_rows <- sum(event_window_panel$weekly_spend_ils <= 0, na.rm = TRUE)
+event_window_panel <- event_window_panel %>%
+  dplyr::filter(weekly_spend_ils > 0) %>%
+  dplyr::mutate(log_weekly_spend = log(weekly_spend_ils))
+
+cat(sprintf(
+  "DiD event-window panel: dropped %s rows with weekly_spend_ils <= 0 (log undefined).\n",
+  format(event_window_zero_or_negative_rows, big.mark = ",")
+))
 
 if (nrow(event_window_panel) == 0) {
   stop("No rows in event window panel. Check event dates and weekly dates.")
@@ -567,11 +622,41 @@ all_model_sample_summary_post_from_minus1 <- dplyr::bind_rows(
   model_results_post_from_minus1$sample_summary
 )
 
+# -------------------------
+# gamma_t demonstration regression (kept for the seminar paper)
+# -------------------------
+# This intentionally fits the canonical TWFE DiD spec WITH calendar-week FE
+# on the all_entities_all_events stacked panel:
+#   log_y ~ post_event |
+#       entity_name + data_source + event_id + week_start_sunday
+# Preserved so the paper can show the broken output (beta absorbed to
+# numerical zero, VCOV warning) that motivated dropping gamma_t for stacked
+# DiD specs (Option 2 design decision).
+gamma_t_demo_model <- run_did_model(event_window_panel, include_gamma_t = TRUE)
+gamma_t_demo_coefficient <- extract_post_event_coefficient(
+  gamma_t_demo_model,
+  "all_entities_all_events__with_gamma_t"
+)
+gamma_t_demo_fit <- extract_model_fit(
+  gamma_t_demo_model,
+  "all_entities_all_events__with_gamma_t",
+  nrow(event_window_panel)
+)
+
+gamma_t_baseline_compare <- all_model_coefficients %>%
+  dplyr::filter(model_name == "all_entities_all_events") %>%
+  dplyr::mutate(model_name = "all_entities_all_events__without_gamma_t (paper baseline)")
+
+gamma_t_compare_table <- dplyr::bind_rows(
+  gamma_t_baseline_compare,
+  gamma_t_demo_coefficient
+)
+
 if (nrow(all_model_coefficients) > 0) {
   combined_did_plot <- plot_did_coefficients(
     coefficients_table = all_model_coefficients,
     plot_title = "DiD-Style Post-Event Estimates Across Model Splits",
-    plot_subtitle = "DV: log(1 + weekly spend). PostEvent = 1 for relative_week >= 0"
+    plot_subtitle = "DV: log(weekly spend). PostEvent = 1 for relative_week >= 0"
   )
 
   ggplot2::ggsave(
@@ -587,7 +672,7 @@ if (nrow(all_model_coefficients_post_from_minus1) > 0) {
   combined_did_post_from_minus1_plot <- plot_did_coefficients(
     coefficients_table = all_model_coefficients_post_from_minus1,
     plot_title = "DiD-Style Post-Event Estimates Across Model Splits",
-    plot_subtitle = "DV: log(1 + weekly spend). PostEvent = 1 for relative_week >= -1"
+    plot_subtitle = "DV: log(weekly spend). PostEvent = 1 for relative_week >= -1"
   )
 
   ggplot2::ggsave(
@@ -678,7 +763,7 @@ if (nrow(oct7_event) == 1) {
     oct7_group_plot <- plot_did_coefficients(
       coefficients_table = oct7_group_coefficients,
       plot_title = "DiD-Style Post-Event Estimates Around 2023-10-07",
-      plot_subtitle = "DV: log(1 + weekly spend). Split by entity group"
+      plot_subtitle = "DV: log(weekly spend). Split by entity group"
     )
 
     ggplot2::ggsave(
@@ -718,7 +803,7 @@ if (nrow(oct7_event) == 1) {
     oct7_group_post_from_minus1_plot <- plot_did_coefficients(
       coefficients_table = oct7_group_coefficients_post_from_minus1,
       plot_title = "DiD-Style Post-Event Estimates Around 2023-10-07",
-      plot_subtitle = "DV: log(1 + weekly spend). PostEvent = 1 for relative_week >= -1"
+      plot_subtitle = "DV: log(weekly spend). PostEvent = 1 for relative_week >= -1"
     )
 
     ggplot2::ggsave(
@@ -753,6 +838,63 @@ write_clean_csv(
 write_clean_csv(
   all_model_fit_post_from_minus1,
   file.path(output_paths$post_from_minus1, "did_model_fit.csv")
+)
+
+# Save the gamma_t demonstration outputs (kept for the seminar paper).
+write_clean_csv(
+  gamma_t_demo_coefficient,
+  file.path(output_paths$gamma_t_demonstration, "did_coefficient_with_gamma_t.csv")
+)
+write_clean_csv(
+  gamma_t_demo_fit,
+  file.path(output_paths$gamma_t_demonstration, "did_model_fit_with_gamma_t.csv")
+)
+write_clean_csv(
+  gamma_t_compare_table,
+  file.path(output_paths$gamma_t_demonstration, "did_coefficient_comparison.csv")
+)
+writeLines(
+  c(
+    "gamma_t demonstration -- DiD",
+    "============================",
+    "",
+    "Panel: all_entities_all_events, +/- 2 weeks around every political/terror event.",
+    "PostEvent = 1 when relative_week >= 0.",
+    "",
+    "Two regressions are reported here side-by-side in",
+    "did_coefficient_comparison.csv:",
+    "",
+    "  (A) without_gamma_t  (the spec used in the rest of analysis_outputs_did/)",
+    "      log_y ~ post_event | entity_name + data_source + event_id",
+    "",
+    "  (B) with_gamma_t     (the textbook canonical TWFE-DiD spec we tried first)",
+    "      log_y ~ post_event |",
+    "          entity_name + data_source + event_id + week_start_sunday",
+    "",
+    "What to point at in the paper:",
+    "",
+    "  * In (B) beta is driven to ~1e-11 (numerical zero) and fixest emits",
+    "    'The VCOV matrix is not positive semi-definite and was fixed'.",
+    "  * In (A) beta is meaningfully sized and its standard error is",
+    "    well-behaved.",
+    "",
+    "Why this happens:",
+    "",
+    "  In our stacked DiD design every entity in every event window is",
+    "  'treated' by that event; there is no never-treated control group at",
+    "  the same calendar week. Inside each window PostEvent is a deterministic",
+    "  function of (event_id, week_start_sunday). Once entity FE + event_id FE",
+    "  + week FE are included, PostEvent has no within-FE variation and beta",
+    "  is not identified. Following standard practice in the stacked-DiD",
+    "  literature, the rest of this script omits gamma_t. The October 7",
+    "  single-event DiD models drop gamma_t for a related stricter reason:",
+    "  with one event, calendar week ↔ relative week one-to-one and",
+    "  PostEvent is a function of calendar week alone.",
+    "",
+    "This folder is a record of the design decision and the empirical",
+    "evidence behind it. Do not delete."
+  ),
+  con = file.path(output_paths$gamma_t_demonstration, "README.txt")
 )
 
 if (nrow(oct7_coefficient) > 0) {
@@ -809,7 +951,18 @@ writeLines("DiD-Style Post-Event Regression Summary", con = summary_connection)
 writeLines("=======================================", con = summary_connection)
 writeLines(sprintf("Generated: %s", as.character(Sys.time())), con = summary_connection)
 writeLines(sprintf("Event window: +/- %s weeks", analysis_window_weeks), con = summary_connection)
+writeLines("Effective spec used here: log(Spending_{i,t}) = alpha_i + beta * PostEvent_{i,t} + u_{i,t}", con = summary_connection)
+writeLines("alpha_i = entity FE (entity_name + data_source); multi-event panels also add event_id FE.", con = summary_connection)
+writeLines("Single-event runs (Oct 7) use entity FE only.", con = summary_connection)
+writeLines("Dependent variable: log(weekly_spend_ils). Weeks with spend <= 0 are dropped (log undefined).", con = summary_connection)
 writeLines("PostEvent definition: 1 if relative_week >= 0, else 0", con = summary_connection)
+writeLines("", con = summary_connection)
+writeLines("Note on gamma_t: the textbook canonical spec adds calendar-week FE", con = summary_connection)
+writeLines("(gamma_t = week_start_sunday). In our stacked design every entity is in the +/-W", con = summary_connection)
+writeLines("window of every event, so PostEvent has no within-FE variation once gamma_t is added", con = summary_connection)
+writeLines("(beta -> ~1e-11, VCOV not positive semi-definite). Following standard stacked-DiD", con = summary_connection)
+writeLines("practice we omit gamma_t for stacked specs. A demonstration run with gamma_t included", con = summary_connection)
+writeLines("is preserved in gamma_t_demonstration/ for the paper.", con = summary_connection)
 writeLines("", con = summary_connection)
 
 writeLines("--- did_design_overview ---", con = summary_connection)
