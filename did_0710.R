@@ -382,6 +382,336 @@ write_paper_style_header <- function(summary_connection,
   writeLines("", con = summary_connection)
 }
 
+write_markdown_table <- function(dataframe, file_path, digits = 3L) {
+  formatted_table <- format_output_table(dataframe, digits = digits) %>%
+    dplyr::mutate(
+      dplyr::across(
+        .cols = dplyr::everything(),
+        .fns = ~ dplyr::if_else(is.na(.x), "", as.character(.x))
+      )
+    )
+
+  if (nrow(formatted_table) == 0) {
+    writeLines("No rows.", con = file_path)
+    return(invisible(NULL))
+  }
+
+  header_line <- paste0("| ", paste(names(formatted_table), collapse = " | "), " |")
+  separator_line <- paste0("| ", paste(rep("---", ncol(formatted_table)), collapse = " | "), " |")
+  row_lines <- apply(formatted_table, 1, function(row_values) {
+    paste0("| ", paste(row_values, collapse = " | "), " |")
+  })
+
+  writeLines(c(header_line, separator_line, row_lines), con = file_path)
+  invisible(NULL)
+}
+
+pretty_model_label <- function(model_name) {
+  dplyr::case_when(
+    model_name == "all_entities_all_events" ~ "All entities x all events",
+    model_name == "political_parties_all_events" ~ "Political parties x all events",
+    model_name == "other_orgs_people_all_events" ~ "Other orgs/people x all events",
+    model_name == "all_entities_political_events" ~ "All entities x political events",
+    model_name == "all_entities_terror_events" ~ "All entities x terror events",
+    model_name == "political_parties_political_events" ~ "Political parties x political events",
+    model_name == "political_parties_terror_events" ~ "Political parties x terror events",
+    model_name == "other_orgs_people_political_events" ~ "Other orgs/people x political events",
+    model_name == "other_orgs_people_terror_events" ~ "Other orgs/people x terror events",
+    model_name == "oct7_all_entities" ~ "Oct 7 x all entities",
+    model_name == "oct7_political_parties" ~ "Oct 7 x political parties",
+    model_name == "oct7_other_orgs_people" ~ "Oct 7 x other orgs/people",
+    TRUE ~ model_name
+  )
+}
+
+significance_stars <- function(p_values) {
+  dplyr::case_when(
+    is.na(p_values) ~ "",
+    p_values < 0.01 ~ "***",
+    p_values < 0.05 ~ "**",
+    p_values < 0.1 ~ "*",
+    TRUE ~ ""
+  )
+}
+
+format_estimate_with_stars <- function(estimate, p_value, digits = 3L) {
+  ifelse(
+    is.na(estimate),
+    NA_character_,
+    paste0(formatC(round(estimate, digits = digits), format = "f", digits = digits), significance_stars(p_value))
+  )
+}
+
+build_did_publication_table <- function(
+  coefficients_table,
+  fit_table,
+  sample_summary_table,
+  model_order,
+  post_event_definition_label
+) {
+  coefficient_summary <- coefficients_table %>%
+    dplyr::mutate(
+      estimate_display = format_estimate_with_stars(estimate, p.value),
+      std_error_display = ifelse(
+        is.na(std.error),
+        NA_character_,
+        paste0("(", formatC(round(std.error, digits = 3L), format = "f", digits = 3L), ")")
+      )
+    ) %>%
+    dplyr::select(model_name, estimate_display, std_error_display, p.value)
+
+  sample_summary_compact <- sample_summary_table %>%
+    dplyr::group_by(model_name) %>%
+    dplyr::summarise(
+      entities = max(entities, na.rm = TRUE),
+      events = max(events, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  model_summary <- tibble::tibble(model_name = model_order) %>%
+    dplyr::left_join(coefficient_summary, by = "model_name") %>%
+    dplyr::left_join(fit_table, by = "model_name") %>%
+    dplyr::left_join(sample_summary_compact, by = "model_name") %>%
+    dplyr::mutate(
+      column_label = pretty_model_label(model_name)
+    )
+
+  row_definitions <- tibble::tribble(
+    ~row_label, ~value_column,
+    "PostEvent", "estimate_display",
+    "Std. Error", "std_error_display",
+    "P-value", "p.value",
+    "Observations", "used_rows",
+    "Entities", "entities",
+    "Events", "events",
+    "R-squared", "r2",
+    "Within R-squared", "within_r2"
+  )
+
+  table_rows <- purrr::map_dfr(seq_len(nrow(row_definitions)), function(row_index) {
+    value_column <- row_definitions$value_column[[row_index]]
+    raw_values <- model_summary[[value_column]]
+    formatted_values <- if (is.numeric(raw_values)) {
+      format_output_column(raw_values, value_column, digits = 3L)
+    } else {
+      as.character(raw_values)
+    }
+
+    tibble::tibble(
+      row_label = row_definitions$row_label[[row_index]],
+      column_label = model_summary$column_label,
+      value = formatted_values
+    )
+  })
+
+  metadata_rows <- tibble::tribble(
+    ~row_label, ~value,
+    "Entity fixed effects", "Yes",
+    "Data-source fixed effects", "Yes",
+    "Event fixed effects", "Yes",
+    "Event window", paste0("+/- ", analysis_window_weeks, " weeks"),
+    "PostEvent definition", post_event_definition_label
+  ) %>%
+    tidyr::crossing(column_label = model_summary$column_label) %>%
+    dplyr::select(row_label, column_label, value)
+
+  dplyr::bind_rows(table_rows, metadata_rows) %>%
+    tidyr::pivot_wider(names_from = column_label, values_from = value) %>%
+    dplyr::rename(Statistic = row_label)
+}
+
+build_did_comparison_table <- function(
+  real_coefficients,
+  real_fit,
+  real_sample_summary,
+  placebo_coefficients,
+  placebo_fit,
+  placebo_sample_summary
+) {
+  sample_summary_compact <- function(sample_summary_table) {
+    sample_summary_table %>%
+      dplyr::group_by(model_name) %>%
+      dplyr::summarise(
+        entities = max(entities, na.rm = TRUE),
+        events = max(events, na.rm = TRUE),
+        .groups = "drop"
+      )
+  }
+
+  real_sample <- sample_summary_compact(real_sample_summary) %>%
+    dplyr::rename(real_entities = entities, real_events = events)
+  placebo_sample <- sample_summary_compact(placebo_sample_summary) %>%
+    dplyr::rename(placebo_entities = entities, placebo_events = events)
+
+  tibble::tibble(model_name = model_specifications$model_name) %>%
+    dplyr::mutate(model_label = pretty_model_label(model_name)) %>%
+    dplyr::left_join(
+      real_coefficients %>%
+        dplyr::rename_with(~ paste0("real_", .x), c(estimate, std.error, p.value, conf.low, conf.high)),
+      by = "model_name"
+    ) %>%
+    dplyr::left_join(
+      placebo_coefficients %>%
+        dplyr::rename_with(~ paste0("placebo_", .x), c(estimate, std.error, p.value, conf.low, conf.high)),
+      by = "model_name"
+    ) %>%
+    dplyr::left_join(
+      real_fit %>%
+        dplyr::select(model_name, used_rows, r2, within_r2) %>%
+        dplyr::rename(
+          real_used_rows = used_rows,
+          real_r2 = r2,
+          real_within_r2 = within_r2
+        ),
+      by = "model_name"
+    ) %>%
+    dplyr::left_join(
+      placebo_fit %>%
+        dplyr::select(model_name, used_rows, r2, within_r2) %>%
+        dplyr::rename(
+          placebo_used_rows = used_rows,
+          placebo_r2 = r2,
+          placebo_within_r2 = within_r2
+        ),
+      by = "model_name"
+    ) %>%
+    dplyr::left_join(real_sample, by = "model_name") %>%
+    dplyr::left_join(placebo_sample, by = "model_name") %>%
+    dplyr::mutate(
+      real_estimate_display = format_estimate_with_stars(real_estimate, real_p.value),
+      placebo_estimate_display = format_estimate_with_stars(placebo_estimate, placebo_p.value)
+    ) %>%
+    dplyr::select(
+      model_name,
+      model_label,
+      real_estimate_display,
+      real_std.error,
+      real_p.value,
+      real_conf.low,
+      real_conf.high,
+      real_used_rows,
+      real_entities,
+      real_events,
+      real_within_r2,
+      placebo_estimate_display,
+      placebo_std.error,
+      placebo_p.value,
+      placebo_conf.low,
+      placebo_conf.high,
+      placebo_used_rows,
+      placebo_entities,
+      placebo_events,
+      placebo_within_r2
+    )
+}
+
+create_placebo_events <- function(real_events_table, candidate_weeks, min_gap_weeks = 3L, seed = 7102023L) {
+  real_event_weeks <- unique(real_events_table$event_week_start_sunday)
+
+  valid_placebo_weeks <- candidate_weeks[
+    sapply(candidate_weeks, function(candidate_week) {
+      all(abs(as.integer(candidate_week - real_event_weeks) / 7) > min_gap_weeks)
+    })
+  ]
+
+  required_n <- nrow(real_events_table)
+  if (length(valid_placebo_weeks) < required_n) {
+    stop(
+      "Not enough valid placebo weeks after excluding weeks near real events. Needed: ",
+      required_n,
+      ", available: ",
+      length(valid_placebo_weeks)
+    )
+  }
+
+  set.seed(seed)
+  placebo_weeks <- sample(valid_placebo_weeks, size = required_n, replace = FALSE)
+  placebo_types <- sample(real_events_table$event_type_group, size = required_n, replace = FALSE)
+
+  tibble::tibble(
+    event_date = placebo_weeks,
+    event_type_raw = paste0("placebo_", placebo_types),
+    event_type_group = placebo_types,
+    event_name = paste0("placebo_event_", seq_len(required_n)),
+    event_details = "Random placebo week (seeded) with buffer from real events",
+    event_id = seq_len(required_n),
+    event_week_start_sunday = placebo_weeks
+  ) %>%
+    dplyr::arrange(event_week_start_sunday) %>%
+    dplyr::mutate(event_id = dplyr::row_number())
+}
+
+load_placebo_events_from_repo <- function(
+  placebo_file_path,
+  real_events_table,
+  min_gap_weeks = 3L
+) {
+  if (!file.exists(placebo_file_path)) {
+    return(NULL)
+  }
+
+  placebo_file <- readr::read_csv(placebo_file_path, show_col_types = FALSE)
+  names(placebo_file) <- trimws(names(placebo_file))
+
+  required_placebo_columns <- c("event_date", "event_type_group")
+  missing_columns <- setdiff(required_placebo_columns, names(placebo_file))
+  if (length(missing_columns) > 0) {
+    stop(
+      "Placebo file missing columns: ",
+      paste(missing_columns, collapse = ", "),
+      ". File: ",
+      placebo_file_path
+    )
+  }
+
+  placebo_events <- placebo_file %>%
+    dplyr::transmute(
+      event_date = parse_date_flexible(event_date),
+      event_type_group = as.character(event_type_group)
+    ) %>%
+    dplyr::filter(!is.na(event_date), event_type_group %in% c("political", "terror")) %>%
+    dplyr::arrange(event_date)
+
+  if (nrow(placebo_events) == 0) {
+    stop("Placebo file has no valid rows after parsing: ", placebo_file_path)
+  }
+
+  placebo_events <- placebo_events %>%
+    dplyr::mutate(
+      event_week_start_sunday = event_date,
+      event_type_raw = paste0("placebo_", event_type_group),
+      event_name = paste0("placebo_event_", dplyr::row_number()),
+      event_details = "Predefined placebo week from repository list",
+      event_id = dplyr::row_number()
+    ) %>%
+    dplyr::select(
+      event_date,
+      event_type_raw,
+      event_type_group,
+      event_name,
+      event_details,
+      event_id,
+      event_week_start_sunday
+    )
+
+  real_event_weeks <- unique(real_events_table$event_week_start_sunday)
+  minimum_gap <- min(sapply(placebo_events$event_week_start_sunday, function(candidate_week) {
+    min(abs(as.integer(candidate_week - real_event_weeks) / 7))
+  }))
+
+  if (minimum_gap <= min_gap_weeks) {
+    stop(
+      "Placebo list violates minimum gap from real events. Min gap observed: ",
+      minimum_gap,
+      " weeks, required: > ",
+      min_gap_weeks,
+      " weeks."
+    )
+  }
+
+  placebo_events
+}
+
 read_weekly_spend_file <- function(file_path) {
   dataset <- readr::read_csv(file_path, show_col_types = FALSE)
   names(dataset) <- trimws(names(dataset))
@@ -575,8 +905,11 @@ dir.create(output_directory, showWarnings = FALSE, recursive = TRUE)
 
 output_paths <- list(
   summaries = file.path(output_directory, "summaries"),
+  tables = file.path(output_directory, "tables"),
   post_from_0 = file.path(output_directory, "post_from_0"),
   post_from_minus1 = file.path(output_directory, "post_from_minus1"),
+  placebo_post_from_0 = file.path(output_directory, "placebo", "post_from_0"),
+  placebo_post_from_minus1 = file.path(output_directory, "placebo", "post_from_minus1"),
   oct7_post_from_0 = file.path(output_directory, "oct7", "post_from_0"),
   oct7_post_from_minus1 = file.path(output_directory, "oct7", "post_from_minus1"),
   gamma_t_demonstration = file.path(output_directory, "gamma_t_demonstration")
@@ -692,6 +1025,30 @@ events_table <- raw_events %>%
 
 if (nrow(events_table) == 0) {
   stop("No valid political/terror events found in events file.")
+}
+
+repo_placebo_dates_path <- "./placebo_events_2020_2025.csv"
+placebo_window_start <- as.Date("2020-01-05")
+placebo_window_end <- as.Date("2025-12-28")
+placebo_events_table <- load_placebo_events_from_repo(
+  placebo_file_path = repo_placebo_dates_path,
+  real_events_table = events_table,
+  min_gap_weeks = analysis_window_weeks + 1L
+)
+
+if (is.null(placebo_events_table)) {
+  candidate_placebo_weeks <- sort(unique(
+    weekly_spend_panel$week_start_sunday[
+      weekly_spend_panel$week_start_sunday >= placebo_window_start &
+        weekly_spend_panel$week_start_sunday <= placebo_window_end
+    ]
+  ))
+  placebo_events_table <- create_placebo_events(
+    real_events_table = events_table,
+    candidate_weeks = candidate_placebo_weeks,
+    min_gap_weeks = analysis_window_weeks + 1L,
+    seed = 7102023L
+  )
 }
 
 # -------------------------
@@ -843,6 +1200,70 @@ gamma_t_compare_table <- dplyr::bind_rows(
   gamma_t_demo_coefficient
 )
 
+placebo_event_window_panel <- tidyr::crossing(
+  weekly_spend_panel %>%
+    dplyr::select(data_source, entity_name, entity_group, week_start_sunday, weekly_spend_ils),
+  placebo_events_table %>%
+    dplyr::select(event_id, event_date, event_week_start_sunday, event_type_group, event_name)
+) %>%
+  dplyr::mutate(
+    relative_week = as.integer((week_start_sunday - event_week_start_sunday) / 7),
+    post_event = dplyr::if_else(relative_week >= 0L, 1L, 0L),
+    log_weekly_spend = log1p(weekly_spend_ils)
+  ) %>%
+  dplyr::filter(relative_week >= -analysis_window_weeks, relative_week <= analysis_window_weeks)
+
+placebo_did_design_overview <- placebo_event_window_panel %>%
+  dplyr::summarise(
+    event_window_weeks = analysis_window_weeks,
+    total_rows = dplyr::n(),
+    total_entities = dplyr::n_distinct(entity_name),
+    total_events = dplyr::n_distinct(event_id),
+    pre_event_rows = sum(post_event == 0L),
+    post_event_rows = sum(post_event == 1L),
+    first_week = min(week_start_sunday, na.rm = TRUE),
+    last_week = max(week_start_sunday, na.rm = TRUE)
+  )
+
+placebo_event_window_panel_post_from_minus1 <- placebo_event_window_panel %>%
+  dplyr::mutate(
+    post_event = dplyr::if_else(relative_week >= -1L, 1L, 0L)
+  )
+
+placebo_did_design_overview_post_from_minus1 <- placebo_event_window_panel_post_from_minus1 %>%
+  dplyr::summarise(
+    event_window_weeks = analysis_window_weeks,
+    total_rows = dplyr::n(),
+    total_entities = dplyr::n_distinct(entity_name),
+    total_events = dplyr::n_distinct(event_id),
+    pre_event_rows = sum(post_event == 0L),
+    post_event_rows = sum(post_event == 1L),
+    first_week = min(week_start_sunday, na.rm = TRUE),
+    last_week = max(week_start_sunday, na.rm = TRUE)
+  )
+
+placebo_model_results <- fit_did_specs(
+  input_panel = placebo_event_window_panel,
+  specifications = model_specifications
+)
+
+placebo_model_results_post_from_minus1 <- fit_did_specs(
+  input_panel = placebo_event_window_panel_post_from_minus1,
+  specifications = model_specifications
+)
+
+placebo_model_coefficients <- dplyr::bind_rows(placebo_model_results$coefficient)
+placebo_model_fit <- dplyr::bind_rows(placebo_model_results$fit)
+placebo_model_sample_summary <- dplyr::bind_rows(placebo_model_results$sample_summary)
+
+placebo_model_coefficients_post_from_minus1 <- dplyr::bind_rows(
+  placebo_model_results_post_from_minus1$coefficient
+)
+placebo_model_fit_post_from_minus1 <- dplyr::bind_rows(placebo_model_results_post_from_minus1$fit)
+placebo_model_sample_summary_post_from_minus1 <- dplyr::bind_rows(
+  placebo_model_results_post_from_minus1$sample_summary
+)
+
 if (nrow(all_model_coefficients) > 0) {
   combined_did_plot <- plot_did_coefficients(
     coefficients_table = all_model_coefficients,
@@ -874,6 +1295,88 @@ if (nrow(all_model_coefficients_post_from_minus1) > 0) {
     dpi = 300
   )
 }
+
+if (nrow(placebo_model_coefficients) > 0) {
+  placebo_combined_did_plot <- plot_did_coefficients(
+    coefficients_table = placebo_model_coefficients,
+    plot_title = "Placebo DiD-Style Post-Event Estimates Across Model Splits",
+    plot_subtitle = "DV: log(1 + weekly spend). PostEvent = 1 for placebo relative_week >= 0"
+  )
+
+  ggplot2::ggsave(
+    filename = file.path(output_paths$placebo_post_from_0, "did_coefficients_by_model.png"),
+    plot = placebo_combined_did_plot,
+    width = 11,
+    height = 6.5,
+    dpi = 300
+  )
+}
+
+if (nrow(placebo_model_coefficients_post_from_minus1) > 0) {
+  placebo_combined_did_post_from_minus1_plot <- plot_did_coefficients(
+    coefficients_table = placebo_model_coefficients_post_from_minus1,
+    plot_title = "Placebo DiD-Style Post-Event Estimates Across Model Splits",
+    plot_subtitle = "DV: log(1 + weekly spend). PostEvent = 1 for placebo relative_week >= -1"
+  )
+
+  ggplot2::ggsave(
+    filename = file.path(output_paths$placebo_post_from_minus1, "did_coefficients_by_model.png"),
+    plot = placebo_combined_did_post_from_minus1_plot,
+    width = 11,
+    height = 6.5,
+    dpi = 300
+  )
+}
+
+did_paper_table_post_from_0 <- build_did_publication_table(
+  coefficients_table = all_model_coefficients,
+  fit_table = all_model_fit,
+  sample_summary_table = all_model_sample_summary,
+  model_order = model_specifications$model_name,
+  post_event_definition_label = "1 if relative_week >= 0"
+)
+
+did_paper_table_post_from_minus1 <- build_did_publication_table(
+  coefficients_table = all_model_coefficients_post_from_minus1,
+  fit_table = all_model_fit_post_from_minus1,
+  sample_summary_table = all_model_sample_summary_post_from_minus1,
+  model_order = model_specifications$model_name,
+  post_event_definition_label = "1 if relative_week >= -1"
+)
+
+placebo_did_paper_table_post_from_0 <- build_did_publication_table(
+  coefficients_table = placebo_model_coefficients,
+  fit_table = placebo_model_fit,
+  sample_summary_table = placebo_model_sample_summary,
+  model_order = model_specifications$model_name,
+  post_event_definition_label = "1 if placebo relative_week >= 0"
+)
+
+placebo_did_paper_table_post_from_minus1 <- build_did_publication_table(
+  coefficients_table = placebo_model_coefficients_post_from_minus1,
+  fit_table = placebo_model_fit_post_from_minus1,
+  sample_summary_table = placebo_model_sample_summary_post_from_minus1,
+  model_order = model_specifications$model_name,
+  post_event_definition_label = "1 if placebo relative_week >= -1"
+)
+
+did_comparison_post_from_0 <- build_did_comparison_table(
+  real_coefficients = all_model_coefficients,
+  real_fit = all_model_fit,
+  real_sample_summary = all_model_sample_summary,
+  placebo_coefficients = placebo_model_coefficients,
+  placebo_fit = placebo_model_fit,
+  placebo_sample_summary = placebo_model_sample_summary
+)
+
+did_comparison_post_from_minus1 <- build_did_comparison_table(
+  real_coefficients = all_model_coefficients_post_from_minus1,
+  real_fit = all_model_fit_post_from_minus1,
+  real_sample_summary = all_model_sample_summary_post_from_minus1,
+  placebo_coefficients = placebo_model_coefficients_post_from_minus1,
+  placebo_fit = placebo_model_fit_post_from_minus1,
+  placebo_sample_summary = placebo_model_sample_summary_post_from_minus1
+)
 
 # -------------------------
 # Dedicated 07/10/2023 DiD-style model
@@ -1014,6 +1517,11 @@ write_clean_csv(did_design_overview, file.path(output_paths$post_from_0, "did_de
 write_clean_csv(all_model_sample_summary, file.path(output_paths$post_from_0, "did_sample_summary_by_model.csv"))
 write_clean_csv(all_model_coefficients, file.path(output_paths$post_from_0, "did_coefficients_by_model.csv"))
 write_clean_csv(all_model_fit, file.path(output_paths$post_from_0, "did_model_fit.csv"))
+write_clean_csv(placebo_events_table, file.path(output_paths$placebo_post_from_0, "placebo_events_dates.csv"))
+write_clean_csv(placebo_did_design_overview, file.path(output_paths$placebo_post_from_0, "did_design_overview.csv"))
+write_clean_csv(placebo_model_sample_summary, file.path(output_paths$placebo_post_from_0, "did_sample_summary_by_model.csv"))
+write_clean_csv(placebo_model_coefficients, file.path(output_paths$placebo_post_from_0, "did_coefficients_by_model.csv"))
+write_clean_csv(placebo_model_fit, file.path(output_paths$placebo_post_from_0, "did_model_fit.csv"))
 write_clean_csv(
   did_design_overview_post_from_minus1,
   file.path(output_paths$post_from_minus1, "did_design_overview.csv")
@@ -1029,6 +1537,58 @@ write_clean_csv(
 write_clean_csv(
   all_model_fit_post_from_minus1,
   file.path(output_paths$post_from_minus1, "did_model_fit.csv")
+)
+write_clean_csv(
+  placebo_did_design_overview_post_from_minus1,
+  file.path(output_paths$placebo_post_from_minus1, "did_design_overview.csv")
+)
+write_clean_csv(
+  placebo_model_sample_summary_post_from_minus1,
+  file.path(output_paths$placebo_post_from_minus1, "did_sample_summary_by_model.csv")
+)
+write_clean_csv(
+  placebo_model_coefficients_post_from_minus1,
+  file.path(output_paths$placebo_post_from_minus1, "did_coefficients_by_model.csv")
+)
+write_clean_csv(
+  placebo_model_fit_post_from_minus1,
+  file.path(output_paths$placebo_post_from_minus1, "did_model_fit.csv")
+)
+write_clean_csv(did_paper_table_post_from_0, file.path(output_paths$tables, "did_paper_table_post_from_0.csv"))
+write_markdown_table(did_paper_table_post_from_0, file.path(output_paths$tables, "did_paper_table_post_from_0.md"))
+write_clean_csv(did_paper_table_post_from_minus1, file.path(output_paths$tables, "did_paper_table_post_from_minus1.csv"))
+write_markdown_table(
+  did_paper_table_post_from_minus1,
+  file.path(output_paths$tables, "did_paper_table_post_from_minus1.md")
+)
+write_clean_csv(
+  placebo_did_paper_table_post_from_0,
+  file.path(output_paths$tables, "placebo_did_paper_table_post_from_0.csv")
+)
+write_markdown_table(
+  placebo_did_paper_table_post_from_0,
+  file.path(output_paths$tables, "placebo_did_paper_table_post_from_0.md")
+)
+write_clean_csv(
+  placebo_did_paper_table_post_from_minus1,
+  file.path(output_paths$tables, "placebo_did_paper_table_post_from_minus1.csv")
+)
+write_markdown_table(
+  placebo_did_paper_table_post_from_minus1,
+  file.path(output_paths$tables, "placebo_did_paper_table_post_from_minus1.md")
+)
+write_clean_csv(did_comparison_post_from_0, file.path(output_paths$tables, "did_real_vs_placebo_post_from_0.csv"))
+write_markdown_table(
+  did_comparison_post_from_0,
+  file.path(output_paths$tables, "did_real_vs_placebo_post_from_0.md")
+)
+write_clean_csv(
+  did_comparison_post_from_minus1,
+  file.path(output_paths$tables, "did_real_vs_placebo_post_from_minus1.csv")
+)
+write_markdown_table(
+  did_comparison_post_from_minus1,
+  file.path(output_paths$tables, "did_real_vs_placebo_post_from_minus1.md")
 )
 
 # Save the gamma_t demonstration outputs (kept for the seminar paper).
@@ -1207,6 +1767,44 @@ write_paper_style_summary(
   summary_connection = summary_connection
 )
 
+writeLines("\n--- placebo_did_design_overview ---", con = summary_connection)
+write_formatted_table(placebo_did_design_overview, summary_connection)
+writeLines("", con = summary_connection)
+
+writeLines("--- placebo_did_sample_summary_by_model ---", con = summary_connection)
+write_formatted_table(placebo_model_sample_summary, summary_connection)
+writeLines("", con = summary_connection)
+
+writeLines("\n--- placebo_did_design_overview_post_from_minus1 ---", con = summary_connection)
+write_formatted_table(placebo_did_design_overview_post_from_minus1, summary_connection)
+writeLines("", con = summary_connection)
+
+writeLines("--- placebo_did_sample_summary_by_model_post_from_minus1 ---", con = summary_connection)
+write_formatted_table(placebo_model_sample_summary_post_from_minus1, summary_connection)
+writeLines("", con = summary_connection)
+
+writeLines("\n--- placebo_did_models_post_from_0 ---", con = summary_connection)
+write_model_summary_sections(
+  model_names = placebo_model_results$model_name,
+  coefficients_table = placebo_model_coefficients,
+  fit_table = placebo_model_fit,
+  summary_connection = summary_connection
+)
+
+writeLines("\n--- placebo_did_models_post_from_minus1 ---", con = summary_connection)
+write_model_summary_sections(
+  model_names = placebo_model_results_post_from_minus1$model_name,
+  coefficients_table = placebo_model_coefficients_post_from_minus1,
+  fit_table = placebo_model_fit_post_from_minus1,
+  summary_connection = summary_connection
+)
+
+writeLines("\n--- did_real_vs_placebo_post_from_0 ---", con = summary_connection)
+write_formatted_table(did_comparison_post_from_0, summary_connection)
+
+writeLines("\n--- did_real_vs_placebo_post_from_minus1 ---", con = summary_connection)
+write_formatted_table(did_comparison_post_from_minus1, summary_connection)
+
 if (nrow(oct7_coefficient) > 0) {
   writeLines("", con = summary_connection)
   writeLines(strrep("=", 73L), con = summary_connection)
@@ -1279,6 +1877,11 @@ if (nrow(all_model_coefficients) > 0) {
   print(format_output_table(all_model_coefficients))
 }
 
+if (nrow(placebo_model_coefficients) > 0) {
+  print_section("Placebo DiD Coefficients")
+  print(format_output_table(placebo_model_coefficients))
+}
+
 if (nrow(all_model_coefficients_post_from_minus1) > 0) {
   print_section("DiD Coefficients (Post From -1)")
   print(format_output_table(all_model_coefficients_post_from_minus1))
@@ -1292,13 +1895,22 @@ if (nrow(oct7_group_fit) > 0) {
 print_section("Output Files")
 cat("Saved DiD-style outputs to: ", normalizePath(output_directory), "\n", sep = "")
 cat("- summaries/regression_summary.txt\n")
+cat("- tables/*\n")
 cat("- post_from_0/*\n")
 cat("- post_from_minus1/*\n")
+cat("- placebo/post_from_0/*\n")
+cat("- placebo/post_from_minus1/*\n")
 if (nrow(all_model_coefficients) > 0) {
   cat("- post_from_0/did_coefficients_by_model.png\n")
 }
 if (nrow(all_model_coefficients_post_from_minus1) > 0) {
   cat("- post_from_minus1/did_coefficients_by_model.png\n")
+}
+if (nrow(placebo_model_coefficients) > 0) {
+  cat("- placebo/post_from_0/did_coefficients_by_model.png\n")
+}
+if (nrow(placebo_model_coefficients_post_from_minus1) > 0) {
+  cat("- placebo/post_from_minus1/did_coefficients_by_model.png\n")
 }
 if (nrow(oct7_coefficient) > 0) {
   cat("- oct7/post_from_0/did_coefs_0710.csv\n")

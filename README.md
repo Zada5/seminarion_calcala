@@ -57,6 +57,7 @@ Rscript did_0710.R
 ```
 
 `did_0710.R` uses the same Sunday-start event windows as the event-study script and defines `PostEvent = 1` when `relative_week >= 0`. It also writes an additional robustness version where `PostEvent = 1` starts at `relative_week >= -1`.
+It now also runs the same placebo-date design used by `event_study_0710.R`, using `placebo_events_2020_2025.csv` when available and otherwise falling back to the seeded deterministic placebo generator.
 
 ### Regression specifications
 
@@ -105,6 +106,7 @@ The earlier version of these scripts used `log1p(weekly_spend_ils)` for the depe
 `event_study_0710.R` now writes:
 
 * `analysis_outputs/summaries/regression_summary.txt`: readable regression summary covering real event-study, placebo event-study, October 7, and the `baseline_minus1` robustness outputs
+* `analysis_outputs/tables/`: paper-style correlation comparison tables (`.csv` and `.md`) including real vs placebo side-by-side outputs
 * `analysis_outputs/descriptive/`: descriptive CSV tables
 * `analysis_outputs/correlations/real_events/`: real-event correlation CSV + graphs
 * `analysis_outputs/correlations/placebo_events/`: placebo-event correlation CSV + graphs
@@ -117,13 +119,15 @@ The earlier version of these scripts used `log1p(weekly_spend_ils)` for the depe
 
 `did_0710.R` writes DiD outputs into:
 
-* `analysis_outputs_did/summaries/regression_summary.txt`: readable summary covering the main DiD, `post_from_minus1`, and October 7 split models
+* `analysis_outputs_did/summaries/regression_summary.txt`: readable summary covering the main DiD, placebo DiD, `post_from_minus1`, and October 7 split models
+* `analysis_outputs_did/tables/`: paper-style DiD tables (`.csv` and `.md`) for real DiD, placebo DiD, and real-vs-placebo comparisons
 * `analysis_outputs_did/post_from_0/`: main DiD design, sample, coefficient, fit, and graph outputs
 * `analysis_outputs_did/post_from_minus1/`: robustness version where `PostEvent = 1` starts at `relative_week >= -1`
+* `analysis_outputs_did/placebo/post_from_0/` and `analysis_outputs_did/placebo/post_from_minus1/`: placebo DiD outputs on the canonical placebo weeks
 * `analysis_outputs_did/oct7/post_from_0/` and `analysis_outputs_did/oct7/post_from_minus1/`: dedicated 2023-10-07 DiD outputs
 * `analysis_outputs_did/gamma_t_demonstration/`: paper artefact — single DiD regression with `gamma_t` (calendar-week FE) included, plus a `README.txt` and side-by-side comparison CSV showing β driven to numerical zero (see "Regression specifications" above)
 
-Numeric outputs in generated CSV and summary text files are formatted to 3 decimal places where relevant, without scientific notation. Very small p-values are displayed as `<0.001` rather than `0.000`.
+Numeric outputs in generated CSV and summary text files are formatted to 3 decimal places where relevant, without scientific notation. Very small p-values are displayed as `<0.001` rather than `0.000`. Correlation summaries now also include Pearson-test p-values.
 
 ---
 

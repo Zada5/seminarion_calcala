@@ -1,0 +1,6 @@
+Statistic,All entities x all events,All entities x political events,All entities x terror events,Other orgs/people x all events,Other orgs/people x political events,Other orgs/people x terror events,Political parties x all events,Political parties x political events,Political parties x terror events
+Real-event correlation,-0.007,-0.020,0.012,0.100,0.057,0.087,-0.112,-0.092,-0.065
+Real-event p-value,0.886,0.690,0.815,0.048,0.258,0.087,0.034,0.081,0.223
+Placebo correlation,-0.004,-0.039,0.037,-0.011,-0.023,0.010,-0.009,-0.051,0.042
+Placebo p-value,0.942,0.445,0.467,0.834,0.646,0.838,0.869,0.338,0.426
+Weeks in sample,390.000,390.000,390.000,390.000,390.000,390.000,358.000,358.000,358.000

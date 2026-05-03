@@ -1,0 +1,15 @@
+| Statistic | All entities x all events | Political parties x all events | Other orgs/people x all events | All entities x political events | All entities x terror events | Political parties x political events | Political parties x terror events | Other orgs/people x political events | Other orgs/people x terror events |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PostEvent | 0.050** | 0.130** | 0.023 | 0.027 | 0.066 | 0.015 | 0.210* | 0.020 | 0.029 |
+| Std. Error | (0.024) | (0.054) | (0.024) | (0.027) | (0.046) | (0.045) | (0.113) | (0.031) | (0.042) |
+| P-value | 0.042 | 0.029 | 0.348 | 0.320 | 0.154 | 0.752 | 0.080 | 0.527 | 0.504 |
+| Observations | 9767 | 1826 | 7941 | 5208 | 4557 | 900 | 926 | 4308 | 3631 |
+| Entities | 66 | 18 | 49 | 59 | 65 | 13 | 18 | 46 | 47 |
+| Events | 66 | 66 | 66 | 36 | 30 | 36 | 30 | 36 | 30 |
+| R-squared | 0.303 | 0.496 | 0.330 | 0.337 | 0.296 | 0.514 | 0.508 | 0.341 | 0.335 |
+| Within R-squared | 0.000 | 0.002 | 0.000 | 0.000 | 0.000 | 0.000 | 0.004 | 0.000 | 0.000 |
+| Data-source fixed effects | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Entity fixed effects | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Event fixed effects | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Event window | +/- 2 weeks | +/- 2 weeks | +/- 2 weeks | +/- 2 weeks | +/- 2 weeks | +/- 2 weeks | +/- 2 weeks | +/- 2 weeks | +/- 2 weeks |
+| PostEvent definition | 1 if placebo relative_week >= -1 | 1 if placebo relative_week >= -1 | 1 if placebo relative_week >= -1 | 1 if placebo relative_week >= -1 | 1 if placebo relative_week >= -1 | 1 if placebo relative_week >= -1 | 1 if placebo relative_week >= -1 | 1 if placebo relative_week >= -1 | 1 if placebo relative_week >= -1 |
