@@ -1,5 +1,5 @@
 model_name,relative_week,estimate,std.error,statistic,p.value,conf.low,conf.high,pct_change,signif
-all_entities_all_events__with_gamma_t,-2,-0.193,14.969,-0.013,0.990,-30.096,29.710,-17.6%,
-all_entities_all_events__with_gamma_t,-1,-0.097,7.484,-0.013,0.990,-15.048,14.855,-9.2%,
-all_entities_all_events__with_gamma_t,1,0.097,7.484,0.013,0.990,-14.855,15.048,+10.1%,
-all_entities_all_events__with_gamma_t,2,0.193,14.969,0.013,0.990,-29.710,30.096,+21.3%,
+all_entities_all_events__with_gamma_t,-2,-0.193,14.969,-0.013,0.990,-30.097,29.711,-17.6%,
+all_entities_all_events__with_gamma_t,-1,-0.097,7.485,-0.013,0.990,-15.049,14.856,-9.2%,
+all_entities_all_events__with_gamma_t,1,0.097,7.485,0.013,0.990,-14.856,15.049,+10.1%,
+all_entities_all_events__with_gamma_t,2,0.193,14.969,0.013,0.990,-29.711,30.097,+21.3%,

@@ -1,0 +1,11 @@
+| entity_group | event_scope | model_label | real_correlation | real_p.value | real_weeks_in_sample | real_weeks_with_any_event | placebo_correlation | placebo_p.value | placebo_weeks_in_sample | placebo_weeks_with_any_event |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| all_entities | all_events | All entities x all events | -0.007 | 0.886 | 390 | 57 | -0.004 | 0.942 | 390 | 66 |
+| all_entities | political | All entities x political events | -0.020 | 0.690 | 390 | 32 | -0.039 | 0.445 | 390 | 36 |
+| all_entities | terror | All entities x terror events | 0.012 | 0.815 | 390 | 28 | 0.037 | 0.467 | 390 | 30 |
+| other_org_or_person | all_events | Other orgs/people x all events | 0.100 | 0.048 | 390 | 57 | -0.011 | 0.834 | 390 | 66 |
+| other_org_or_person | political | Other orgs/people x political events | 0.057 | 0.258 | 390 | 32 | -0.023 | 0.646 | 390 | 36 |
+| other_org_or_person | terror | Other orgs/people x terror events | 0.087 | 0.087 | 390 | 28 | 0.010 | 0.838 | 390 | 30 |
+| political_party | all_events | Political parties x all events | -0.112 | 0.034 | 358 | 57 | -0.009 | 0.869 | 358 | 65 |
+| political_party | political | Political parties x political events | -0.092 | 0.081 | 358 | 32 | -0.051 | 0.338 | 358 | 35 |
+| political_party | terror | Political parties x terror events | -0.065 | 0.223 | 358 | 28 | 0.042 | 0.426 | 358 | 30 |

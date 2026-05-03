@@ -433,6 +433,142 @@ write_paper_style_header <- function(summary_connection,
   writeLines("", con = summary_connection)
 }
 
+write_markdown_table <- function(dataframe, file_path, digits = 3L) {
+  formatted_table <- format_output_table(dataframe, digits = digits) %>%
+    dplyr::mutate(
+      dplyr::across(
+        .cols = dplyr::everything(),
+        .fns = ~ dplyr::if_else(is.na(.x), "", as.character(.x))
+      )
+    )
+
+  if (nrow(formatted_table) == 0) {
+    writeLines("No rows.", con = file_path)
+    return(invisible(NULL))
+  }
+
+  header_line <- paste0("| ", paste(names(formatted_table), collapse = " | "), " |")
+  separator_line <- paste0("| ", paste(rep("---", ncol(formatted_table)), collapse = " | "), " |")
+  row_lines <- apply(formatted_table, 1, function(row_values) {
+    paste0("| ", paste(row_values, collapse = " | "), " |")
+  })
+
+  writeLines(c(header_line, separator_line, row_lines), con = file_path)
+  invisible(NULL)
+}
+
+pretty_model_label <- function(entity_group, event_scope) {
+  paste(
+    dplyr::case_when(
+      entity_group == "all_entities" ~ "All entities",
+      entity_group == "political_party" ~ "Political parties",
+      entity_group == "other_org_or_person" ~ "Other orgs/people",
+      TRUE ~ entity_group
+    ),
+    "x",
+    dplyr::case_when(
+      event_scope == "all_events" ~ "all events",
+      event_scope == "political" ~ "political events",
+      event_scope == "terror" ~ "terror events",
+      TRUE ~ event_scope
+    )
+  )
+}
+
+safe_correlation_test <- function(x, y) {
+  valid_rows <- stats::complete.cases(x, y)
+  x <- x[valid_rows]
+  y <- y[valid_rows]
+
+  if (length(x) < 3 || stats::sd(x) == 0 || stats::sd(y) == 0) {
+    return(list(correlation = NA_real_, p_value = NA_real_, observations = length(x)))
+  }
+
+  test_result <- suppressWarnings(stats::cor.test(x, y, method = "pearson"))
+  list(
+    correlation = unname(test_result$estimate[[1]]),
+    p_value = unname(test_result$p.value),
+    observations = length(x)
+  )
+}
+
+build_correlation_comparison_table <- function(real_summary, placebo_summary) {
+  real_table <- real_summary %>%
+    dplyr::rename(
+      real_correlation = correlation_weekly_spend_vs_event_count,
+      real_p.value = p.value,
+      real_weeks_in_sample = weeks_in_sample,
+      real_weeks_with_any_event = weeks_with_any_event,
+      real_average_weekly_spend_ils = average_weekly_spend_ils,
+      real_average_weekly_event_count = average_weekly_event_count
+    )
+
+  placebo_table <- placebo_summary %>%
+    dplyr::rename(
+      placebo_correlation = correlation_weekly_spend_vs_event_count,
+      placebo_p.value = p.value,
+      placebo_weeks_in_sample = weeks_in_sample,
+      placebo_weeks_with_any_event = weeks_with_any_event,
+      placebo_average_weekly_spend_ils = average_weekly_spend_ils,
+      placebo_average_weekly_event_count = average_weekly_event_count
+    )
+
+  tibble::tibble(
+    entity_group = c("all_entities", "political_party", "other_org_or_person")
+  ) %>%
+    tidyr::crossing(event_scope = c("all_events", "political", "terror")) %>%
+    dplyr::left_join(real_table, by = c("entity_group", "event_scope")) %>%
+    dplyr::left_join(placebo_table, by = c("entity_group", "event_scope")) %>%
+    dplyr::mutate(model_label = pretty_model_label(entity_group, event_scope)) %>%
+    dplyr::select(
+      entity_group,
+      event_scope,
+      model_label,
+      real_correlation,
+      real_p.value,
+      real_weeks_in_sample,
+      real_weeks_with_any_event,
+      placebo_correlation,
+      placebo_p.value,
+      placebo_weeks_in_sample,
+      placebo_weeks_with_any_event
+    )
+}
+
+build_correlation_publication_table <- function(comparison_table) {
+  table_rows <- comparison_table %>%
+    dplyr::mutate(column_label = model_label) %>%
+    dplyr::select(
+      column_label,
+      real_correlation,
+      real_p.value,
+      placebo_correlation,
+      placebo_p.value,
+      real_weeks_in_sample
+    )
+
+  row_definitions <- tibble::tribble(
+    ~row_label, ~value_column,
+    "Real-event correlation", "real_correlation",
+    "Real-event p-value", "real_p.value",
+    "Placebo correlation", "placebo_correlation",
+    "Placebo p-value", "placebo_p.value",
+    "Weeks in sample", "real_weeks_in_sample"
+  )
+
+  purrr::map_dfr(seq_len(nrow(row_definitions)), function(row_index) {
+    value_column <- row_definitions$value_column[[row_index]]
+
+    tibble::tibble(
+      row_label = row_definitions$row_label[[row_index]],
+      column_label = table_rows$column_label,
+      value = table_rows[[value_column]]
+    )
+  }) %>%
+    tidyr::pivot_wider(names_from = column_label, values_from = value) %>%
+    dplyr::rename(Statistic = row_label)
+}
+
 add_baseline_coefficient_row <- function(coefficients_table, model_name_label, baseline_relative_week = 0L) {
   baseline_row <- tibble::tibble(
     model_name = model_name_label,
@@ -656,14 +792,19 @@ build_correlation_outputs <- function(event_count_wide_table, spend_totals_for_c
 
   correlation_summary_local <- correlation_panel_long_local %>%
     dplyr::group_by(entity_group, event_scope) %>%
-    dplyr::summarise(
-      correlation_weekly_spend_vs_event_count = safe_correlation(total_weekly_spend_ils, weekly_event_count),
-      weeks_in_sample = dplyr::n(),
-      weeks_with_any_event = sum(weekly_event_count > 0, na.rm = TRUE),
-      average_weekly_spend_ils = mean(total_weekly_spend_ils, na.rm = TRUE),
-      average_weekly_event_count = mean(weekly_event_count, na.rm = TRUE),
-      .groups = "drop"
-    ) %>%
+    dplyr::group_modify(function(.x, .y) {
+      correlation_test <- safe_correlation_test(.x$total_weekly_spend_ils, .x$weekly_event_count)
+
+      tibble::tibble(
+        correlation_weekly_spend_vs_event_count = correlation_test$correlation,
+        p.value = correlation_test$p_value,
+        weeks_in_sample = correlation_test$observations,
+        weeks_with_any_event = sum(.x$weekly_event_count > 0, na.rm = TRUE),
+        average_weekly_spend_ils = mean(.x$total_weekly_spend_ils, na.rm = TRUE),
+        average_weekly_event_count = mean(.x$weekly_event_count, na.rm = TRUE)
+      )
+    }) %>%
+    dplyr::ungroup() %>%
     dplyr::arrange(entity_group, event_scope)
 
   list(
@@ -817,6 +958,7 @@ dir.create(output_directory, showWarnings = FALSE, recursive = TRUE)
 
 output_paths <- list(
   summaries = file.path(output_directory, "summaries"),
+  tables = file.path(output_directory, "tables"),
   descriptive = file.path(output_directory, "descriptive"),
   correlations_real = file.path(output_directory, "correlations", "real_events"),
   correlations_placebo = file.path(output_directory, "correlations", "placebo_events"),
@@ -1378,6 +1520,11 @@ placebo_correlation_outputs <- build_correlation_outputs(
 )
 placebo_correlation_summary <- placebo_correlation_outputs$correlation_summary
 placebo_correlation_panel_long <- placebo_correlation_outputs$correlation_panel_long
+correlation_comparison_table <- build_correlation_comparison_table(
+  real_summary = correlation_summary,
+  placebo_summary = placebo_correlation_summary
+)
+correlation_publication_table <- build_correlation_publication_table(correlation_comparison_table)
 
 placebo_event_window_panel <- tidyr::crossing(
   weekly_spend_panel %>%
@@ -1786,6 +1933,10 @@ write_clean_csv(pre_post_oct7_stats, file.path(output_paths$descriptive, "descri
 write_clean_csv(correlation_summary, file.path(output_paths$correlations_real, "correlation_summary.csv"))
 write_clean_csv(placebo_events_table, file.path(output_paths$placebo_events, "placebo_events_dates.csv"))
 write_clean_csv(placebo_correlation_summary, file.path(output_paths$correlations_placebo, "placebo_correlation_summary.csv"))
+write_clean_csv(correlation_comparison_table, file.path(output_paths$tables, "correlation_real_vs_placebo.csv"))
+write_markdown_table(correlation_comparison_table, file.path(output_paths$tables, "correlation_real_vs_placebo.md"))
+write_clean_csv(correlation_publication_table, file.path(output_paths$tables, "correlation_paper_table.csv"))
+write_markdown_table(correlation_publication_table, file.path(output_paths$tables, "correlation_paper_table.md"))
 
 write_clean_csv(all_model_coefficients, file.path(output_paths$event_study_baseline_0, "event_study_coefficients_by_model.csv"))
 write_clean_csv(all_model_fit, file.path(output_paths$event_study_baseline_0, "event_study_model_fit.csv"))
@@ -1936,6 +2087,10 @@ writeLines(strrep("-", 73L), con = summary_connection)
 write_formatted_table(placebo_correlation_summary, summary_connection)
 writeLines("", con = summary_connection)
 
+writeLines("--- correlation_real_vs_placebo ---", con = summary_connection)
+write_formatted_table(correlation_comparison_table, summary_connection)
+writeLines("", con = summary_connection)
+
 writeLines("", con = summary_connection)
 writeLines(strrep("=", 73L), con = summary_connection)
 writeLines("Event-study models -- baseline reference week = 0", con = summary_connection)
@@ -2072,6 +2227,7 @@ if (nrow(oct7_group_fit) > 0) {
 print_section("Output Files")
 cat("Saved descriptive stats and regressions to: ", normalizePath(output_directory), "\n", sep = "")
 cat("- summaries/regression_summary.txt\n")
+cat("- tables/*\n")
 cat("- descriptive/*.csv\n")
 cat("- correlations/real_events/*\n")
 cat("- correlations/placebo_events/*\n")
