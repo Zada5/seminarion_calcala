@@ -1,12 +1,19 @@
-import requests
-import os
-import re
+"""Build weekly Meta Ads Library spending files.
+
+The raw Meta exports report ad-level spend over arbitrary date ranges. This
+script converts those rows into the repository's Sunday-start weekly schema by
+spreading spend evenly across delivery days and summing by entity/week.
+"""
+
 import glob
 import math
-from datetime import datetime, date, timedelta
+import os
+import re
 from collections import defaultdict
+from datetime import date, datetime, timedelta
 
 import pandas as pd
+import requests
 
 
 # ---------------------------
@@ -14,8 +21,10 @@ import pandas as pd
 # ---------------------------
 
 DATE_RE = re.compile(r"(20\d{2}-\d{2}-\d{2})")
+EPOCH_WEEK1 = date(2020, 1, 5)  # first Sunday of 2020
 
-def parse_party_and_download_date_from_filename(path: str):
+
+def parse_party_and_download_date_from_filename(path: str) -> tuple[str, date]:
     """
     Examples:
       "מקור ראשון-2026-01-04.csv"         -> party="מקור ראשון", download_date=2026-01-04
@@ -28,7 +37,7 @@ def parse_party_and_download_date_from_filename(path: str):
     m = DATE_RE.search(name)
     if m:
         download_date = datetime.strptime(m.group(1), "%Y-%m-%d").date()
-        party_part = name[:m.start()].rstrip("-_ ").strip()
+        party_part = name[: m.start()].rstrip("-_ ").strip()
         if not party_part:
             party_part = "UNKNOWN_PARTY"
         return party_part, download_date
@@ -50,7 +59,9 @@ def parse_meta_spend_midpoint(spend_value) -> float | None:
       "lower_bound: 100, upper_bound: 199"
     Return midpoint (149.5). If missing/invalid -> None.
     """
-    if spend_value is None or (isinstance(spend_value, float) and math.isnan(spend_value)):
+    if spend_value is None or (
+        isinstance(spend_value, float) and math.isnan(spend_value)
+    ):
         return None
 
     s = str(spend_value)
@@ -85,8 +96,6 @@ def week_start_sunday(d: date) -> date:
     return d - timedelta(days=offset)
 
 
-EPOCH_WEEK1 = date(2020, 1, 5)  # first Sunday of 2020
-
 def week_index_since_2020(ws: date) -> int:
     return ((ws - EPOCH_WEEK1).days // 7) + 1
 
@@ -104,7 +113,8 @@ def iter_week_starts(start_day: date, end_day: date):
 # Core processing
 # ---------------------------
 
-def process_meta_folder(input_folder: str, output_csv_path: str):
+
+def process_meta_folder(input_folder: str, output_csv_path: str) -> None:
     # Exchange rate cache: {date_str: rate}
     exchange_rate_cache = {}
 
@@ -114,7 +124,9 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
         API_KEY = "REMOVED_APILAYER_API_KEY"
         min_supported = datetime(2020, 1, 1).date()
         if date_obj < min_supported:
-            print(f"Date {date_obj} before 2020-01-01, using 2020-01-01 for rate lookup.")
+            print(
+                f"Date {date_obj} before 2020-01-01, using 2020-01-01 for rate lookup."
+            )
             date_obj = min_supported
         date_str = date_obj.strftime("%Y-%m-%d")
         if date_str in exchange_rate_cache:
@@ -122,7 +134,9 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
         url = f"https://api.apilayer.com/currency_data/convert?base=USD&symbols=ILS&amount=1&date={date_str}"
         headers = {"apikey": API_KEY}
         try:
-            print(f"Fetching USD→ILS rate for {date_str} using API key: {API_KEY[:4]}... (URL: {url})")
+            print(
+                f"Fetching USD→ILS rate for {date_str} using API key: {API_KEY[:4]}... (URL: {url})"
+            )
             resp = requests.get(url, headers=headers, timeout=10)
             resp.raise_for_status()
             data = resp.json()
@@ -132,11 +146,15 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
                 exchange_rate_cache[date_str] = rate
                 return rate
             else:
-                print(f"ERROR: Unexpected API response for {date_str}: {data}. Using default rate {DEFAULT_RATE}.")
+                print(
+                    f"ERROR: Unexpected API response for {date_str}: {data}. Using default rate {DEFAULT_RATE}."
+                )
                 exchange_rate_cache[date_str] = DEFAULT_RATE
                 return DEFAULT_RATE
         except Exception as e:
-            print(f"ERROR: Could not fetch USD→ILS rate for {date_str}: {e}. URL: {url} Using default rate {DEFAULT_RATE}.")
+            print(
+                f"ERROR: Could not fetch USD→ILS rate for {date_str}: {e}. URL: {url} Using default rate {DEFAULT_RATE}."
+            )
             exchange_rate_cache[date_str] = DEFAULT_RATE
             return DEFAULT_RATE
 
@@ -188,23 +206,29 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
 
     # build output dataframe
     out_rows = []
-    for (party, ws) in output_keys:
+    for party, ws in output_keys:
         total_week = agg_total_week[(party, ws)]
-        out_rows.append({
-            "source": "meta",
-            "party_name": party,
-            "week_start_sunday": ws.isoformat(),
-            "week_index_since_2020": week_index_since_2020(ws),
-            "total_spend_week": total_week,
-            "avg_spend_per_day_week": round(total_week / 7.0, 2),
-            "currency": "ILS",
-        })
+        out_rows.append(
+            {
+                "source": "meta",
+                "party_name": party,
+                "week_start_sunday": ws.isoformat(),
+                "week_index_since_2020": week_index_since_2020(ws),
+                "total_spend_week": total_week,
+                "avg_spend_per_day_week": round(total_week / 7.0, 2),
+                "currency": "ILS",
+            }
+        )
 
     out_df = pd.DataFrame(out_rows)
     if out_df.empty:
-        raise RuntimeError("No spend data aggregated. Check input files / columns / spend format.")
+        raise RuntimeError(
+            "No spend data aggregated. Check input files / columns / spend format."
+        )
 
-    out_df = out_df.sort_values(["party_name", "week_start_sunday"]).reset_index(drop=True)
+    out_df = out_df.sort_values(["party_name", "week_start_sunday"]).reset_index(
+        drop=True
+    )
 
     # write
     os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)

@@ -1,3 +1,10 @@
+"""Build weekly Google Ads spending files in the shared analysis schema.
+
+The Google source is already weekly, but this script normalizes dates, entity
+names, and output columns so Google and Meta data can be combined cleanly by the
+R analysis scripts.
+"""
+
 import math
 import os
 from datetime import date, datetime, timedelta
@@ -46,7 +53,9 @@ def normalize_columns(df: pd.DataFrame) -> dict[str, str]:
     return normalized
 
 
-def process_google_file(input_path: str, output_csv_path: str, sheet_name: str | int = 0):
+def process_google_file(
+    input_path: str, output_csv_path: str, sheet_name: str | int = 0
+) -> None:
     try:
         df = pd.read_excel(input_path, sheet_name=sheet_name, engine="openpyxl")
     except ImportError as exc:
@@ -60,11 +69,15 @@ def process_google_file(input_path: str, output_csv_path: str, sheet_name: str |
     week_start_col = normalized.get("week_start_date")
     spend_col = normalized.get("spend_ils")
 
-    missing = [name for name, col in [
-        ("Advertiser_Name", advertiser_col),
-        ("Week_Start_Date", week_start_col),
-        ("Spend_ILS", spend_col),
-    ] if col is None]
+    missing = [
+        name
+        for name, col in [
+            ("Advertiser_Name", advertiser_col),
+            ("Week_Start_Date", week_start_col),
+            ("Spend_ILS", spend_col),
+        ]
+        if col is None
+    ]
     if missing:
         raise ValueError(f"Missing required columns: {', '.join(missing)}")
 
@@ -79,7 +92,9 @@ def process_google_file(input_path: str, output_csv_path: str, sheet_name: str |
         week_start = to_date_safe(week_start_raw)
         if week_start is None:
             continue
-        if spend_value is None or (isinstance(spend_value, float) and math.isnan(spend_value)):
+        if spend_value is None or (
+            isinstance(spend_value, float) and math.isnan(spend_value)
+        ):
             continue
         try:
             total_spend = float(spend_value)
@@ -87,25 +102,31 @@ def process_google_file(input_path: str, output_csv_path: str, sheet_name: str |
             continue
 
         ws = week_start_sunday(week_start)
-        agg_total_week[(party_name, ws)] = agg_total_week.get((party_name, ws), 0.0) + total_spend
+        agg_total_week[(party_name, ws)] = (
+            agg_total_week.get((party_name, ws), 0.0) + total_spend
+        )
 
     if not agg_total_week:
         raise RuntimeError("No spend data aggregated. Check input file / columns.")
 
     out_rows = []
     for (party, ws), total_week in agg_total_week.items():
-        out_rows.append({
-            "source": "google",
-            "party_name": party,
-            "week_start_sunday": ws.isoformat(),
-            "week_index_since_2020": week_index_since_2020(ws),
-            "total_spend_week": total_week,
-            "avg_spend_per_day_week": round(total_week / 7.0, 2),
-            "currency": "ILS",
-        })
+        out_rows.append(
+            {
+                "source": "google",
+                "party_name": party,
+                "week_start_sunday": ws.isoformat(),
+                "week_index_since_2020": week_index_since_2020(ws),
+                "total_spend_week": total_week,
+                "avg_spend_per_day_week": round(total_week / 7.0, 2),
+                "currency": "ILS",
+            }
+        )
 
     out_df = pd.DataFrame(out_rows)
-    out_df = out_df.sort_values(["party_name", "week_start_sunday"]).reset_index(drop=True)
+    out_df = out_df.sort_values(["party_name", "week_start_sunday"]).reset_index(
+        drop=True
+    )
     os.makedirs(os.path.dirname(output_csv_path), exist_ok=True)
     out_df.to_csv(output_csv_path, index=False, encoding="utf-8-sig")
 

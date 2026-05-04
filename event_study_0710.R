@@ -42,11 +42,22 @@ cat("\014")
 #
 # Run in RStudio or command line:
 # Rscript event_study_0710.R [google_csv] [meta_csv] [events_csv] [output_dir] [window_weeks]
+#
+# Script organization:
+#   1. Shared helpers for parsing, formatting, regression output, and plotting
+#   2. Input/output configuration and explicit 2020-2025 analysis window
+#   3. Weekly spend/event panels, descriptive statistics, and correlations
+#   4. Event-study, placebo, October 7, and gamma_t demonstration models
+#   5. Reproducible output writing and concise console summary
 
 required_packages <- c(
   "readr", "dplyr", "tidyr", "lubridate", "stringr",
   "ggplot2", "fixest", "broom", "purrr", "tibble"
 )
+
+# -------------------------
+# Package setup
+# -------------------------
 
 install_missing_packages <- function(package_names) {
   missing_packages <- package_names[!sapply(package_names, requireNamespace, quietly = TRUE)]
@@ -57,6 +68,10 @@ install_missing_packages <- function(package_names) {
 
 install_missing_packages(required_packages)
 invisible(lapply(required_packages, library, character.only = TRUE))
+
+# -------------------------
+# General parsing/date helpers
+# -------------------------
 
 resolve_default_path <- function(candidate_paths) {
   existing <- candidate_paths[file.exists(candidate_paths)]
@@ -97,6 +112,10 @@ safe_fitstat <- function(model_object, stat_name) {
   stat_value <- tryCatch(fixest::fitstat(model_object, stat_name), error = function(e) NA_real_)
   as.numeric(stat_value)[1]
 }
+
+# -------------------------
+# Output formatting helpers
+# -------------------------
 
 # Convert a log-scale coefficient to its multiplicative percent change.
 # Estimates are log-differences; the actual effect on weekly_spend_ils is
@@ -230,9 +249,15 @@ write_model_summary_sections <- function(model_names, coefficients_table, fit_ta
   }
 }
 
+# -------------------------
+# Paper-style text/table helpers
+# -------------------------
+
 # Format a single number for a paper-style cell (fixed decimal width, NA -> "").
 .fmt_paper_number <- function(x, digits = 3L) {
-  if (is.null(x) || length(x) == 0 || is.na(x) || !is.finite(x)) return("")
+  if (is.null(x) || length(x) == 0 || is.na(x) || !is.finite(x)) {
+    return("")
+  }
   formatC(x, format = "f", digits = digits)
 }
 
@@ -320,13 +345,15 @@ write_paper_style_model_section <- function(model_label,
       signif_text <- if (is.null(row$signif) || is.na(row$signif)) "" else as.character(row$signif)
 
       writeLines(
-        sprintf("%-22s %10s %10s %12s %9s %4s",
-                variable_label,
-                .fmt_paper_number(row$estimate, 3L),
-                .fmt_paper_number(row$std.error, 3L),
-                pct_text,
-                p_value_text,
-                signif_text),
+        sprintf(
+          "%-22s %10s %10s %12s %9s %4s",
+          variable_label,
+          .fmt_paper_number(row$estimate, 3L),
+          .fmt_paper_number(row$std.error, 3L),
+          pct_text,
+          p_value_text,
+          signif_text
+        ),
         con = summary_connection
       )
     }
@@ -342,11 +369,13 @@ write_paper_style_model_section <- function(model_label,
       "NA"
     }
     writeLines(
-      sprintf("N (used): %s    R^2: %s    Adj. R^2: %s    Within R^2: %s",
-              n_used_text,
-              .fmt_paper_number(fit_row$r2, 3L),
-              .fmt_paper_number(fit_row$adjusted_r2, 3L),
-              .fmt_paper_number(fit_row$within_r2, 3L)),
+      sprintf(
+        "N (used): %s    R^2: %s    Adj. R^2: %s    Within R^2: %s",
+        n_used_text,
+        .fmt_paper_number(fit_row$r2, 3L),
+        .fmt_paper_number(fit_row$adjusted_r2, 3L),
+        .fmt_paper_number(fit_row$within_r2, 3L)
+      ),
       con = summary_connection
     )
   }
@@ -474,6 +503,10 @@ pretty_model_label <- function(entity_group, event_scope) {
     )
   )
 }
+
+# -------------------------
+# Publication matrix helpers
+# -------------------------
 
 format_estimate_with_stars <- function(estimate, p_value, digits = 3L) {
   ifelse(
@@ -686,6 +719,10 @@ write_html_matrix_table <- function(matrix_table,
   invisible(NULL)
 }
 
+# -------------------------
+# Correlation table helpers
+# -------------------------
+
 safe_correlation_test <- function(x, y) {
   valid_rows <- stats::complete.cases(x, y)
   x <- x[valid_rows]
@@ -779,6 +816,10 @@ build_correlation_publication_table <- function(comparison_table) {
     tidyr::pivot_wider(names_from = column_label, values_from = value) %>%
     dplyr::rename(Statistic = row_label)
 }
+
+# -------------------------
+# Event-study model and plotting helpers
+# -------------------------
 
 add_baseline_coefficient_row <- function(coefficients_table, model_name_label, baseline_relative_week = 0L) {
   baseline_row <- tibble::tibble(
@@ -1024,6 +1065,10 @@ build_correlation_outputs <- function(event_count_wide_table, spend_totals_for_c
     correlation_summary = correlation_summary_local
   )
 }
+
+# -------------------------
+# Placebo/input helpers
+# -------------------------
 
 create_placebo_events <- function(real_events_table, candidate_weeks, min_gap_weeks = 3L, seed = 7102023L) {
   real_event_weeks <- unique(real_events_table$event_week_start_sunday)

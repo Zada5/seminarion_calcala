@@ -36,11 +36,22 @@ cat("\014")
 #
 # Run in RStudio or command line:
 # Rscript did_0710.R [google_csv] [meta_csv] [events_csv] [output_dir] [window_weeks]
+#
+# Script organization:
+#   1. Shared helpers for parsing, formatting, regression output, and plotting
+#   2. Input/output configuration and explicit 2020-2025 analysis window
+#   3. Real and placebo stacked event-window panels
+#   4. Main DiD, robustness, October 7, and gamma_t demonstration models
+#   5. Reproducible output writing and concise console summary
 
 required_packages <- c(
   "readr", "dplyr", "tidyr", "lubridate", "stringr",
   "ggplot2", "fixest", "broom", "purrr", "tibble"
 )
+
+# -------------------------
+# Package setup
+# -------------------------
 
 install_missing_packages <- function(package_names) {
   missing_packages <- package_names[!sapply(package_names, requireNamespace, quietly = TRUE)]
@@ -51,6 +62,10 @@ install_missing_packages <- function(package_names) {
 
 install_missing_packages(required_packages)
 invisible(lapply(required_packages, library, character.only = TRUE))
+
+# -------------------------
+# General parsing/date helpers
+# -------------------------
 
 resolve_default_path <- function(candidate_paths) {
   existing <- candidate_paths[file.exists(candidate_paths)]
@@ -91,6 +106,10 @@ safe_fitstat <- function(model_object, stat_name) {
   stat_value <- tryCatch(fixest::fitstat(model_object, stat_name), error = function(e) NA_real_)
   as.numeric(stat_value)[1]
 }
+
+# -------------------------
+# Output formatting helpers
+# -------------------------
 
 # Convert a log-scale coefficient to its multiplicative percent change.
 # pct_change = (exp(estimate) - 1) * 100. Used because the dependent variable
@@ -224,8 +243,14 @@ write_model_summary_sections <- function(model_names, coefficients_table, fit_ta
   }
 }
 
+# -------------------------
+# Paper-style text/table helpers
+# -------------------------
+
 .fmt_paper_number <- function(x, digits = 3L) {
-  if (is.null(x) || length(x) == 0 || is.na(x) || !is.finite(x)) return("")
+  if (is.null(x) || length(x) == 0 || is.na(x) || !is.finite(x)) {
+    return("")
+  }
   formatC(x, format = "f", digits = digits)
 }
 
@@ -252,7 +277,8 @@ write_paper_style_model_section <- function(model_label,
 
   if (is.null(coefficients_table) || nrow(coefficients_table) == 0) {
     writeLines("(no coefficients available -- model failed or insufficient data)",
-               con = summary_connection)
+      con = summary_connection
+    )
   } else {
     for (row_index in seq_len(nrow(coefficients_table))) {
       row <- coefficients_table[row_index, ]
@@ -266,22 +292,28 @@ write_paper_style_model_section <- function(model_label,
       pct_text <- if (!is.null(row$pct_change) && is.finite(row$pct_change)) {
         sign_prefix <- if (row$pct_change >= 0) "+" else ""
         paste0(sign_prefix, formatC(row$pct_change, format = "f", digits = 1), "%")
-      } else { "" }
+      } else {
+        ""
+      }
 
       p_value_text <- if (is.finite(row$p.value)) {
         if (row$p.value < 0.001) "<0.001" else formatC(row$p.value, format = "f", digits = 3)
-      } else { "" }
+      } else {
+        ""
+      }
 
       signif_text <- if (is.null(row$signif) || is.na(row$signif)) "" else as.character(row$signif)
 
       writeLines(
-        sprintf("%-22s %10s %10s %12s %9s %4s",
-                variable_label,
-                .fmt_paper_number(row$estimate, 3L),
-                .fmt_paper_number(row$std.error, 3L),
-                pct_text,
-                p_value_text,
-                signif_text),
+        sprintf(
+          "%-22s %10s %10s %12s %9s %4s",
+          variable_label,
+          .fmt_paper_number(row$estimate, 3L),
+          .fmt_paper_number(row$std.error, 3L),
+          pct_text,
+          p_value_text,
+          signif_text
+        ),
         con = summary_connection
       )
     }
@@ -293,13 +325,17 @@ write_paper_style_model_section <- function(model_label,
     fit_row <- fit_table[1, ]
     n_used_text <- if (is.numeric(fit_row$used_rows) && is.finite(fit_row$used_rows)) {
       format(round(fit_row$used_rows), big.mark = ",")
-    } else { "NA" }
+    } else {
+      "NA"
+    }
     writeLines(
-      sprintf("N (used): %s    R^2: %s    Adj. R^2: %s    Within R^2: %s",
-              n_used_text,
-              .fmt_paper_number(fit_row$r2, 3L),
-              .fmt_paper_number(fit_row$adjusted_r2, 3L),
-              .fmt_paper_number(fit_row$within_r2, 3L)),
+      sprintf(
+        "N (used): %s    R^2: %s    Adj. R^2: %s    Within R^2: %s",
+        n_used_text,
+        .fmt_paper_number(fit_row$r2, 3L),
+        .fmt_paper_number(fit_row$adjusted_r2, 3L),
+        .fmt_paper_number(fit_row$within_r2, 3L)
+      ),
       con = summary_connection
     )
   }
@@ -424,15 +460,9 @@ pretty_model_label <- function(model_name) {
   )
 }
 
-significance_stars <- function(p_values) {
-  dplyr::case_when(
-    is.na(p_values) ~ "",
-    p_values < 0.01 ~ "***",
-    p_values < 0.05 ~ "**",
-    p_values < 0.1 ~ "*",
-    TRUE ~ ""
-  )
-}
+# -------------------------
+# Publication matrix helpers
+# -------------------------
 
 format_estimate_with_stars <- function(estimate, p_value, digits = 3L) {
   ifelse(
@@ -643,6 +673,10 @@ write_html_matrix_table <- function(matrix_table,
   invisible(NULL)
 }
 
+# -------------------------
+# DiD publication/comparison table helpers
+# -------------------------
+
 build_did_publication_table <- function(
   coefficients_table,
   fit_table,
@@ -806,6 +840,10 @@ build_did_comparison_table <- function(
     )
 }
 
+# -------------------------
+# Placebo/input helpers
+# -------------------------
+
 create_placebo_events <- function(real_events_table, candidate_weeks, min_gap_weeks = 3L, seed = 7102023L) {
   real_event_weeks <- unique(real_events_table$event_week_start_sunday)
 
@@ -918,6 +956,10 @@ read_weekly_spend_file <- function(file_path) {
   names(dataset) <- trimws(names(dataset))
   dataset
 }
+
+# -------------------------
+# DiD model and plotting helpers
+# -------------------------
 
 run_did_model <- function(model_data, include_gamma_t = FALSE) {
   if (nrow(model_data) < 10) {
