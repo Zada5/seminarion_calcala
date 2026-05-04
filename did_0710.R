@@ -442,6 +442,207 @@ format_estimate_with_stars <- function(estimate, p_value, digits = 3L) {
   )
 }
 
+format_standard_error_for_paper <- function(std_error, digits = 3L) {
+  ifelse(
+    is.na(std_error),
+    NA_character_,
+    paste0("(", formatC(round(std_error, digits = digits), format = "f", digits = digits), ")")
+  )
+}
+
+paper_entity_label <- function(entity_group_filter) {
+  dplyr::case_when(
+    entity_group_filter == "all" ~ "All entities",
+    entity_group_filter == "political_party" ~ "Political parties",
+    entity_group_filter == "other_org_or_person" ~ "Organizations/people",
+    TRUE ~ entity_group_filter
+  )
+}
+
+paper_event_label <- function(event_type_filter) {
+  dplyr::case_when(
+    event_type_filter == "all" ~ "All events",
+    event_type_filter == "political" ~ "Political events",
+    event_type_filter == "terror" ~ "Terror events",
+    TRUE ~ event_type_filter
+  )
+}
+
+build_did_key_results_matrix <- function(coefficients_table,
+                                         model_fit_table,
+                                         model_specifications_table) {
+  entity_order <- c("All entities", "Political parties", "Organizations/people")
+  event_order <- c("All events", "Political events", "Terror events")
+
+  coefficients_compact <- coefficients_table %>%
+    dplyr::mutate(
+      estimate_display = format_estimate_with_stars(estimate, p.value),
+      std_error_display = format_standard_error_for_paper(std.error)
+    ) %>%
+    dplyr::select(model_name, estimate_display, std_error_display, p.value)
+
+  fit_compact <- model_fit_table %>%
+    dplyr::select(model_name, used_rows, r2, within_r2)
+
+  model_specifications_table %>%
+    dplyr::mutate(
+      entity_label = paper_entity_label(entity_group_filter),
+      event_label = paper_event_label(event_type_filter)
+    ) %>%
+    dplyr::left_join(coefficients_compact, by = "model_name") %>%
+    dplyr::left_join(fit_compact, by = "model_name") %>%
+    dplyr::mutate(
+      entity_label = factor(entity_label, levels = entity_order),
+      event_label = factor(event_label, levels = event_order)
+    ) %>%
+    dplyr::arrange(entity_label, event_label)
+}
+
+latex_escape <- function(text_values) {
+  text_values <- gsub("\\\\", "\\\\textbackslash{}", text_values)
+  text_values <- gsub("([#$%&_{}])", "\\\\\\1", text_values, perl = TRUE)
+  text_values
+}
+
+write_latex_matrix_table <- function(matrix_table,
+                                     file_path,
+                                     caption,
+                                     label,
+                                     coefficient_label,
+                                     note_text) {
+  entity_labels <- levels(matrix_table$entity_label)
+  event_labels <- levels(matrix_table$event_label)
+
+  get_cell <- function(entity_label, event_label, value_column) {
+    value <- matrix_table %>%
+      dplyr::filter(entity_label == !!entity_label, event_label == !!event_label) %>%
+      dplyr::pull(.data[[value_column]])
+
+    if (length(value) == 0 || is.na(value[1])) "" else as.character(value[1])
+  }
+
+  table_lines <- c(
+    "\\begin{table}[!htbp]",
+    "\\centering",
+    paste0("\\caption{", latex_escape(caption), "}"),
+    paste0("\\label{", label, "}"),
+    "\\begin{tabular}{lccc}",
+    "\\hline\\hline",
+    paste0(" & ", paste(latex_escape(event_labels), collapse = " & "), " \\\\"),
+    "\\hline"
+  )
+
+  for (entity_label in entity_labels) {
+    estimate_cells <- vapply(
+      event_labels,
+      function(event_label) get_cell(entity_label, event_label, "estimate_display"),
+      character(1)
+    )
+    se_cells <- vapply(
+      event_labels,
+      function(event_label) get_cell(entity_label, event_label, "std_error_display"),
+      character(1)
+    )
+    table_lines <- c(
+      table_lines,
+      paste0(latex_escape(entity_label), " & ", paste(estimate_cells, collapse = " & "), " \\\\"),
+      paste0(" & ", paste(se_cells, collapse = " & "), " \\\\")
+    )
+  }
+
+  table_lines <- c(
+    table_lines,
+    "\\hline",
+    paste0("\\multicolumn{4}{l}{\\footnotesize ", latex_escape(coefficient_label), "}\\\\"),
+    paste0("\\multicolumn{4}{l}{\\footnotesize Notes: ", latex_escape(note_text), "}\\\\"),
+    "\\hline\\hline",
+    "\\end{tabular}",
+    "\\end{table}"
+  )
+
+  writeLines(table_lines, con = file_path)
+  invisible(NULL)
+}
+
+html_escape <- function(text_values) {
+  text_values <- gsub("&", "&amp;", text_values, fixed = TRUE)
+  text_values <- gsub("<", "&lt;", text_values, fixed = TRUE)
+  text_values <- gsub(">", "&gt;", text_values, fixed = TRUE)
+  text_values <- gsub('"', "&quot;", text_values, fixed = TRUE)
+  text_values
+}
+
+write_html_matrix_table <- function(matrix_table,
+                                    file_path,
+                                    title,
+                                    subtitle,
+                                    coefficient_label,
+                                    note_text) {
+  entity_labels <- levels(matrix_table$entity_label)
+  event_labels <- levels(matrix_table$event_label)
+
+  get_row <- function(entity_label, event_label) {
+    matrix_table %>%
+      dplyr::filter(entity_label == !!entity_label, event_label == !!event_label) %>%
+      dplyr::slice_head(n = 1)
+  }
+
+  body_lines <- unlist(lapply(entity_labels, function(entity_label) {
+    cells <- unlist(lapply(event_labels, function(event_label) {
+      row <- get_row(entity_label, event_label)
+      estimate_text <- if (nrow(row) == 0 || is.na(row$estimate_display)) "" else row$estimate_display
+      se_text <- if (nrow(row) == 0 || is.na(row$std_error_display)) "" else row$std_error_display
+      paste0(
+        "<td><div class=\"estimate\">", html_escape(estimate_text),
+        "</div><div class=\"se\">", html_escape(se_text), "</div></td>"
+      )
+    }))
+
+    paste0("<tr><th scope=\"row\">", html_escape(entity_label), "</th>", paste(cells, collapse = ""), "</tr>")
+  }))
+
+  html_lines <- c(
+    "<!doctype html>",
+    "<html lang=\"en\">",
+    "<head>",
+    "<meta charset=\"utf-8\">",
+    "<style>",
+    "body { font-family: Georgia, 'Times New Roman', serif; color: #111; margin: 36px; }",
+    ".table-wrap { max-width: 920px; margin: 0 auto; }",
+    "h1 { font-size: 18px; text-align: center; font-weight: 400; margin: 0 0 4px; }",
+    ".subtitle { text-align: center; font-size: 13px; margin: 0 0 18px; }",
+    "table { width: 100%; border-collapse: collapse; border-top: 2px solid #111; border-bottom: 2px solid #111; }",
+    "thead th { border-bottom: 1px solid #111; font-weight: 600; padding: 8px 10px; text-align: center; }",
+    "tbody th { text-align: left; font-weight: 400; padding: 8px 10px; }",
+    "td { text-align: center; padding: 8px 10px; vertical-align: top; }",
+    ".estimate { font-variant-numeric: tabular-nums; }",
+    ".se { font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }",
+    ".note { font-size: 12px; line-height: 1.35; margin-top: 12px; }",
+    "</style>",
+    "</head>",
+    "<body>",
+    "<div class=\"table-wrap\">",
+    paste0("<h1>", html_escape(title), "</h1>"),
+    paste0("<p class=\"subtitle\">", html_escape(subtitle), "</p>"),
+    "<table>",
+    "<thead>",
+    paste0("<tr><th></th>", paste0("<th>", html_escape(event_labels), "</th>", collapse = ""), "</tr>"),
+    "</thead>",
+    "<tbody>",
+    body_lines,
+    "</tbody>",
+    "</table>",
+    paste0("<p class=\"note\"><em>", html_escape(coefficient_label), "</em></p>"),
+    paste0("<p class=\"note\"><em>Notes:</em> ", html_escape(note_text), "</p>"),
+    "</div>",
+    "</body>",
+    "</html>"
+  )
+
+  writeLines(html_lines, con = file_path)
+  invisible(NULL)
+}
+
 build_did_publication_table <- function(
   coefficients_table,
   fit_table,
@@ -901,6 +1102,11 @@ if (is.na(analysis_window_weeks) || analysis_window_weeks < 1L) {
   stop("window_weeks must be an integer >= 1")
 }
 
+analysis_start_week <- as.Date("2020-01-05")
+analysis_end_week <- as.Date("2025-12-28")
+analysis_start_date <- as.Date("2020-01-01")
+analysis_end_date <- as.Date("2025-12-31")
+
 dir.create(output_directory, showWarnings = FALSE, recursive = TRUE)
 
 output_paths <- list(
@@ -954,6 +1160,7 @@ cat("Meta weekly data  : ", meta_data_path, "\n", sep = "")
 cat("Events file       : ", events_data_path, "\n", sep = "")
 cat("Output directory  : ", output_directory, "\n", sep = "")
 cat("Event window      : +/- ", analysis_window_weeks, " weeks\n", sep = "")
+cat("Analysis weeks    : ", as.character(analysis_start_week), " to ", as.character(analysis_end_week), "\n", sep = "")
 
 # -------------------------
 # Load and clean weekly spending data
@@ -983,6 +1190,7 @@ weekly_spend_panel <- dplyr::bind_rows(google_weekly_spend, meta_weekly_spend) %
     currency = as.character(currency)
   ) %>%
   dplyr::filter(!is.na(week_start_sunday), !is.na(weekly_spend_ils)) %>%
+  dplyr::filter(week_start_sunday >= analysis_start_week, week_start_sunday <= analysis_end_week) %>%
   dplyr::mutate(calendar_year = lubridate::year(week_start_sunday))
 
 if (nrow(weekly_spend_panel) == 0) {
@@ -1021,7 +1229,14 @@ events_table <- raw_events %>%
   dplyr::mutate(
     event_id = dplyr::row_number(),
     event_week_start_sunday = get_next_sunday(event_date)
-  )
+  ) %>%
+  dplyr::filter(
+    event_date >= analysis_start_date,
+    event_date <= analysis_end_date,
+    event_week_start_sunday >= analysis_start_week,
+    event_week_start_sunday <= analysis_end_week
+  ) %>%
+  dplyr::mutate(event_id = dplyr::row_number())
 
 if (nrow(events_table) == 0) {
   stop("No valid political/terror events found in events file.")
@@ -1378,6 +1593,18 @@ did_comparison_post_from_minus1 <- build_did_comparison_table(
   placebo_sample_summary = placebo_model_sample_summary_post_from_minus1
 )
 
+did_key_results_post_from_0 <- build_did_key_results_matrix(
+  coefficients_table = all_model_coefficients,
+  model_fit_table = all_model_fit,
+  model_specifications_table = model_specifications
+)
+
+did_key_results_post_from_minus1 <- build_did_key_results_matrix(
+  coefficients_table = all_model_coefficients_post_from_minus1,
+  model_fit_table = all_model_fit_post_from_minus1,
+  model_specifications_table = model_specifications
+)
+
 # -------------------------
 # Dedicated 07/10/2023 DiD-style model
 # -------------------------
@@ -1561,6 +1788,63 @@ write_markdown_table(
   did_paper_table_post_from_minus1,
   file.path(output_paths$tables, "did_paper_table_post_from_minus1.md")
 )
+write_clean_csv(did_key_results_post_from_0, file.path(output_paths$tables, "did_key_results_post_from_0.csv"))
+write_latex_matrix_table(
+  matrix_table = did_key_results_post_from_0,
+  file_path = file.path(output_paths$tables, "did_key_results_post_from_0.tex"),
+  caption = "Difference-in-differences estimates by entity group and event type",
+  label = "tab:did_key_results_post_from_0",
+  coefficient_label = "Cells report the PostEvent coefficient; clustered standard errors are in parentheses.",
+  note_text = paste0(
+    "Dependent variable is log weekly spending. PostEvent equals 1 for relative week >= 0. ",
+    "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
+    "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
+    "*** p < 0.01, ** p < 0.05, * p < 0.10."
+  )
+)
+write_html_matrix_table(
+  matrix_table = did_key_results_post_from_0,
+  file_path = file.path(output_paths$tables, "did_key_results_post_from_0.html"),
+  title = "Difference-in-Differences Estimates by Entity Group and Event Type",
+  subtitle = "PostEvent coefficient; standard errors in parentheses",
+  coefficient_label = "Cells report the PostEvent coefficient.",
+  note_text = paste0(
+    "Dependent variable is log weekly spending. PostEvent equals 1 for relative week >= 0. ",
+    "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
+    "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
+    "*** p < 0.01, ** p < 0.05, * p < 0.10."
+  )
+)
+write_clean_csv(
+  did_key_results_post_from_minus1,
+  file.path(output_paths$tables, "did_key_results_post_from_minus1.csv")
+)
+write_latex_matrix_table(
+  matrix_table = did_key_results_post_from_minus1,
+  file_path = file.path(output_paths$tables, "did_key_results_post_from_minus1.tex"),
+  caption = "Difference-in-differences estimates by entity group and event type: post from -1",
+  label = "tab:did_key_results_post_from_minus1",
+  coefficient_label = "Cells report the PostEvent coefficient; clustered standard errors are in parentheses.",
+  note_text = paste0(
+    "Dependent variable is log weekly spending. PostEvent equals 1 for relative week >= -1. ",
+    "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
+    "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
+    "*** p < 0.01, ** p < 0.05, * p < 0.10."
+  )
+)
+write_html_matrix_table(
+  matrix_table = did_key_results_post_from_minus1,
+  file_path = file.path(output_paths$tables, "did_key_results_post_from_minus1.html"),
+  title = "Difference-in-Differences Estimates by Entity Group and Event Type",
+  subtitle = "Robustness: PostEvent equals 1 from relative week -1",
+  coefficient_label = "Cells report the PostEvent coefficient.",
+  note_text = paste0(
+    "Dependent variable is log weekly spending. PostEvent equals 1 for relative week >= -1. ",
+    "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
+    "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
+    "*** p < 0.01, ** p < 0.05, * p < 0.10."
+  )
+)
 write_clean_csv(
   placebo_did_paper_table_post_from_0,
   file.path(output_paths$tables, "placebo_did_paper_table_post_from_0.csv")
@@ -1715,6 +1999,13 @@ write_paper_style_header(
   ),
   dependent_variable_note = "Dependent variable: log(weekly_spend_ils). Weeks with spend <= 0 are dropped (log undefined).",
   extra_notes = c(
+    paste0(
+      "Analysis sample: Sunday-start weeks ",
+      as.character(analysis_start_week),
+      " through ",
+      as.character(analysis_end_week),
+      "."
+    ),
     "Note on gamma_t: the textbook canonical spec adds calendar-week FE",
     "(gamma_t = week_start_sunday). In our stacked design every entity is in the",
     "+/-W window of every event, so PostEvent has no within-FE variation once",

@@ -1,0 +1,10 @@
+model_name,entity_group_filter,event_type_filter,entity_label,event_label,estimate_display,std_error_display,p.value,used_rows,r2,within_r2
+all_entities_all_events,all,all,All entities,All events,-0.025,(0.025),0.315,10038,0.347,0.001
+all_entities_political_events,all,political,All entities,Political events,-0.066*,(0.033),0.052,5323,0.329,0.006
+all_entities_terror_events,all,terror,All entities,Terror events,0.016,(0.030),0.589,4714,0.407,0.001
+political_parties_all_events,political_party,all,Political parties,All events,0.000,(0.057),0.997,1411,0.436,0.004
+political_parties_political_events,political_party,political,Political parties,Political events,-0.185,(0.124),0.156,755,0.454,0.021
+political_parties_terror_events,political_party,terror,Political parties,Terror events,0.175***,(0.039),<0.001,656,0.483,0.005
+other_orgs_people_all_events,other_org_or_person,all,Organizations/people,All events,-0.023,(0.027),0.406,8627,0.362,0.001
+other_orgs_people_political_events,other_org_or_person,political,Organizations/people,Political events,-0.042,(0.034),0.215,4568,0.342,0.003
+other_orgs_people_terror_events,other_org_or_person,terror,Organizations/people,Terror events,-0.003,(0.032),0.931,4058,0.415,0.001

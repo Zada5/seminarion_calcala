@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+body { font-family: Georgia, 'Times New Roman', serif; color: #111; margin: 36px; }
+.table-wrap { max-width: 920px; margin: 0 auto; }
+h1 { font-size: 18px; text-align: center; font-weight: 400; margin: 0 0 4px; }
+.subtitle { text-align: center; font-size: 13px; margin: 0 0 18px; }
+table { width: 100%; border-collapse: collapse; border-top: 2px solid #111; border-bottom: 2px solid #111; }
+thead th { border-bottom: 1px solid #111; font-weight: 600; padding: 8px 10px; text-align: center; }
+tbody th { text-align: left; font-weight: 400; padding: 8px 10px; }
+td { text-align: center; padding: 8px 10px; vertical-align: top; }
+.estimate { font-variant-numeric: tabular-nums; }
+.se { font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.note { font-size: 12px; line-height: 1.35; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="table-wrap">
+<h1>Event-Study Estimates by Entity Group and Event Type</h1>
+<p class="subtitle">Coefficient for relative week +1; standard errors in parentheses</p>
+<table>
+<thead>
+<tr><th></th><th>All events</th><th>Political events</th><th>Terror events</th></tr>
+</thead>
+<tbody>
+<tr><th scope="row">All entities</th><td><div class="estimate">-0.025</div><div class="se">(0.025)</div></td><td><div class="estimate">-0.066*</div><div class="se">(0.033)</div></td><td><div class="estimate">0.016</div><div class="se">(0.030)</div></td></tr>
+<tr><th scope="row">Political parties</th><td><div class="estimate">0.000</div><div class="se">(0.057)</div></td><td><div class="estimate">-0.185</div><div class="se">(0.124)</div></td><td><div class="estimate">0.175***</div><div class="se">(0.039)</div></td></tr>
+<tr><th scope="row">Organizations/people</th><td><div class="estimate">-0.023</div><div class="se">(0.027)</div></td><td><div class="estimate">-0.042</div><div class="se">(0.034)</div></td><td><div class="estimate">-0.003</div><div class="se">(0.032)</div></td></tr>
+</tbody>
+</table>
+<p class="note"><em>Cells report the coefficient for relative week +1.</em></p>
+<p class="note"><em>Notes:</em> Dependent variable is log weekly spending. The omitted baseline is relative week 0. All models include entity and data-source fixed effects; stacked models also include event fixed effects. Sample is restricted to Sunday-start weeks from 2020-01-05 through 2025-12-28. *** p &lt; 0.01, ** p &lt; 0.05, * p &lt; 0.10.</p>
+</div>
+</body>
+</html>

@@ -1,3 +1,3 @@
-entity_group,total_spend_ils,average_weekly_row_spend_ils,median_weekly_row_spend_ils,rows,entities
-other_org_or_person,48622802.250,5700.880,2070.173,8529,50
-political_party,16209301.000,9614.058,1335.116,1686,18
+entity_group,total_spend_ils,average_weekly_row_spend_ils,median_weekly_row_spend_ils,sd_weekly_row_spend_ils,min_weekly_row_spend_ils,p25_weekly_row_spend_ils,p75_weekly_row_spend_ils,max_weekly_row_spend_ils,rows,week_rows,entities,first_week,last_week
+other_org_or_person,45291305.521,5719.321,2132.943,13850.226,0.973,899,4914.206,323814.063,7919,313,50,2020-01-05,2025-12-28
+political_party,12463157.317,8098.218,1250.000,25746.972,8.250,500,4074.412,415000.000,1539,310,18,2020-01-05,2025-12-28

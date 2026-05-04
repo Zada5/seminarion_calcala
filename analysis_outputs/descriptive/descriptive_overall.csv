@@ -1,2 +1,2 @@
-total_spend_ils,average_weekly_row_spend_ils,median_weekly_row_spend_ils,total_rows,total_entities,first_week,last_week
-64832103.250,6346.755,1974.787,10215,68,2018-07-22,2026-01-04
+analysis_start_week,analysis_end_week,total_spend_ils,average_weekly_row_spend_ils,median_weekly_row_spend_ils,sd_weekly_row_spend_ils,min_weekly_row_spend_ils,p25_weekly_row_spend_ils,p75_weekly_row_spend_ils,max_weekly_row_spend_ils,total_rows,total_week_rows,total_entities,first_week,last_week
+2020-01-05,2025-12-28,57754462.838,6106.414,2000,16407.052,0.973,791.620,4827.037,415000,9458,313,68,2020-01-05,2025-12-28
