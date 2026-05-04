@@ -1,5 +1,5 @@
-period_vs_oct7,entity_group,total_spend_ils,average_weekly_row_spend_ils,rows,entities
-before_2023_10_08,other_org_or_person,27129722.021,5243.472,5174,43
-before_2023_10_08,political_party,15675344.375,12030.195,1303,18
-on_or_after_2023_10_08,other_org_or_person,21493080.230,6406.283,3355,39
-on_or_after_2023_10_08,political_party,533956.625,1394.143,383,9
+period_vs_oct7,entity_group,total_spend_ils,average_weekly_row_spend_ils,median_weekly_row_spend_ils,sd_weekly_row_spend_ils,min_weekly_row_spend_ils,p25_weekly_row_spend_ils,p75_weekly_row_spend_ils,max_weekly_row_spend_ils,rows,week_rows,entities
+before_2023_10_08,other_org_or_person,23798607.399,5210.994,1985.625,13536.755,0.973,848.500,4553.177,282752.409,4567,196,43
+before_2023_10_08,political_party,11929200.692,10319.378,1646.385,29352.914,8.250,699.000,5540.016,415000.000,1156,196,18
+on_or_after_2023_10_08,other_org_or_person,21492698.122,6411.903,2388.333,14239.094,9.967,998.150,5474.882,323814.063,3352,117,39
+on_or_after_2023_10_08,political_party,533956.625,1394.143,500.000,1976.820,16.500,250.000,1549.660,10971.450,383,114,9

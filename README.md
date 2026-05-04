@@ -49,6 +49,10 @@ Both scripts use these default inputs unless command-line arguments override the
 ./Consolidated List of Terror and Political incidents 2020-2025 v3.csv
 ```
 
+The default analysis sample is restricted to the seminar window: Sunday-start
+weeks from `2020-01-05` through `2025-12-28`. Events are also restricted to
+the same 2020-2025 window after conversion to the Sunday event week.
+
 Run them from terminal with:
 
 ```bash
@@ -106,8 +110,8 @@ The earlier version of these scripts used `log1p(weekly_spend_ils)` for the depe
 `event_study_0710.R` now writes:
 
 * `analysis_outputs/summaries/regression_summary.txt`: readable regression summary covering real event-study, placebo event-study, October 7, and the `baseline_minus1` robustness outputs
-* `analysis_outputs/tables/`: paper-style correlation comparison tables (`.csv` and `.md`) including real vs placebo side-by-side outputs
-* `analysis_outputs/descriptive/`: descriptive CSV tables
+* `analysis_outputs/tables/`: paper-style correlation comparison tables (`.csv` and `.md`) including real vs placebo side-by-side outputs, plus `event_study_key_results_relative_week_plus1.tex` and `.html` for direct paper use
+* `analysis_outputs/descriptive/`: descriptive CSV tables with total, mean, median, standard deviation, min, quartiles, max, row counts, week counts, entity counts, and first/last week
 * `analysis_outputs/correlations/real_events/`: real-event correlation CSV + graphs
 * `analysis_outputs/correlations/placebo_events/`: placebo-event correlation CSV + graphs
 * `analysis_outputs/event_study/baseline_0/`: main event-study CSVs + figures
@@ -120,7 +124,7 @@ The earlier version of these scripts used `log1p(weekly_spend_ils)` for the depe
 `did_0710.R` writes DiD outputs into:
 
 * `analysis_outputs_did/summaries/regression_summary.txt`: readable summary covering the main DiD, placebo DiD, `post_from_minus1`, and October 7 split models
-* `analysis_outputs_did/tables/`: paper-style DiD tables (`.csv` and `.md`) for real DiD, placebo DiD, and real-vs-placebo comparisons
+* `analysis_outputs_did/tables/`: paper-style DiD tables (`.csv` and `.md`) for real DiD, placebo DiD, and real-vs-placebo comparisons, plus `did_key_results_post_from_0.tex` / `.html` and `did_key_results_post_from_minus1.tex` / `.html` for direct paper use
 * `analysis_outputs_did/post_from_0/`: main DiD design, sample, coefficient, fit, and graph outputs
 * `analysis_outputs_did/post_from_minus1/`: robustness version where `PostEvent = 1` starts at `relative_week >= -1`
 * `analysis_outputs_did/placebo/post_from_0/` and `analysis_outputs_did/placebo/post_from_minus1/`: placebo DiD outputs on the canonical placebo weeks

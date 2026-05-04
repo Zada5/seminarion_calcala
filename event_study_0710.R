@@ -475,6 +475,217 @@ pretty_model_label <- function(entity_group, event_scope) {
   )
 }
 
+format_estimate_with_stars <- function(estimate, p_value, digits = 3L) {
+  ifelse(
+    is.na(estimate),
+    NA_character_,
+    paste0(formatC(round(estimate, digits = digits), format = "f", digits = digits), significance_stars(p_value))
+  )
+}
+
+format_standard_error_for_paper <- function(std_error, digits = 3L) {
+  ifelse(
+    is.na(std_error),
+    NA_character_,
+    paste0("(", formatC(round(std_error, digits = digits), format = "f", digits = digits), ")")
+  )
+}
+
+paper_entity_label <- function(entity_group_filter) {
+  dplyr::case_when(
+    entity_group_filter == "all" ~ "All entities",
+    entity_group_filter == "political_party" ~ "Political parties",
+    entity_group_filter == "other_org_or_person" ~ "Organizations/people",
+    TRUE ~ entity_group_filter
+  )
+}
+
+paper_event_label <- function(event_type_filter) {
+  dplyr::case_when(
+    event_type_filter == "all" ~ "All events",
+    event_type_filter == "political" ~ "Political events",
+    event_type_filter == "terror" ~ "Terror events",
+    TRUE ~ event_type_filter
+  )
+}
+
+build_event_study_key_results_matrix <- function(coefficients_table,
+                                                 model_fit_table,
+                                                 model_specifications_table,
+                                                 target_relative_week = 1L) {
+  entity_order <- c("All entities", "Political parties", "Organizations/people")
+  event_order <- c("All events", "Political events", "Terror events")
+
+  coefficients_compact <- coefficients_table %>%
+    dplyr::filter(relative_week == target_relative_week) %>%
+    dplyr::mutate(
+      estimate_display = format_estimate_with_stars(estimate, p.value),
+      std_error_display = format_standard_error_for_paper(std.error)
+    ) %>%
+    dplyr::select(model_name, estimate_display, std_error_display, p.value)
+
+  fit_compact <- model_fit_table %>%
+    dplyr::select(model_name, used_rows, r2, within_r2)
+
+  model_specifications_table %>%
+    dplyr::mutate(
+      entity_label = paper_entity_label(entity_group_filter),
+      event_label = paper_event_label(event_type_filter)
+    ) %>%
+    dplyr::left_join(coefficients_compact, by = "model_name") %>%
+    dplyr::left_join(fit_compact, by = "model_name") %>%
+    dplyr::mutate(
+      entity_label = factor(entity_label, levels = entity_order),
+      event_label = factor(event_label, levels = event_order)
+    ) %>%
+    dplyr::arrange(entity_label, event_label)
+}
+
+latex_escape <- function(text_values) {
+  text_values <- gsub("\\\\", "\\\\textbackslash{}", text_values)
+  text_values <- gsub("([#$%&_{}])", "\\\\\\1", text_values, perl = TRUE)
+  text_values
+}
+
+write_latex_matrix_table <- function(matrix_table,
+                                     file_path,
+                                     caption,
+                                     label,
+                                     coefficient_label,
+                                     note_text) {
+  entity_labels <- levels(matrix_table$entity_label)
+  event_labels <- levels(matrix_table$event_label)
+
+  get_cell <- function(entity_label, event_label, value_column) {
+    value <- matrix_table %>%
+      dplyr::filter(entity_label == !!entity_label, event_label == !!event_label) %>%
+      dplyr::pull(.data[[value_column]])
+
+    if (length(value) == 0 || is.na(value[1])) "" else as.character(value[1])
+  }
+
+  table_lines <- c(
+    "\\begin{table}[!htbp]",
+    "\\centering",
+    paste0("\\caption{", latex_escape(caption), "}"),
+    paste0("\\label{", label, "}"),
+    "\\begin{tabular}{lccc}",
+    "\\hline\\hline",
+    paste0(" & ", paste(latex_escape(event_labels), collapse = " & "), " \\\\"),
+    "\\hline"
+  )
+
+  for (entity_label in entity_labels) {
+    estimate_cells <- vapply(
+      event_labels,
+      function(event_label) get_cell(entity_label, event_label, "estimate_display"),
+      character(1)
+    )
+    se_cells <- vapply(
+      event_labels,
+      function(event_label) get_cell(entity_label, event_label, "std_error_display"),
+      character(1)
+    )
+    table_lines <- c(
+      table_lines,
+      paste0(latex_escape(entity_label), " & ", paste(estimate_cells, collapse = " & "), " \\\\"),
+      paste0(" & ", paste(se_cells, collapse = " & "), " \\\\")
+    )
+  }
+
+  table_lines <- c(
+    table_lines,
+    "\\hline",
+    paste0("\\multicolumn{4}{l}{\\footnotesize ", latex_escape(coefficient_label), "}\\\\"),
+    paste0("\\multicolumn{4}{l}{\\footnotesize Notes: ", latex_escape(note_text), "}\\\\"),
+    "\\hline\\hline",
+    "\\end{tabular}",
+    "\\end{table}"
+  )
+
+  writeLines(table_lines, con = file_path)
+  invisible(NULL)
+}
+
+html_escape <- function(text_values) {
+  text_values <- gsub("&", "&amp;", text_values, fixed = TRUE)
+  text_values <- gsub("<", "&lt;", text_values, fixed = TRUE)
+  text_values <- gsub(">", "&gt;", text_values, fixed = TRUE)
+  text_values <- gsub('"', "&quot;", text_values, fixed = TRUE)
+  text_values
+}
+
+write_html_matrix_table <- function(matrix_table,
+                                    file_path,
+                                    title,
+                                    subtitle,
+                                    coefficient_label,
+                                    note_text) {
+  entity_labels <- levels(matrix_table$entity_label)
+  event_labels <- levels(matrix_table$event_label)
+
+  get_row <- function(entity_label, event_label) {
+    matrix_table %>%
+      dplyr::filter(entity_label == !!entity_label, event_label == !!event_label) %>%
+      dplyr::slice_head(n = 1)
+  }
+
+  body_lines <- unlist(lapply(entity_labels, function(entity_label) {
+    cells <- unlist(lapply(event_labels, function(event_label) {
+      row <- get_row(entity_label, event_label)
+      estimate_text <- if (nrow(row) == 0 || is.na(row$estimate_display)) "" else row$estimate_display
+      se_text <- if (nrow(row) == 0 || is.na(row$std_error_display)) "" else row$std_error_display
+      paste0(
+        "<td><div class=\"estimate\">", html_escape(estimate_text),
+        "</div><div class=\"se\">", html_escape(se_text), "</div></td>"
+      )
+    }))
+
+    paste0("<tr><th scope=\"row\">", html_escape(entity_label), "</th>", paste(cells, collapse = ""), "</tr>")
+  }))
+
+  html_lines <- c(
+    "<!doctype html>",
+    "<html lang=\"en\">",
+    "<head>",
+    "<meta charset=\"utf-8\">",
+    "<style>",
+    "body { font-family: Georgia, 'Times New Roman', serif; color: #111; margin: 36px; }",
+    ".table-wrap { max-width: 920px; margin: 0 auto; }",
+    "h1 { font-size: 18px; text-align: center; font-weight: 400; margin: 0 0 4px; }",
+    ".subtitle { text-align: center; font-size: 13px; margin: 0 0 18px; }",
+    "table { width: 100%; border-collapse: collapse; border-top: 2px solid #111; border-bottom: 2px solid #111; }",
+    "thead th { border-bottom: 1px solid #111; font-weight: 600; padding: 8px 10px; text-align: center; }",
+    "tbody th { text-align: left; font-weight: 400; padding: 8px 10px; }",
+    "td { text-align: center; padding: 8px 10px; vertical-align: top; }",
+    ".estimate { font-variant-numeric: tabular-nums; }",
+    ".se { font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }",
+    ".note { font-size: 12px; line-height: 1.35; margin-top: 12px; }",
+    "</style>",
+    "</head>",
+    "<body>",
+    "<div class=\"table-wrap\">",
+    paste0("<h1>", html_escape(title), "</h1>"),
+    paste0("<p class=\"subtitle\">", html_escape(subtitle), "</p>"),
+    "<table>",
+    "<thead>",
+    paste0("<tr><th></th>", paste0("<th>", html_escape(event_labels), "</th>", collapse = ""), "</tr>"),
+    "</thead>",
+    "<tbody>",
+    body_lines,
+    "</tbody>",
+    "</table>",
+    paste0("<p class=\"note\"><em>", html_escape(coefficient_label), "</em></p>"),
+    paste0("<p class=\"note\"><em>Notes:</em> ", html_escape(note_text), "</p>"),
+    "</div>",
+    "</body>",
+    "</html>"
+  )
+
+  writeLines(html_lines, con = file_path)
+  invisible(NULL)
+}
+
 safe_correlation_test <- function(x, y) {
   valid_rows <- stats::complete.cases(x, y)
   x <- x[valid_rows]
@@ -954,6 +1165,11 @@ if (is.na(analysis_window_weeks) || analysis_window_weeks < 1L) {
   stop("window_weeks must be an integer >= 1")
 }
 
+analysis_start_week <- as.Date("2020-01-05")
+analysis_end_week <- as.Date("2025-12-28")
+analysis_start_date <- as.Date("2020-01-01")
+analysis_end_date <- as.Date("2025-12-31")
+
 dir.create(output_directory, showWarnings = FALSE, recursive = TRUE)
 
 output_paths <- list(
@@ -1030,6 +1246,7 @@ cat("Meta weekly data  : ", meta_data_path, "\n", sep = "")
 cat("Events file       : ", events_data_path, "\n", sep = "")
 cat("Output directory  : ", output_directory, "\n", sep = "")
 cat("Event window      : +/- ", analysis_window_weeks, " weeks\n", sep = "")
+cat("Analysis weeks    : ", as.character(analysis_start_week), " to ", as.character(analysis_end_week), "\n", sep = "")
 
 # -------------------------
 # Load and clean weekly spending data
@@ -1059,6 +1276,7 @@ weekly_spend_panel <- dplyr::bind_rows(google_weekly_spend, meta_weekly_spend) %
     currency = as.character(currency)
   ) %>%
   dplyr::filter(!is.na(week_start_sunday), !is.na(weekly_spend_ils)) %>%
+  dplyr::filter(week_start_sunday >= analysis_start_week, week_start_sunday <= analysis_end_week) %>%
   dplyr::mutate(calendar_year = lubridate::year(week_start_sunday))
 
 if (nrow(weekly_spend_panel) == 0) {
@@ -1097,7 +1315,14 @@ events_table <- raw_events %>%
   dplyr::mutate(
     event_id = dplyr::row_number(),
     event_week_start_sunday = get_next_sunday(event_date)
-  )
+  ) %>%
+  dplyr::filter(
+    event_date >= analysis_start_date,
+    event_date <= analysis_end_date,
+    event_week_start_sunday >= analysis_start_week,
+    event_week_start_sunday <= analysis_end_week
+  ) %>%
+  dplyr::mutate(event_id = dplyr::row_number())
 
 if (nrow(events_table) == 0) {
   stop("No valid political/terror events found in events file.")
@@ -1149,10 +1374,18 @@ correlation_summary <- correlation_outputs$correlation_summary
 # -------------------------
 overall_spend_stats <- weekly_spend_panel %>%
   dplyr::summarise(
+    analysis_start_week = analysis_start_week,
+    analysis_end_week = analysis_end_week,
     total_spend_ils = sum(weekly_spend_ils, na.rm = TRUE),
     average_weekly_row_spend_ils = mean(weekly_spend_ils, na.rm = TRUE),
     median_weekly_row_spend_ils = median(weekly_spend_ils, na.rm = TRUE),
+    sd_weekly_row_spend_ils = stats::sd(weekly_spend_ils, na.rm = TRUE),
+    min_weekly_row_spend_ils = min(weekly_spend_ils, na.rm = TRUE),
+    p25_weekly_row_spend_ils = as.numeric(stats::quantile(weekly_spend_ils, 0.25, na.rm = TRUE)),
+    p75_weekly_row_spend_ils = as.numeric(stats::quantile(weekly_spend_ils, 0.75, na.rm = TRUE)),
+    max_weekly_row_spend_ils = max(weekly_spend_ils, na.rm = TRUE),
     total_rows = dplyr::n(),
+    total_week_rows = dplyr::n_distinct(week_start_sunday),
     total_entities = dplyr::n_distinct(entity_name),
     first_week = min(week_start_sunday, na.rm = TRUE),
     last_week = max(week_start_sunday, na.rm = TRUE)
@@ -1164,8 +1397,16 @@ spend_stats_by_group <- weekly_spend_panel %>%
     total_spend_ils = sum(weekly_spend_ils, na.rm = TRUE),
     average_weekly_row_spend_ils = mean(weekly_spend_ils, na.rm = TRUE),
     median_weekly_row_spend_ils = median(weekly_spend_ils, na.rm = TRUE),
+    sd_weekly_row_spend_ils = stats::sd(weekly_spend_ils, na.rm = TRUE),
+    min_weekly_row_spend_ils = min(weekly_spend_ils, na.rm = TRUE),
+    p25_weekly_row_spend_ils = as.numeric(stats::quantile(weekly_spend_ils, 0.25, na.rm = TRUE)),
+    p75_weekly_row_spend_ils = as.numeric(stats::quantile(weekly_spend_ils, 0.75, na.rm = TRUE)),
+    max_weekly_row_spend_ils = max(weekly_spend_ils, na.rm = TRUE),
     rows = dplyr::n(),
+    week_rows = dplyr::n_distinct(week_start_sunday),
     entities = dplyr::n_distinct(entity_name),
+    first_week = min(week_start_sunday, na.rm = TRUE),
+    last_week = max(week_start_sunday, na.rm = TRUE),
     .groups = "drop"
   ) %>%
   dplyr::arrange(dplyr::desc(total_spend_ils))
@@ -1176,7 +1417,13 @@ yearly_spend_stats <- weekly_spend_panel %>%
     total_spend_ils = sum(weekly_spend_ils, na.rm = TRUE),
     average_weekly_row_spend_ils = mean(weekly_spend_ils, na.rm = TRUE),
     median_weekly_row_spend_ils = median(weekly_spend_ils, na.rm = TRUE),
+    sd_weekly_row_spend_ils = stats::sd(weekly_spend_ils, na.rm = TRUE),
+    min_weekly_row_spend_ils = min(weekly_spend_ils, na.rm = TRUE),
+    p25_weekly_row_spend_ils = as.numeric(stats::quantile(weekly_spend_ils, 0.25, na.rm = TRUE)),
+    p75_weekly_row_spend_ils = as.numeric(stats::quantile(weekly_spend_ils, 0.75, na.rm = TRUE)),
+    max_weekly_row_spend_ils = max(weekly_spend_ils, na.rm = TRUE),
     rows = dplyr::n(),
+    week_rows = dplyr::n_distinct(week_start_sunday),
     entities = dplyr::n_distinct(entity_name),
     .groups = "drop"
   ) %>%
@@ -1191,7 +1438,14 @@ yearly_spend_stats_by_group <- weekly_spend_panel %>%
   dplyr::summarise(
     total_spend_ils = sum(weekly_spend_ils, na.rm = TRUE),
     average_weekly_row_spend_ils = mean(weekly_spend_ils, na.rm = TRUE),
+    median_weekly_row_spend_ils = median(weekly_spend_ils, na.rm = TRUE),
+    sd_weekly_row_spend_ils = stats::sd(weekly_spend_ils, na.rm = TRUE),
+    min_weekly_row_spend_ils = min(weekly_spend_ils, na.rm = TRUE),
+    p25_weekly_row_spend_ils = as.numeric(stats::quantile(weekly_spend_ils, 0.25, na.rm = TRUE)),
+    p75_weekly_row_spend_ils = as.numeric(stats::quantile(weekly_spend_ils, 0.75, na.rm = TRUE)),
+    max_weekly_row_spend_ils = max(weekly_spend_ils, na.rm = TRUE),
     rows = dplyr::n(),
+    week_rows = dplyr::n_distinct(week_start_sunday),
     entities = dplyr::n_distinct(entity_name),
     .groups = "drop"
   ) %>%
@@ -1212,7 +1466,14 @@ pre_post_oct7_stats <- weekly_spend_panel %>%
   dplyr::summarise(
     total_spend_ils = sum(weekly_spend_ils, na.rm = TRUE),
     average_weekly_row_spend_ils = mean(weekly_spend_ils, na.rm = TRUE),
+    median_weekly_row_spend_ils = median(weekly_spend_ils, na.rm = TRUE),
+    sd_weekly_row_spend_ils = stats::sd(weekly_spend_ils, na.rm = TRUE),
+    min_weekly_row_spend_ils = min(weekly_spend_ils, na.rm = TRUE),
+    p25_weekly_row_spend_ils = as.numeric(stats::quantile(weekly_spend_ils, 0.25, na.rm = TRUE)),
+    p75_weekly_row_spend_ils = as.numeric(stats::quantile(weekly_spend_ils, 0.75, na.rm = TRUE)),
+    max_weekly_row_spend_ils = max(weekly_spend_ils, na.rm = TRUE),
     rows = dplyr::n(),
+    week_rows = dplyr::n_distinct(week_start_sunday),
     entities = dplyr::n_distinct(entity_name),
     .groups = "drop"
   ) %>%
@@ -1335,6 +1596,13 @@ gamma_t_compare_table <- dplyr::bind_rows(
 
 all_model_coefficients_ref_minus1 <- dplyr::bind_rows(model_results_ref_minus1$coefficients)
 all_model_fit_ref_minus1 <- dplyr::bind_rows(model_results_ref_minus1$fit)
+
+event_study_key_results_plus1 <- build_event_study_key_results_matrix(
+  coefficients_table = all_model_coefficients,
+  model_fit_table = all_model_fit,
+  model_specifications_table = model_specifications,
+  target_relative_week = 1L
+)
 
 # -------------------------
 # Save event-study figures for every model split
@@ -1937,6 +2205,33 @@ write_clean_csv(correlation_comparison_table, file.path(output_paths$tables, "co
 write_markdown_table(correlation_comparison_table, file.path(output_paths$tables, "correlation_real_vs_placebo.md"))
 write_clean_csv(correlation_publication_table, file.path(output_paths$tables, "correlation_paper_table.csv"))
 write_markdown_table(correlation_publication_table, file.path(output_paths$tables, "correlation_paper_table.md"))
+write_clean_csv(event_study_key_results_plus1, file.path(output_paths$tables, "event_study_key_results_relative_week_plus1.csv"))
+write_latex_matrix_table(
+  matrix_table = event_study_key_results_plus1,
+  file_path = file.path(output_paths$tables, "event_study_key_results_relative_week_plus1.tex"),
+  caption = "Event-study estimates by entity group and event type",
+  label = "tab:event_study_key_results_plus1",
+  coefficient_label = "Cells report the coefficient for relative week +1; clustered standard errors are in parentheses.",
+  note_text = paste0(
+    "Dependent variable is log weekly spending. The omitted baseline is relative week 0. ",
+    "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
+    "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
+    "*** p < 0.01, ** p < 0.05, * p < 0.10."
+  )
+)
+write_html_matrix_table(
+  matrix_table = event_study_key_results_plus1,
+  file_path = file.path(output_paths$tables, "event_study_key_results_relative_week_plus1.html"),
+  title = "Event-Study Estimates by Entity Group and Event Type",
+  subtitle = "Coefficient for relative week +1; standard errors in parentheses",
+  coefficient_label = "Cells report the coefficient for relative week +1.",
+  note_text = paste0(
+    "Dependent variable is log weekly spending. The omitted baseline is relative week 0. ",
+    "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
+    "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
+    "*** p < 0.01, ** p < 0.05, * p < 0.10."
+  )
+)
 
 write_clean_csv(all_model_coefficients, file.path(output_paths$event_study_baseline_0, "event_study_coefficients_by_model.csv"))
 write_clean_csv(all_model_fit, file.path(output_paths$event_study_baseline_0, "event_study_model_fit.csv"))
@@ -2066,6 +2361,13 @@ write_paper_style_header(
   ),
   dependent_variable_note = "Dependent variable: log(weekly_spend_ils). Weeks with spend <= 0 are dropped (log undefined).",
   extra_notes = c(
+    paste0(
+      "Analysis sample: Sunday-start weeks ",
+      as.character(analysis_start_week),
+      " through ",
+      as.character(analysis_end_week),
+      "."
+    ),
     "Note on gamma_t: the textbook canonical spec adds calendar-week FE",
     "(gamma_t = week_start_sunday FE). In our stacked design every entity is",
     "inside the +/-W window of every event, so calendar-week FE absorbs the",
