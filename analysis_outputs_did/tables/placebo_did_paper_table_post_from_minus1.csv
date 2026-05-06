@@ -1,11 +1,11 @@
 Statistic,All entities x all events,Political parties x all events,Other orgs/people x all events,All entities x political events,All entities x terror events,Political parties x political events,Political parties x terror events,Other orgs/people x political events,Other orgs/people x terror events
-PostEvent,0.048**,0.117**,0.023,0.031,0.056,0.015,0.188,0.024,0.022
-Std. Error,(0.023),(0.053),(0.023),(0.027),(0.045),(0.045),(0.116),(0.030),(0.042)
-P-value,0.043,0.041,0.325,0.260,0.220,0.752,0.124,0.438,0.596
+PostEvent,0.048**,0.117**,0.023,0.031,0.057,0.015,0.188,0.024,0.023
+Std. Error,(0.023),(0.053),(0.023),(0.027),(0.046),(0.045),(0.116),(0.031),(0.042)
+P-value,0.043,0.041,0.321,0.256,0.218,0.751,0.125,0.433,0.587
 Observations,9738,1821,7917,5205,4531,900,921,4305,3610
 Entities,66,18,49,59,65,13,18,46,47
 Events,66,66,66,36,30,36,30,36,30
-R-squared,0.304,0.499,0.330,0.337,0.298,0.514,0.513,0.342,0.336
+R-squared,0.301,0.499,0.326,0.333,0.295,0.514,0.512,0.337,0.331
 Within R-squared,0.000,0.001,0.000,0.000,0.000,0.000,0.003,0.000,0.000
 Data-source fixed effects,Yes,Yes,Yes,Yes,Yes,Yes,Yes,Yes,Yes
 Entity fixed effects,Yes,Yes,Yes,Yes,Yes,Yes,Yes,Yes,Yes
