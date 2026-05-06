@@ -110,7 +110,7 @@ The earlier version of these scripts used `log1p(weekly_spend_ils)` for the depe
 `event_study_0710.R` now writes:
 
 * `analysis_outputs/summaries/regression_summary.txt`: readable regression summary covering real event-study, placebo event-study, October 7, and the `baseline_minus1` robustness outputs
-* `analysis_outputs/tables/`: paper-style correlation comparison tables (`.csv` and `.md`) including real vs placebo side-by-side outputs, plus `event_study_key_results_relative_week_plus1.tex` and `.html` for direct paper use
+* `analysis_outputs/tables/`: paper-style correlation comparison tables (`.csv` and `.md`) including real vs placebo side-by-side outputs, plus `event_study_key_results_baseline_minus1.tex` and `.html` for direct paper use
 * `analysis_outputs/descriptive/`: descriptive CSV tables with total, mean, median, standard deviation, min, quartiles, max, row counts, week counts, entity counts, and first/last week
 * `analysis_outputs/correlations/real_events/`: real-event correlation CSV + graphs
 * `analysis_outputs/correlations/placebo_events/`: placebo-event correlation CSV + graphs

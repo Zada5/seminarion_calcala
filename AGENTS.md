@@ -75,8 +75,8 @@ Rscript did_0710.R <google_csv> <meta_csv> <events_csv> <output_dir> <window_wee
 ## Output files generated
 - `analysis_outputs/summaries/regression_summary.txt`
 - `analysis_outputs/tables/*`
-- `analysis_outputs/tables/event_study_key_results_relative_week_plus1.tex`
-- `analysis_outputs/tables/event_study_key_results_relative_week_plus1.html`
+- `analysis_outputs/tables/event_study_key_results_baseline_minus1.tex`
+- `analysis_outputs/tables/event_study_key_results_baseline_minus1.html`
 - `analysis_outputs/descriptive/*.csv`
 - `analysis_outputs/correlations/real_events/*`
 - `analysis_outputs/correlations/placebo_events/*`

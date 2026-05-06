@@ -1235,7 +1235,12 @@ legacy_output_paths <- file.path(
     "event_study_figures",
     "event_study_figures_ref_minus1",
     "placebo_event_study_figures",
-    "placebo_event_study_figures_ref_minus1"
+    "placebo_event_study_figures_ref_minus1",
+    file.path("tables", "event_study_key_results_relative_week_plus1.csv"),
+    file.path("tables", "event_study_key_results_relative_week_plus1.tex"),
+    file.path("tables", "event_study_key_results_relative_week_plus1.html"),
+    file.path("tables", "event_study_key_results_relative_week_plus1.png"),
+    file.path("tables", "event_study_key_results_relative_week_plus1.pdf")
   )
 )
 unlink(legacy_output_paths[file.exists(legacy_output_paths)], recursive = TRUE)
@@ -1597,9 +1602,9 @@ gamma_t_compare_table <- dplyr::bind_rows(
 all_model_coefficients_ref_minus1 <- dplyr::bind_rows(model_results_ref_minus1$coefficients)
 all_model_fit_ref_minus1 <- dplyr::bind_rows(model_results_ref_minus1$fit)
 
-event_study_key_results_plus1 <- build_event_study_key_results_matrix(
-  coefficients_table = all_model_coefficients,
-  model_fit_table = all_model_fit,
+event_study_key_results_baseline_minus1 <- build_event_study_key_results_matrix(
+  coefficients_table = all_model_coefficients_ref_minus1,
+  model_fit_table = all_model_fit_ref_minus1,
   model_specifications_table = model_specifications,
   target_relative_week = 1L
 )
@@ -2205,28 +2210,31 @@ write_clean_csv(correlation_comparison_table, file.path(output_paths$tables, "co
 write_markdown_table(correlation_comparison_table, file.path(output_paths$tables, "correlation_real_vs_placebo.md"))
 write_clean_csv(correlation_publication_table, file.path(output_paths$tables, "correlation_paper_table.csv"))
 write_markdown_table(correlation_publication_table, file.path(output_paths$tables, "correlation_paper_table.md"))
-write_clean_csv(event_study_key_results_plus1, file.path(output_paths$tables, "event_study_key_results_relative_week_plus1.csv"))
+write_clean_csv(
+  event_study_key_results_baseline_minus1,
+  file.path(output_paths$tables, "event_study_key_results_baseline_minus1.csv")
+)
 write_latex_matrix_table(
-  matrix_table = event_study_key_results_plus1,
-  file_path = file.path(output_paths$tables, "event_study_key_results_relative_week_plus1.tex"),
+  matrix_table = event_study_key_results_baseline_minus1,
+  file_path = file.path(output_paths$tables, "event_study_key_results_baseline_minus1.tex"),
   caption = "Event-study estimates by entity group and event type",
-  label = "tab:event_study_key_results_plus1",
-  coefficient_label = "Cells report the coefficient for relative week +1; clustered standard errors are in parentheses.",
+  label = "tab:event_study_key_results_baseline_minus1",
+  coefficient_label = "Cells report the coefficient for relative week +1, estimated with relative week -1 as the omitted baseline; clustered standard errors are in parentheses.",
   note_text = paste0(
-    "Dependent variable is log weekly spending. The omitted baseline is relative week 0. ",
+    "Dependent variable is log weekly spending. The omitted baseline is relative week -1. ",
     "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
     "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
     "*** p < 0.01, ** p < 0.05, * p < 0.10."
   )
 )
 write_html_matrix_table(
-  matrix_table = event_study_key_results_plus1,
-  file_path = file.path(output_paths$tables, "event_study_key_results_relative_week_plus1.html"),
+  matrix_table = event_study_key_results_baseline_minus1,
+  file_path = file.path(output_paths$tables, "event_study_key_results_baseline_minus1.html"),
   title = "Event-Study Estimates by Entity Group and Event Type",
-  subtitle = "Coefficient for relative week +1; standard errors in parentheses",
-  coefficient_label = "Cells report the coefficient for relative week +1.",
+  subtitle = "Relative week +1 coefficient, using relative week -1 as the baseline; standard errors in parentheses",
+  coefficient_label = "Cells report the coefficient for relative week +1, estimated with relative week -1 as the omitted baseline.",
   note_text = paste0(
-    "Dependent variable is log weekly spending. The omitted baseline is relative week 0. ",
+    "Dependent variable is log weekly spending. The omitted baseline is relative week -1. ",
     "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
     "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
     "*** p < 0.01, ** p < 0.05, * p < 0.10."
