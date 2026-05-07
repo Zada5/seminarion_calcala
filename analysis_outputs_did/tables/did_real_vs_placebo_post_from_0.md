@@ -1,11 +1,11 @@
 | model_name | model_label | real_estimate_display | real_std.error | real_p.value | real_conf.low | real_conf.high | real_used_rows | real_entities | real_events | real_within_r2 | placebo_estimate_display | placebo_std.error | placebo_p.value | placebo_conf.low | placebo_conf.high | placebo_used_rows | placebo_entities | placebo_events | placebo_within_r2 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| all_entities_all_events | All entities x all events | -0.087*** | 0.022 | 0.000 | -0.131 | -0.042 | 10038 | 66 | 66 | 0.001 | 0.063*** | 0.023 | 0.007 | 0.018 | 0.109 | 9738 | 65 | 66 | 0.001 |
-| political_parties_all_events | Political parties x all events | -0.140* | 0.077 | 0.087 | -0.304 | 0.023 | 1411 | 16 | 66 | 0.003 | 0.145** | 0.061 | 0.030 | 0.016 | 0.275 | 1821 | 16 | 66 | 0.003 |
-| other_orgs_people_all_events | Other orgs/people x all events | -0.059*** | 0.022 | 0.010 | -0.104 | -0.015 | 8627 | 50 | 66 | 0.001 | 0.034 | 0.021 | 0.107 | -0.008 | 0.075 | 7917 | 49 | 66 | 0.000 |
-| all_entities_political_events | All entities x political events | -0.176*** | 0.036 | 0.000 | -0.249 | -0.104 | 5323 | 65 | 36 | 0.005 | 0.040 | 0.027 | 0.154 | -0.015 | 0.095 | 5205 | 59 | 36 | 0.000 |
-| all_entities_terror_events | All entities x terror events | 0.016 | 0.031 | 0.599 | -0.045 | 0.078 | 4714 | 62 | 30 | 0.000 | 0.082** | 0.040 | 0.045 | 0.002 | 0.162 | 4531 | 63 | 30 | 0.001 |
-| political_parties_political_events | Political parties x political events | -0.337* | 0.165 | 0.059 | -0.688 | 0.015 | 755 | 16 | 36 | 0.018 | 0.069 | 0.053 | 0.216 | -0.046 | 0.185 | 900 | 13 | 36 | 0.001 |
-| political_parties_terror_events | Political parties x terror events | 0.050 | 0.064 | 0.449 | -0.088 | 0.188 | 656 | 15 | 30 | 0.001 | 0.186* | 0.094 | 0.064 | -0.013 | 0.386 | 921 | 16 | 30 | 0.005 |
-| other_orgs_people_political_events | Other orgs/people x political events | -0.125*** | 0.033 | 0.000 | -0.192 | -0.059 | 4568 | 49 | 36 | 0.003 | 0.023 | 0.029 | 0.434 | -0.035 | 0.081 | 4305 | 47 | 36 | 0.000 |
-| other_orgs_people_terror_events | Other orgs/people x terror events | 0.016 | 0.033 | 0.621 | -0.050 | 0.083 | 4058 | 47 | 30 | 0.000 | 0.048 | 0.039 | 0.219 | -0.030 | 0.126 | 3610 | 47 | 30 | 0.000 |
+| all_entities_all_events | All entities x all events | -0.087*** | 0.022 | 0.000 | -0.131 | -0.042 | 10038 | 66 | 66 | 0.001 | 0.056** | 0.023 | 0.019 | 0.010 | 0.103 | 9884 | 64 | 66 | 0.000 |
+| political_parties_all_events | Political parties x all events | -0.140* | 0.077 | 0.087 | -0.304 | 0.023 | 1411 | 16 | 66 | 0.003 | 0.147** | 0.054 | 0.016 | 0.031 | 0.262 | 1839 | 15 | 66 | 0.003 |
+| other_orgs_people_all_events | Other orgs/people x all events | -0.059*** | 0.022 | 0.010 | -0.104 | -0.015 | 8627 | 50 | 66 | 0.001 | 0.026 | 0.022 | 0.229 | -0.017 | 0.070 | 8045 | 49 | 66 | 0.000 |
+| all_entities_political_events | All entities x political events | -0.176*** | 0.036 | 0.000 | -0.249 | -0.104 | 5323 | 65 | 36 | 0.005 | 0.037 | 0.027 | 0.170 | -0.016 | 0.090 | 5286 | 59 | 36 | 0.000 |
+| all_entities_terror_events | All entities x terror events | 0.016 | 0.031 | 0.599 | -0.045 | 0.078 | 4714 | 62 | 30 | 0.000 | 0.074* | 0.041 | 0.073 | -0.007 | 0.155 | 4596 | 63 | 30 | 0.001 |
+| political_parties_political_events | Political parties x political events | -0.337* | 0.165 | 0.059 | -0.688 | 0.015 | 755 | 16 | 36 | 0.018 | 0.094** | 0.038 | 0.029 | 0.012 | 0.177 | 909 | 13 | 36 | 0.002 |
+| political_parties_terror_events | Political parties x terror events | 0.050 | 0.064 | 0.449 | -0.088 | 0.188 | 656 | 15 | 30 | 0.001 | 0.167* | 0.092 | 0.089 | -0.028 | 0.363 | 930 | 15 | 30 | 0.004 |
+| other_orgs_people_political_events | Other orgs/people x political events | -0.125*** | 0.033 | 0.000 | -0.192 | -0.059 | 4568 | 49 | 36 | 0.003 | 0.016 | 0.029 | 0.593 | -0.043 | 0.074 | 4377 | 47 | 36 | 0.000 |
+| other_orgs_people_terror_events | Other orgs/people x terror events | 0.016 | 0.033 | 0.621 | -0.050 | 0.083 | 4058 | 47 | 30 | 0.000 | 0.044 | 0.039 | 0.260 | -0.034 | 0.122 | 3666 | 48 | 30 | 0.000 |
