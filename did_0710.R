@@ -334,6 +334,53 @@ write_paper_style_summary <- function(model_names,
   }
 }
 
+write_did_comparison_summary <- function(comparison_table, summary_connection) {
+  rule_width <- 115L
+  if (is.null(comparison_table) || nrow(comparison_table) == 0) {
+    writeLines("No comparison rows available.", con = summary_connection)
+    return(invisible(NULL))
+  }
+
+  writeLines(
+    sprintf(
+      "%-42s %12s %9s %14s %9s %10s %12s",
+      "Model", "Real beta", "Real p", "Placebo beta", "Plac. p", "Real N", "Placebo N"
+    ),
+    con = summary_connection
+  )
+  writeLines(strrep("-", rule_width), con = summary_connection)
+
+  for (row_index in seq_len(nrow(comparison_table))) {
+    row <- comparison_table[row_index, ]
+    real_p <- if (is.finite(row$real_p.value)) {
+      if (row$real_p.value < 0.001) "<0.001" else formatC(row$real_p.value, format = "f", digits = 3)
+    } else {
+      ""
+    }
+    placebo_p <- if (is.finite(row$placebo_p.value)) {
+      if (row$placebo_p.value < 0.001) "<0.001" else formatC(row$placebo_p.value, format = "f", digits = 3)
+    } else {
+      ""
+    }
+
+    writeLines(
+      sprintf(
+        "%-42s %12s %9s %14s %9s %10s %12s",
+        row$model_label,
+        row$real_estimate_display,
+        real_p,
+        row$placebo_estimate_display,
+        placebo_p,
+        format(round(row$real_used_rows), big.mark = ","),
+        format(round(row$placebo_used_rows), big.mark = ",")
+      ),
+      con = summary_connection
+    )
+  }
+
+  invisible(NULL)
+}
+
 write_paper_style_header <- function(summary_connection,
                                      title,
                                      spec_lines,
@@ -1010,6 +1057,40 @@ create_placebo_events <- function(real_events_table, candidate_weeks, min_gap_we
     dplyr::mutate(event_id = dplyr::row_number())
 }
 
+filter_complete_placebo_windows <- function(placebo_events_table,
+                                            analysis_start_week,
+                                            analysis_end_week,
+                                            window_weeks) {
+  earliest_valid_week <- analysis_start_week + lubridate::weeks(window_weeks)
+  latest_valid_week <- analysis_end_week - lubridate::weeks(window_weeks)
+
+  invalid_placebo_events <- placebo_events_table %>%
+    dplyr::filter(
+      event_week_start_sunday < earliest_valid_week |
+        event_week_start_sunday > latest_valid_week
+    )
+
+  if (nrow(invalid_placebo_events) > 0) {
+    warning(
+      "Dropping ",
+      nrow(invalid_placebo_events),
+      " placebo event(s) without a complete +/-",
+      window_weeks,
+      " week window inside the analysis sample. Dropped weeks: ",
+      paste(invalid_placebo_events$event_week_start_sunday, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  placebo_events_table %>%
+    dplyr::filter(
+      event_week_start_sunday >= earliest_valid_week,
+      event_week_start_sunday <= latest_valid_week
+    ) %>%
+    dplyr::arrange(event_week_start_sunday) %>%
+    dplyr::mutate(event_id = dplyr::row_number())
+}
+
 load_placebo_events_from_repo <- function(
   placebo_file_path,
   real_events_table,
@@ -1433,8 +1514,8 @@ placebo_events_table <- load_placebo_events_from_repo(
 if (is.null(placebo_events_table)) {
   candidate_placebo_weeks <- sort(unique(
     weekly_spend_panel$week_start_sunday[
-      weekly_spend_panel$week_start_sunday >= placebo_window_start &
-        weekly_spend_panel$week_start_sunday <= placebo_window_end
+      weekly_spend_panel$week_start_sunday >= placebo_window_start + lubridate::weeks(analysis_window_weeks) &
+        weekly_spend_panel$week_start_sunday <= placebo_window_end - lubridate::weeks(analysis_window_weeks)
     ]
   ))
   placebo_events_table <- create_placebo_events(
@@ -1444,6 +1525,13 @@ if (is.null(placebo_events_table)) {
     seed = 7102023L
   )
 }
+
+placebo_events_table <- filter_complete_placebo_windows(
+  placebo_events_table = placebo_events_table,
+  analysis_start_week = analysis_start_week,
+  analysis_end_week = analysis_end_week,
+  window_weeks = analysis_window_weeks
+)
 
 # -------------------------
 # Event-window panel for DiD-style regressions
@@ -1948,24 +2036,35 @@ write_paper_style_summary(
   summary_connection = summary_connection
 )
 
-writeLines("\n--- placebo_did_design_overview ---", con = summary_connection)
+writeLines("", con = summary_connection)
+writeLines("Placebo design overview (PostEvent = 1 from placebo relative_week >= 0)", con = summary_connection)
+writeLines(strrep("-", 73L), con = summary_connection)
 write_formatted_table(placebo_did_design_overview, summary_connection)
 writeLines("", con = summary_connection)
 
-writeLines("--- placebo_did_sample_summary_by_model ---", con = summary_connection)
+writeLines("Placebo sample summary by model", con = summary_connection)
+writeLines(strrep("-", 73L), con = summary_connection)
 write_formatted_table(placebo_model_sample_summary, summary_connection)
 writeLines("", con = summary_connection)
 
-writeLines("\n--- placebo_did_models_post_from_0 ---", con = summary_connection)
-write_model_summary_sections(
+writeLines("", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("Placebo DiD models -- PostEvent = 1 from placebo relative_week >= 0", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+write_paper_style_summary(
   model_names = placebo_model_results$model_name,
   coefficients_table = placebo_model_coefficients,
   fit_table = placebo_model_fit,
   summary_connection = summary_connection
 )
 
-writeLines("\n--- did_real_vs_placebo_post_from_0 ---", con = summary_connection)
-write_formatted_table(did_comparison_post_from_0, summary_connection)
+writeLines("", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("Real vs placebo DiD comparison -- PostEvent from relative_week >= 0", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("This is a diagnostic check: placebo coefficients should not be read as real event effects.", con = summary_connection)
+writeLines("", con = summary_connection)
+write_did_comparison_summary(did_comparison_post_from_0, summary_connection)
 
 if (nrow(oct7_coefficient) > 0) {
   writeLines("", con = summary_connection)
