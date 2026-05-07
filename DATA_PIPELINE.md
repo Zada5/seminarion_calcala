@@ -1,0 +1,425 @@
+# Data Pipeline
+
+This document explains the full data path in this repository: which files the project starts from, what cleaning or transformation each file goes through, which scripts consume which inputs, and where the outputs are written.
+
+The short version:
+
+```text
+Raw Meta CSV exports        Raw Google XLSX export
+        |                           |
+        v                           v
+meta_csvs_to_final_file.py   google_csvs_to_final_file.py
+        |                           |
+        v                           v
+first_cleaning/*.csv         first_cleaning/*.csv
+        |                           |
+        +------- manual review, harmonization, class labels -------+
+                                    |
+                                    v
+                         second_cleaning/*.csv
+                                    |
+          +-------------------------+----------------------+----------------------+
+          |                         |                                             |
+          v                         v                                             v
+ descriptive R step        event_study_0710.R                              did_0710.R
+          |                         |                                             |
+          v                         v                                             v
+analysis_outputs/          analysis_outputs/                         analysis_outputs_did/
+descriptive/               event-study folders
+```
+
+## 1. Raw Starting Files
+
+The project starts from two advertising data sources plus an event timeline.
+
+### Meta Ads Library raw exports
+
+Location:
+
+```text
+meta_csvs/
+```
+
+These are many separate Meta Ad Library CSV exports. Each file corresponds to one manually downloaded advertiser/entity export. The file name is important because the Meta conversion script uses it to infer:
+
+- the advertiser/entity name
+- the export/download date, when the file name contains a `YYYY-MM-DD` date
+
+Typical file shape:
+
+```text
+meta_csvs/<entity name>-YYYY-MM-DD.csv
+```
+
+Important raw columns used by the script:
+
+- `ad_delivery_start_time`
+- `ad_delivery_stop_time`
+- `spend`
+- `currency`
+
+### Google Ads raw export
+
+Location:
+
+```text
+google_csv/Google Ads Political Spendings Cleaned.xlsx
+```
+
+Despite the word "Cleaned" in the file name, this is the Google-side source workbook used by the repository conversion script. It is already weekly or near-weekly in structure, so the script mainly normalizes column names, dates, and output schema.
+
+Required columns used by the script:
+
+- `Advertiser_Name`
+- `Week_Start_Date`
+- `Spend_ILS`
+
+### Event timeline
+
+Location:
+
+```text
+Consolidated List of Terror and Political incidents 2020-2025 v3.csv
+```
+
+This file is the real political/terror event timeline used by the event-study and DiD scripts. The scripts convert event dates to Sunday-start event weeks and classify events using the event `Type` field.
+
+### Placebo event list
+
+Location:
+
+```text
+placebo_events_2020_2025.csv
+```
+
+This is the canonical placebo event-week input. Both analysis scripts read it when present. If it is missing, the scripts fall back to deterministic seeded placebo generation, but the repository version should keep this file so collaborators can inspect the exact placebo dates.
+
+## 2. Source-To-Weekly Conversion
+
+The first transformation stage converts platform-specific source files into a shared weekly spend schema.
+
+### Meta conversion
+
+Script:
+
+```bash
+python3 meta_csvs_to_final_file.py
+```
+
+Default input:
+
+```text
+meta_csvs/
+```
+
+Default output:
+
+```text
+first_cleaning/weekly_party_spend_meta.csv
+```
+
+What the script does:
+
+- reads every CSV in `meta_csvs/`
+- infers the entity name and download date from each file name
+- parses Meta spend ranges, using the midpoint of each range
+- treats missing ad stop dates as active through the download date
+- spreads each ad's estimated spend evenly across its active days
+- allocates daily spend into Sunday-start weeks
+- converts USD rows to ILS when needed, using a fallback rate if lookup fails
+- writes one row per entity-week
+
+Output schema:
+
+```text
+source, party_name, week_start_sunday, week_index_since_2020,
+total_spend_week, avg_spend_per_day_week, currency
+```
+
+### Google conversion
+
+Script:
+
+```bash
+python3 google_csvs_to_final_file.py
+```
+
+Default input:
+
+```text
+google_csv/Google Ads Political Spendings Cleaned.xlsx
+```
+
+Default output:
+
+```text
+first_cleaning/weekly_party_spend_google.csv
+```
+
+What the script does:
+
+- reads the Google workbook
+- validates the required Google columns
+- converts Excel serial dates or text dates into normal dates
+- snaps dates to Sunday-start weeks
+- sums spend by advertiser-week
+- writes the same weekly schema as Meta, with `source = google`
+
+Output schema:
+
+```text
+source, party_name, week_start_sunday, week_index_since_2020,
+total_spend_week, avg_spend_per_day_week, currency
+```
+
+## 3. Manual Cleaning Stages
+
+After script-based conversion, the project keeps manual-cleaning stages as explicit files.
+
+### First cleaning
+
+Location:
+
+```text
+first_cleaning/weekly_party_spend_google.csv
+first_cleaning/weekly_party_spend_meta.csv
+```
+
+These are the direct standardized weekly outputs from the platform conversion scripts. They are useful for auditing the first script-produced result.
+
+### Earlier cleaned data
+
+Location:
+
+```text
+cleaned_data/weekly_party_spend_google.csv
+cleaned_data/weekly_party_spend_meta.csv
+```
+
+These are older cleaned weekly files kept for compatibility and comparison. The R scripts can fall back to these paths if the `second_cleaning/` files are not present, but they are not the preferred seminar input.
+
+### Second cleaning: preferred analysis input
+
+Location:
+
+```text
+second_cleaning/weekly_party_spend_google.csv
+second_cleaning/weekly_party_spend_meta.csv
+```
+
+These are the preferred inputs for the seminar analysis. They preserve the shared weekly schema and add/use the `class` column required for splitting entities into:
+
+- `political_party`
+- `other_org_or_person`
+
+The analysis scripts use these files by default.
+
+## 4. Combined Total Spend File
+
+Location:
+
+```text
+Total_Spend_Per_Party_or_Entity.xlsx
+```
+
+This workbook contains a combined Google + Meta total spend by party/entity, with columns:
+
+```text
+Party, Total Spend
+```
+
+It is useful as a quick total-spend reference, but it is not the main weekly panel used by the event-study or DiD scripts. The main analysis scripts recombine Google and Meta from the weekly files in `second_cleaning/`.
+
+## 5. Main Analysis Inputs
+
+Both R scripts use these default files:
+
+```text
+second_cleaning/weekly_party_spend_google.csv
+second_cleaning/weekly_party_spend_meta.csv
+Consolidated List of Terror and Political incidents 2020-2025 v3.csv
+```
+
+Both scripts also use:
+
+```text
+placebo_events_2020_2025.csv
+```
+
+when that file exists.
+
+The default analysis window is:
+
+```text
+2020-01-05 through 2025-12-28
+```
+
+All weeks are Sunday-start weeks.
+
+## 6. Descriptive Output Step
+
+Output location:
+
+```text
+analysis_outputs/descriptive/
+```
+
+This folder contains descriptive spend tables created from the cleaned weekly Google + Meta inputs. These outputs are meant to provide the basic data hygiene and scale checks before interpreting the event-study or DiD regressions.
+
+Files currently present:
+
+```text
+analysis_outputs/descriptive/descriptive_overall.csv
+analysis_outputs/descriptive/descriptive_by_group.csv
+analysis_outputs/descriptive/descriptive_by_year.csv
+analysis_outputs/descriptive/descriptive_by_year_and_group.csv
+analysis_outputs/descriptive/descriptive_pre_post_oct7.csv
+```
+
+What this step summarizes:
+
+- total spend in ILS
+- mean, median, standard deviation, min, quartiles, and max spend
+- row counts, week counts, and entity counts
+- first and last week in each summarized slice
+- spend by entity group
+- spend by calendar year
+- spend before vs. after October 7, 2023
+
+The same descriptive outputs are also generated by the descriptive block inside `event_study_0710.R`. If a standalone descriptive R script is used, it should consume the same preferred weekly inputs in `second_cleaning/` and write to this same folder.
+
+## 7. Event-Study Script
+
+Script:
+
+```bash
+Rscript event_study_0710.R
+```
+
+Optional full argument form:
+
+```bash
+Rscript event_study_0710.R <google_csv> <meta_csv> <events_csv> <output_dir> <window_weeks>
+```
+
+Default output directory:
+
+```text
+analysis_outputs/
+```
+
+What the script does:
+
+- reads the preferred Google and Meta weekly files
+- binds them into one weekly panel
+- standardizes fields such as `data_source`, `entity_name`, `entity_group`, and `weekly_spend_ils`
+- filters to the default 2020-2025 seminar window
+- reads real events and converts them to Sunday-start event weeks
+- reads the canonical placebo event list when present
+- creates or refreshes the descriptive spend tables in `analysis_outputs/descriptive/`
+- creates weekly event-count and spend-correlation outputs
+- builds stacked event windows around real and placebo events
+- drops rows with `weekly_spend_ils <= 0` before log regressions
+- estimates event-study regressions for all entities and entity/event-type splits
+- runs dedicated October 7, 2023 event-study outputs
+- preserves one `gamma_t` demonstration regression showing why calendar-week fixed effects are omitted in the stacked design
+
+Key outputs:
+
+```text
+analysis_outputs/descriptive/
+analysis_outputs/correlations/real_events/
+analysis_outputs/correlations/placebo_events/
+analysis_outputs/tables/
+analysis_outputs/event_study/baseline_0/
+analysis_outputs/event_study/baseline_minus1/
+analysis_outputs/placebo_event_study/baseline_0/
+analysis_outputs/placebo_event_study/baseline_minus1/
+analysis_outputs/oct7_event_study/baseline_0/
+analysis_outputs/oct7_event_study/baseline_minus1/
+analysis_outputs/event_study/gamma_t_demonstration/
+analysis_outputs/summaries/regression_summary.txt
+```
+
+Legacy root-level files generated by this script:
+
+```text
+data_window.csv
+event_study_coefs.csv
+event_study_figure.png
+regression_summary.txt
+```
+
+These are kept only for compatibility with older drafts. The canonical outputs are under `analysis_outputs/`.
+
+## 8. DiD Script
+
+Script:
+
+```bash
+Rscript did_0710.R
+```
+
+Optional full argument form:
+
+```bash
+Rscript did_0710.R <google_csv> <meta_csv> <events_csv> <output_dir> <window_weeks>
+```
+
+Default output directory:
+
+```text
+analysis_outputs_did/
+```
+
+What the script does:
+
+- reads the same preferred Google and Meta weekly files
+- binds them into one weekly panel
+- filters to the same 2020-2025 seminar window
+- reads real events and the canonical placebo list
+- builds stacked `+/- window_weeks` event panels
+- defines `PostEvent = 1` when `relative_week >= 0`
+- drops rows with `weekly_spend_ils <= 0` before log regressions
+- estimates DiD-style post-event fixed-effects models
+- runs placebo DiD checks
+- runs dedicated October 7, 2023 DiD outputs
+- preserves one `gamma_t` demonstration regression showing why calendar-week fixed effects are omitted in the stacked design
+
+Key outputs:
+
+```text
+analysis_outputs_did/post_from_0/
+analysis_outputs_did/placebo/post_from_0/
+analysis_outputs_did/oct7/post_from_0/
+analysis_outputs_did/gamma_t_demonstration/
+analysis_outputs_did/tables/
+analysis_outputs_did/summaries/regression_summary.txt
+```
+
+## 9. File Lineage Table
+
+| Stage | Files | Produced by | Consumed by |
+| --- | --- | --- | --- |
+| Raw Meta exports | `meta_csvs/*.csv` | manual export from Meta Ads Library | `meta_csvs_to_final_file.py` |
+| Raw Google export | `google_csv/Google Ads Political Spendings Cleaned.xlsx` | manual export / source workbook | `google_csvs_to_final_file.py` |
+| First weekly Meta file | `first_cleaning/weekly_party_spend_meta.csv` | `meta_csvs_to_final_file.py` | manual review / later cleaning |
+| First weekly Google file | `first_cleaning/weekly_party_spend_google.csv` | `google_csvs_to_final_file.py` | manual review / later cleaning |
+| Older cleaned weekly files | `cleaned_data/weekly_party_spend_*.csv` | earlier cleaning workflow | fallback input for R scripts |
+| Preferred weekly files | `second_cleaning/weekly_party_spend_*.csv` | manual second cleaning after first weekly conversion | `event_study_0710.R`, `did_0710.R` |
+| Real event timeline | `Consolidated List of Terror and Political incidents 2020-2025 v3.csv` | manual consolidated event list | `event_study_0710.R`, `did_0710.R` |
+| Placebo event list | `placebo_events_2020_2025.csv` | canonical placebo-date input | `event_study_0710.R`, `did_0710.R` |
+| Descriptive outputs | `analysis_outputs/descriptive/*.csv` | dedicated descriptive R step / descriptive block in `event_study_0710.R` | data hygiene review, seminar descriptive tables |
+| Event-study outputs | `analysis_outputs/**` | `event_study_0710.R` | seminar tables, figures, interpretation |
+| DiD outputs | `analysis_outputs_did/**` | `did_0710.R` | seminar tables, figures, interpretation |
+| Combined total reference | `Total_Spend_Per_Party_or_Entity.xlsx` | separate combined total aggregation | quick total-spend lookup |
+
+## 10. Reproducibility Notes
+
+- The analysis unit is weekly spend, with Sunday-start weeks.
+- Spend is in ILS.
+- The R scripts combine Google and Meta internally from the weekly files; they do not use the combined-total Excel workbook as their regression input.
+- The preferred analysis files live in `second_cleaning/`.
+- The `class` field is required for entity-group splits.
+- Rows with zero or negative spend are allowed in descriptive processing but are dropped before regressions because the dependent variable is `log(weekly_spend_ils)`.
+- The stacked event-study and DiD specifications intentionally omit calendar-week fixed effects except in the dedicated `gamma_t_demonstration/` folders.
