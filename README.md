@@ -60,7 +60,7 @@ Rscript event_study_0710.R
 Rscript did_0710.R
 ```
 
-`did_0710.R` uses the same Sunday-start event windows as the event-study script and defines `PostEvent = 1` when `relative_week >= 0`. It also writes an additional robustness version where `PostEvent = 1` starts at `relative_week >= -1`.
+`did_0710.R` uses the same Sunday-start event windows as the event-study script and defines `PostEvent = 1` when `relative_week >= 0`.
 It now also runs the same placebo-date design used by `event_study_0710.R`, using `placebo_events_2020_2025.csv` when available and otherwise falling back to the seeded deterministic placebo generator.
 
 ### Regression specifications
@@ -86,8 +86,8 @@ DiD (Oct 7):            log(Spending_{i,t}) = alpha_i + beta * PostEvent_{i,t} +
 Implementation details:
 
 - `alpha_i` is the entity fixed effect (`entity_name`; `data_source` FE is also added so platform-level shifts cannot leak into beta).
-- `D_{i,k}` is the relative-week dummy (`relative_week == k`), `i()` reference week is `0` for the main run and `-1` for the robustness folder.
-- `PostEvent_{i,t}` is `1` for `relative_week >= 0` (and a separate robustness model for `relative_week >= -1`).
+- `D_{i,k}` is the event-study relative-week dummy (`relative_week == k`), `i()` reference week is `0` for the main event-study run and `-1` for the event-study robustness folder.
+- `PostEvent_{i,t}` is `1` for `relative_week >= 0`.
 - For multi-event (stacked) panels, `event_id` FE is added on top of `alpha_i`.
 - Single-event runs (the October 7 dedicated models) use `entity_name + data_source` FE only — there is only one event so adding `event_id` FE would be a singleton and adding `gamma_t` would be collinear with relative week / PostEvent.
 - Standard errors are clustered by `entity_name`.
@@ -124,12 +124,11 @@ The earlier version of these scripts used `log1p(weekly_spend_ils)` for the depe
 
 `did_0710.R` writes DiD outputs into:
 
-* `analysis_outputs_did/summaries/regression_summary.txt`: readable summary covering the main DiD, placebo DiD, `post_from_minus1`, and October 7 split models
-* `analysis_outputs_did/tables/`: paper-style DiD tables (`.csv` and `.md`) for real DiD, placebo DiD, and real-vs-placebo comparisons, plus `did_key_results_post_from_0` and `did_key_results_post_from_minus1` exports as `.tex`, `.html`, `.png`, and `.pdf` for direct paper use
+* `analysis_outputs_did/summaries/regression_summary.txt`: readable summary covering the main DiD, placebo DiD, and October 7 split models
+* `analysis_outputs_did/tables/`: paper-style DiD tables (`.csv` and `.md`) for real DiD, placebo DiD, and real-vs-placebo comparisons, plus `did_key_results_post_from_0` exports as `.tex`, `.html`, `.png`, and `.pdf` for direct paper use
 * `analysis_outputs_did/post_from_0/`: main DiD design, sample, coefficient, fit, and graph outputs
-* `analysis_outputs_did/post_from_minus1/`: robustness version where `PostEvent = 1` starts at `relative_week >= -1`
-* `analysis_outputs_did/placebo/post_from_0/` and `analysis_outputs_did/placebo/post_from_minus1/`: placebo DiD outputs on the canonical placebo weeks
-* `analysis_outputs_did/oct7/post_from_0/` and `analysis_outputs_did/oct7/post_from_minus1/`: dedicated 2023-10-07 DiD outputs
+* `analysis_outputs_did/placebo/post_from_0/`: placebo DiD outputs on the canonical placebo weeks
+* `analysis_outputs_did/oct7/post_from_0/`: dedicated 2023-10-07 DiD outputs
 * `analysis_outputs_did/gamma_t_demonstration/`: paper artefact — single DiD regression with `gamma_t` (calendar-week FE) included, plus a `README.txt` and side-by-side comparison CSV showing β driven to numerical zero (see "Regression specifications" above)
 
 Numeric outputs in generated CSV and summary text files are formatted to 3 decimal places where relevant, without scientific notation. Very small p-values are displayed as `<0.001` rather than `0.000`. Correlation summaries now also include Pearson-test p-values. The root-level legacy October 7 files are kept only for backward compatibility and must stay script-generated.

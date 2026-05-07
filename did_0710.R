@@ -1281,11 +1281,8 @@ output_paths <- list(
   summaries = file.path(output_directory, "summaries"),
   tables = file.path(output_directory, "tables"),
   post_from_0 = file.path(output_directory, "post_from_0"),
-  post_from_minus1 = file.path(output_directory, "post_from_minus1"),
   placebo_post_from_0 = file.path(output_directory, "placebo", "post_from_0"),
-  placebo_post_from_minus1 = file.path(output_directory, "placebo", "post_from_minus1"),
   oct7_post_from_0 = file.path(output_directory, "oct7", "post_from_0"),
-  oct7_post_from_minus1 = file.path(output_directory, "oct7", "post_from_minus1"),
   gamma_t_demonstration = file.path(output_directory, "gamma_t_demonstration")
 )
 invisible(lapply(output_paths, dir.create, showWarnings = FALSE, recursive = TRUE))
@@ -1316,7 +1313,21 @@ legacy_output_paths <- file.path(
     "did_model_fit_0710_by_group_post_from_minus1.csv",
     "did_sample_summary_0710_by_group_post_from_minus1.csv",
     "did_coefficients_0710_by_group_post_from_minus1.png",
-    "did_regression_summary.txt"
+    "did_regression_summary.txt",
+    "post_from_minus1",
+    file.path("placebo", "post_from_minus1"),
+    file.path("oct7", "post_from_minus1"),
+    file.path("tables", "did_paper_table_post_from_minus1.csv"),
+    file.path("tables", "did_paper_table_post_from_minus1.md"),
+    file.path("tables", "did_key_results_post_from_minus1.csv"),
+    file.path("tables", "did_key_results_post_from_minus1.tex"),
+    file.path("tables", "did_key_results_post_from_minus1.html"),
+    file.path("tables", "did_key_results_post_from_minus1.png"),
+    file.path("tables", "did_key_results_post_from_minus1.pdf"),
+    file.path("tables", "placebo_did_paper_table_post_from_minus1.csv"),
+    file.path("tables", "placebo_did_paper_table_post_from_minus1.md"),
+    file.path("tables", "did_real_vs_placebo_post_from_minus1.csv"),
+    file.path("tables", "did_real_vs_placebo_post_from_minus1.md")
   )
 )
 legacy_output_paths <- c(legacy_output_paths, file.path(output_paths$summaries, "did_regression_summary.txt"))
@@ -1516,42 +1527,14 @@ fit_did_specs <- function(input_panel, specifications) {
     )
 }
 
-event_window_panel_post_from_minus1 <- event_window_panel %>%
-  dplyr::mutate(
-    post_event = dplyr::if_else(relative_week >= -1L, 1L, 0L)
-  )
-
-did_design_overview_post_from_minus1 <- event_window_panel_post_from_minus1 %>%
-  dplyr::summarise(
-    event_window_weeks = analysis_window_weeks,
-    total_rows = dplyr::n(),
-    total_entities = dplyr::n_distinct(entity_name),
-    total_events = dplyr::n_distinct(event_id),
-    pre_event_rows = sum(post_event == 0L),
-    post_event_rows = sum(post_event == 1L),
-    first_week = min(week_start_sunday, na.rm = TRUE),
-    last_week = max(week_start_sunday, na.rm = TRUE)
-  )
-
 model_results <- fit_did_specs(
   input_panel = event_window_panel,
-  specifications = model_specifications
-)
-
-model_results_post_from_minus1 <- fit_did_specs(
-  input_panel = event_window_panel_post_from_minus1,
   specifications = model_specifications
 )
 
 all_model_coefficients <- dplyr::bind_rows(model_results$coefficient)
 all_model_fit <- dplyr::bind_rows(model_results$fit)
 all_model_sample_summary <- dplyr::bind_rows(model_results$sample_summary)
-
-all_model_coefficients_post_from_minus1 <- dplyr::bind_rows(model_results_post_from_minus1$coefficient)
-all_model_fit_post_from_minus1 <- dplyr::bind_rows(model_results_post_from_minus1$fit)
-all_model_sample_summary_post_from_minus1 <- dplyr::bind_rows(
-  model_results_post_from_minus1$sample_summary
-)
 
 # -------------------------
 # gamma_t demonstration regression (kept for the seminar paper)
@@ -1621,44 +1604,14 @@ placebo_did_design_overview <- placebo_event_window_panel %>%
     last_week = max(week_start_sunday, na.rm = TRUE)
   )
 
-placebo_event_window_panel_post_from_minus1 <- placebo_event_window_panel %>%
-  dplyr::mutate(
-    post_event = dplyr::if_else(relative_week >= -1L, 1L, 0L)
-  )
-
-placebo_did_design_overview_post_from_minus1 <- placebo_event_window_panel_post_from_minus1 %>%
-  dplyr::summarise(
-    event_window_weeks = analysis_window_weeks,
-    total_rows = dplyr::n(),
-    total_entities = dplyr::n_distinct(entity_name),
-    total_events = dplyr::n_distinct(event_id),
-    pre_event_rows = sum(post_event == 0L),
-    post_event_rows = sum(post_event == 1L),
-    first_week = min(week_start_sunday, na.rm = TRUE),
-    last_week = max(week_start_sunday, na.rm = TRUE)
-  )
-
 placebo_model_results <- fit_did_specs(
   input_panel = placebo_event_window_panel,
-  specifications = model_specifications
-)
-
-placebo_model_results_post_from_minus1 <- fit_did_specs(
-  input_panel = placebo_event_window_panel_post_from_minus1,
   specifications = model_specifications
 )
 
 placebo_model_coefficients <- dplyr::bind_rows(placebo_model_results$coefficient)
 placebo_model_fit <- dplyr::bind_rows(placebo_model_results$fit)
 placebo_model_sample_summary <- dplyr::bind_rows(placebo_model_results$sample_summary)
-
-placebo_model_coefficients_post_from_minus1 <- dplyr::bind_rows(
-  placebo_model_results_post_from_minus1$coefficient
-)
-placebo_model_fit_post_from_minus1 <- dplyr::bind_rows(placebo_model_results_post_from_minus1$fit)
-placebo_model_sample_summary_post_from_minus1 <- dplyr::bind_rows(
-  placebo_model_results_post_from_minus1$sample_summary
-)
 
 if (nrow(all_model_coefficients) > 0) {
   combined_did_plot <- plot_did_coefficients(
@@ -1670,22 +1623,6 @@ if (nrow(all_model_coefficients) > 0) {
   ggplot2::ggsave(
     filename = file.path(output_paths$post_from_0, "did_coefficients_by_model.png"),
     plot = combined_did_plot,
-    width = 11,
-    height = 6.5,
-    dpi = 300
-  )
-}
-
-if (nrow(all_model_coefficients_post_from_minus1) > 0) {
-  combined_did_post_from_minus1_plot <- plot_did_coefficients(
-    coefficients_table = all_model_coefficients_post_from_minus1,
-    plot_title = "DiD-Style Post-Event Estimates Across Model Splits",
-    plot_subtitle = "DV: log(weekly spend). PostEvent = 1 for relative_week >= -1"
-  )
-
-  ggplot2::ggsave(
-    filename = file.path(output_paths$post_from_minus1, "did_coefficients_by_model.png"),
-    plot = combined_did_post_from_minus1_plot,
     width = 11,
     height = 6.5,
     dpi = 300
@@ -1708,22 +1645,6 @@ if (nrow(placebo_model_coefficients) > 0) {
   )
 }
 
-if (nrow(placebo_model_coefficients_post_from_minus1) > 0) {
-  placebo_combined_did_post_from_minus1_plot <- plot_did_coefficients(
-    coefficients_table = placebo_model_coefficients_post_from_minus1,
-    plot_title = "Placebo DiD-Style Post-Event Estimates Across Model Splits",
-    plot_subtitle = "DV: log(weekly spend). PostEvent = 1 for placebo relative_week >= -1"
-  )
-
-  ggplot2::ggsave(
-    filename = file.path(output_paths$placebo_post_from_minus1, "did_coefficients_by_model.png"),
-    plot = placebo_combined_did_post_from_minus1_plot,
-    width = 11,
-    height = 6.5,
-    dpi = 300
-  )
-}
-
 did_paper_table_post_from_0 <- build_did_publication_table(
   coefficients_table = all_model_coefficients,
   fit_table = all_model_fit,
@@ -1732,28 +1653,12 @@ did_paper_table_post_from_0 <- build_did_publication_table(
   post_event_definition_label = "1 if relative_week >= 0"
 )
 
-did_paper_table_post_from_minus1 <- build_did_publication_table(
-  coefficients_table = all_model_coefficients_post_from_minus1,
-  fit_table = all_model_fit_post_from_minus1,
-  sample_summary_table = all_model_sample_summary_post_from_minus1,
-  model_order = model_specifications$model_name,
-  post_event_definition_label = "1 if relative_week >= -1"
-)
-
 placebo_did_paper_table_post_from_0 <- build_did_publication_table(
   coefficients_table = placebo_model_coefficients,
   fit_table = placebo_model_fit,
   sample_summary_table = placebo_model_sample_summary,
   model_order = model_specifications$model_name,
   post_event_definition_label = "1 if placebo relative_week >= 0"
-)
-
-placebo_did_paper_table_post_from_minus1 <- build_did_publication_table(
-  coefficients_table = placebo_model_coefficients_post_from_minus1,
-  fit_table = placebo_model_fit_post_from_minus1,
-  sample_summary_table = placebo_model_sample_summary_post_from_minus1,
-  model_order = model_specifications$model_name,
-  post_event_definition_label = "1 if placebo relative_week >= -1"
 )
 
 did_comparison_post_from_0 <- build_did_comparison_table(
@@ -1765,24 +1670,9 @@ did_comparison_post_from_0 <- build_did_comparison_table(
   placebo_sample_summary = placebo_model_sample_summary
 )
 
-did_comparison_post_from_minus1 <- build_did_comparison_table(
-  real_coefficients = all_model_coefficients_post_from_minus1,
-  real_fit = all_model_fit_post_from_minus1,
-  real_sample_summary = all_model_sample_summary_post_from_minus1,
-  placebo_coefficients = placebo_model_coefficients_post_from_minus1,
-  placebo_fit = placebo_model_fit_post_from_minus1,
-  placebo_sample_summary = placebo_model_sample_summary_post_from_minus1
-)
-
 did_key_results_post_from_0 <- build_did_key_results_matrix(
   coefficients_table = all_model_coefficients,
   model_fit_table = all_model_fit,
-  model_specifications_table = model_specifications
-)
-
-did_key_results_post_from_minus1 <- build_did_key_results_matrix(
-  coefficients_table = all_model_coefficients_post_from_minus1,
-  model_fit_table = all_model_fit_post_from_minus1,
   model_specifications_table = model_specifications
 )
 
@@ -1796,29 +1686,14 @@ oct7_event <- events_table %>%
 oct7_coefficient <- tibble::tibble()
 oct7_model <- NULL
 oct7_sample_summary <- tibble::tibble()
-oct7_coefficient_post_from_minus1 <- tibble::tibble()
-oct7_model_post_from_minus1 <- NULL
-oct7_sample_summary_post_from_minus1 <- tibble::tibble()
 
 if (nrow(oct7_event) == 1) {
   oct7_event_window <- event_window_panel %>%
-    dplyr::filter(event_id == oct7_event$event_id)
-  oct7_event_window_post_from_minus1 <- event_window_panel_post_from_minus1 %>%
     dplyr::filter(event_id == oct7_event$event_id)
 
   oct7_model <- run_did_model(oct7_event_window)
   oct7_coefficient <- extract_post_event_coefficient(oct7_model, "oct7_event")
   oct7_sample_summary <- build_sample_summary(oct7_event_window, "oct7_event")
-
-  oct7_model_post_from_minus1 <- run_did_model(oct7_event_window_post_from_minus1)
-  oct7_coefficient_post_from_minus1 <- extract_post_event_coefficient(
-    oct7_model_post_from_minus1,
-    "oct7_event"
-  )
-  oct7_sample_summary_post_from_minus1 <- build_sample_summary(
-    oct7_event_window_post_from_minus1,
-    "oct7_event"
-  )
 }
 
 # -------------------------
@@ -1835,10 +1710,6 @@ oct7_group_results <- tibble::tibble()
 oct7_group_coefficients <- tibble::tibble()
 oct7_group_fit <- tibble::tibble()
 oct7_group_sample_summary <- tibble::tibble()
-oct7_group_results_post_from_minus1 <- tibble::tibble()
-oct7_group_coefficients_post_from_minus1 <- tibble::tibble()
-oct7_group_fit_post_from_minus1 <- tibble::tibble()
-oct7_group_sample_summary_post_from_minus1 <- tibble::tibble()
 
 if (nrow(oct7_event) == 1) {
   oct7_group_results <- oct7_group_specifications %>%
@@ -1876,46 +1747,6 @@ if (nrow(oct7_event) == 1) {
       dpi = 300
     )
   }
-
-  oct7_group_results_post_from_minus1 <- oct7_group_specifications %>%
-    dplyr::mutate(
-      model_data = purrr::map(entity_group_filter, function(group_filter) {
-        if (group_filter == "all") {
-          oct7_event_window_post_from_minus1
-        } else {
-          oct7_event_window_post_from_minus1 %>% dplyr::filter(entity_group == group_filter)
-        }
-      }),
-      input_rows = purrr::map_int(model_data, nrow),
-      model = purrr::map(model_data, run_did_model),
-      coefficient = purrr::map2(model, model_name, extract_post_event_coefficient),
-      fit = purrr::pmap(list(model, model_name, input_rows), extract_model_fit),
-      sample_summary = purrr::map2(model_data, model_name, build_sample_summary)
-    )
-
-  oct7_group_coefficients_post_from_minus1 <- dplyr::bind_rows(
-    oct7_group_results_post_from_minus1$coefficient
-  )
-  oct7_group_fit_post_from_minus1 <- dplyr::bind_rows(oct7_group_results_post_from_minus1$fit)
-  oct7_group_sample_summary_post_from_minus1 <- dplyr::bind_rows(
-    oct7_group_results_post_from_minus1$sample_summary
-  )
-
-  if (nrow(oct7_group_coefficients_post_from_minus1) > 0) {
-    oct7_group_post_from_minus1_plot <- plot_did_coefficients(
-      coefficients_table = oct7_group_coefficients_post_from_minus1,
-      plot_title = "DiD-Style Post-Event Estimates Around 2023-10-07",
-      plot_subtitle = "DV: log(weekly spend). PostEvent = 1 for relative_week >= -1"
-    )
-
-    ggplot2::ggsave(
-      filename = file.path(output_paths$oct7_post_from_minus1, "did_coefficients_0710_by_group.png"),
-      plot = oct7_group_post_from_minus1_plot,
-      width = 8.5,
-      height = 4.5,
-      dpi = 300
-    )
-  }
 }
 
 # -------------------------
@@ -1930,45 +1761,8 @@ write_clean_csv(placebo_did_design_overview, file.path(output_paths$placebo_post
 write_clean_csv(placebo_model_sample_summary, file.path(output_paths$placebo_post_from_0, "did_sample_summary_by_model.csv"))
 write_clean_csv(placebo_model_coefficients, file.path(output_paths$placebo_post_from_0, "did_coefficients_by_model.csv"))
 write_clean_csv(placebo_model_fit, file.path(output_paths$placebo_post_from_0, "did_model_fit.csv"))
-write_clean_csv(
-  did_design_overview_post_from_minus1,
-  file.path(output_paths$post_from_minus1, "did_design_overview.csv")
-)
-write_clean_csv(
-  all_model_sample_summary_post_from_minus1,
-  file.path(output_paths$post_from_minus1, "did_sample_summary_by_model.csv")
-)
-write_clean_csv(
-  all_model_coefficients_post_from_minus1,
-  file.path(output_paths$post_from_minus1, "did_coefficients_by_model.csv")
-)
-write_clean_csv(
-  all_model_fit_post_from_minus1,
-  file.path(output_paths$post_from_minus1, "did_model_fit.csv")
-)
-write_clean_csv(
-  placebo_did_design_overview_post_from_minus1,
-  file.path(output_paths$placebo_post_from_minus1, "did_design_overview.csv")
-)
-write_clean_csv(
-  placebo_model_sample_summary_post_from_minus1,
-  file.path(output_paths$placebo_post_from_minus1, "did_sample_summary_by_model.csv")
-)
-write_clean_csv(
-  placebo_model_coefficients_post_from_minus1,
-  file.path(output_paths$placebo_post_from_minus1, "did_coefficients_by_model.csv")
-)
-write_clean_csv(
-  placebo_model_fit_post_from_minus1,
-  file.path(output_paths$placebo_post_from_minus1, "did_model_fit.csv")
-)
 write_clean_csv(did_paper_table_post_from_0, file.path(output_paths$tables, "did_paper_table_post_from_0.csv"))
 write_markdown_table(did_paper_table_post_from_0, file.path(output_paths$tables, "did_paper_table_post_from_0.md"))
-write_clean_csv(did_paper_table_post_from_minus1, file.path(output_paths$tables, "did_paper_table_post_from_minus1.csv"))
-write_markdown_table(
-  did_paper_table_post_from_minus1,
-  file.path(output_paths$tables, "did_paper_table_post_from_minus1.md")
-)
 write_clean_csv(did_key_results_post_from_0, file.path(output_paths$tables, "did_key_results_post_from_0.csv"))
 write_latex_matrix_table(
   matrix_table = did_key_results_post_from_0,
@@ -2011,50 +1805,6 @@ write_matrix_table_graphics(
   )
 )
 write_clean_csv(
-  did_key_results_post_from_minus1,
-  file.path(output_paths$tables, "did_key_results_post_from_minus1.csv")
-)
-write_latex_matrix_table(
-  matrix_table = did_key_results_post_from_minus1,
-  file_path = file.path(output_paths$tables, "did_key_results_post_from_minus1.tex"),
-  caption = "Difference-in-differences estimates by entity group and event type: post from -1",
-  label = "tab:did_key_results_post_from_minus1",
-  coefficient_label = "Cells report the PostEvent coefficient; clustered standard errors are in parentheses.",
-  note_text = paste0(
-    "Dependent variable is log weekly spending. PostEvent equals 1 for relative week >= -1. ",
-    "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
-    "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
-    "*** p < 0.01, ** p < 0.05, * p < 0.10."
-  )
-)
-write_html_matrix_table(
-  matrix_table = did_key_results_post_from_minus1,
-  file_path = file.path(output_paths$tables, "did_key_results_post_from_minus1.html"),
-  title = "Difference-in-Differences Estimates by Entity Group and Event Type",
-  subtitle = "Robustness: PostEvent equals 1 from relative week -1",
-  coefficient_label = "Cells report the PostEvent coefficient.",
-  note_text = paste0(
-    "Dependent variable is log weekly spending. PostEvent equals 1 for relative week >= -1. ",
-    "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
-    "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
-    "*** p < 0.01, ** p < 0.05, * p < 0.10."
-  )
-)
-write_matrix_table_graphics(
-  matrix_table = did_key_results_post_from_minus1,
-  png_path = file.path(output_paths$tables, "did_key_results_post_from_minus1.png"),
-  pdf_path = file.path(output_paths$tables, "did_key_results_post_from_minus1.pdf"),
-  title = "Difference-in-Differences Estimates by Entity Group and Event Type",
-  subtitle = "Robustness: PostEvent equals 1 from relative week -1",
-  coefficient_label = "Cells report the PostEvent coefficient.",
-  note_text = paste0(
-    "Dependent variable is log weekly spending. PostEvent equals 1 for relative week >= -1. ",
-    "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
-    "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
-    "*** p < 0.01, ** p < 0.05, * p < 0.10."
-  )
-)
-write_clean_csv(
   placebo_did_paper_table_post_from_0,
   file.path(output_paths$tables, "placebo_did_paper_table_post_from_0.csv")
 )
@@ -2062,26 +1812,10 @@ write_markdown_table(
   placebo_did_paper_table_post_from_0,
   file.path(output_paths$tables, "placebo_did_paper_table_post_from_0.md")
 )
-write_clean_csv(
-  placebo_did_paper_table_post_from_minus1,
-  file.path(output_paths$tables, "placebo_did_paper_table_post_from_minus1.csv")
-)
-write_markdown_table(
-  placebo_did_paper_table_post_from_minus1,
-  file.path(output_paths$tables, "placebo_did_paper_table_post_from_minus1.md")
-)
 write_clean_csv(did_comparison_post_from_0, file.path(output_paths$tables, "did_real_vs_placebo_post_from_0.csv"))
 write_markdown_table(
   did_comparison_post_from_0,
   file.path(output_paths$tables, "did_real_vs_placebo_post_from_0.md")
-)
-write_clean_csv(
-  did_comparison_post_from_minus1,
-  file.path(output_paths$tables, "did_real_vs_placebo_post_from_minus1.csv")
-)
-write_markdown_table(
-  did_comparison_post_from_minus1,
-  file.path(output_paths$tables, "did_real_vs_placebo_post_from_minus1.md")
 )
 
 # Save the gamma_t demonstration outputs (kept for the seminar paper).
@@ -2144,20 +1878,8 @@ writeLines(
 if (nrow(oct7_coefficient) > 0) {
   write_clean_csv(oct7_coefficient, file.path(output_paths$oct7_post_from_0, "did_coefs_0710.csv"))
 }
-if (nrow(oct7_coefficient_post_from_minus1) > 0) {
-  write_clean_csv(
-    oct7_coefficient_post_from_minus1,
-    file.path(output_paths$oct7_post_from_minus1, "did_coefs_0710.csv")
-  )
-}
 if (nrow(oct7_sample_summary) > 0) {
   write_clean_csv(oct7_sample_summary, file.path(output_paths$oct7_post_from_0, "did_sample_summary_0710.csv"))
-}
-if (nrow(oct7_sample_summary_post_from_minus1) > 0) {
-  write_clean_csv(
-    oct7_sample_summary_post_from_minus1,
-    file.path(output_paths$oct7_post_from_minus1, "did_sample_summary_0710.csv")
-  )
 }
 if (nrow(oct7_group_coefficients) > 0) {
   write_clean_csv(oct7_group_coefficients, file.path(output_paths$oct7_post_from_0, "did_coefs_0710_by_group.csv"))
@@ -2167,24 +1889,6 @@ if (nrow(oct7_group_fit) > 0) {
 }
 if (nrow(oct7_group_sample_summary) > 0) {
   write_clean_csv(oct7_group_sample_summary, file.path(output_paths$oct7_post_from_0, "did_sample_summary_0710_by_group.csv"))
-}
-if (nrow(oct7_group_coefficients_post_from_minus1) > 0) {
-  write_clean_csv(
-    oct7_group_coefficients_post_from_minus1,
-    file.path(output_paths$oct7_post_from_minus1, "did_coefs_0710_by_group.csv")
-  )
-}
-if (nrow(oct7_group_fit_post_from_minus1) > 0) {
-  write_clean_csv(
-    oct7_group_fit_post_from_minus1,
-    file.path(output_paths$oct7_post_from_minus1, "did_model_fit_0710_by_group.csv")
-  )
-}
-if (nrow(oct7_group_sample_summary_post_from_minus1) > 0) {
-  write_clean_csv(
-    oct7_group_sample_summary_post_from_minus1,
-    file.path(output_paths$oct7_post_from_minus1, "did_sample_summary_0710_by_group.csv")
-  )
 }
 
 summary_file_path <- file.path(output_paths$summaries, "regression_summary.txt")
@@ -2199,8 +1903,6 @@ write_paper_style_header(
     "",
     "  alpha_i      : entity_name FE (and data_source FE for platform shifts)",
     "  PostEvent    : 1 if relative_week >= 0 within the +/-W event window, else 0",
-    "                 (robustness panel also reports a PostEvent that switches on at",
-    "                  relative_week = -1)",
     "  Multi-event (stacked) panels also add event_id FE.",
     "  Single-event runs (Oct 7) use entity_name + data_source FE only.",
     sprintf("  Event window: +/- %s weeks.", analysis_window_weeks),
@@ -2235,16 +1937,6 @@ writeLines(strrep("-", 73L), con = summary_connection)
 write_formatted_table(all_model_sample_summary, summary_connection)
 writeLines("", con = summary_connection)
 
-writeLines("Design overview (PostEvent = 1 from relative_week >= -1, robustness)", con = summary_connection)
-writeLines(strrep("-", 73L), con = summary_connection)
-write_formatted_table(did_design_overview_post_from_minus1, summary_connection)
-writeLines("", con = summary_connection)
-
-writeLines("Sample summary by model (PostEvent = 1 from relative_week >= -1, robustness)", con = summary_connection)
-writeLines(strrep("-", 73L), con = summary_connection)
-write_formatted_table(all_model_sample_summary_post_from_minus1, summary_connection)
-writeLines("", con = summary_connection)
-
 writeLines("", con = summary_connection)
 writeLines(strrep("=", 73L), con = summary_connection)
 writeLines("DiD models -- PostEvent = 1 from relative_week >= 0", con = summary_connection)
@@ -2256,31 +1948,12 @@ write_paper_style_summary(
   summary_connection = summary_connection
 )
 
-writeLines("", con = summary_connection)
-writeLines(strrep("=", 73L), con = summary_connection)
-writeLines("DiD models -- PostEvent = 1 from relative_week >= -1 (robustness)", con = summary_connection)
-writeLines(strrep("=", 73L), con = summary_connection)
-write_paper_style_summary(
-  model_names = model_results_post_from_minus1$model_name,
-  coefficients_table = all_model_coefficients_post_from_minus1,
-  fit_table = all_model_fit_post_from_minus1,
-  summary_connection = summary_connection
-)
-
 writeLines("\n--- placebo_did_design_overview ---", con = summary_connection)
 write_formatted_table(placebo_did_design_overview, summary_connection)
 writeLines("", con = summary_connection)
 
 writeLines("--- placebo_did_sample_summary_by_model ---", con = summary_connection)
 write_formatted_table(placebo_model_sample_summary, summary_connection)
-writeLines("", con = summary_connection)
-
-writeLines("\n--- placebo_did_design_overview_post_from_minus1 ---", con = summary_connection)
-write_formatted_table(placebo_did_design_overview_post_from_minus1, summary_connection)
-writeLines("", con = summary_connection)
-
-writeLines("--- placebo_did_sample_summary_by_model_post_from_minus1 ---", con = summary_connection)
-write_formatted_table(placebo_model_sample_summary_post_from_minus1, summary_connection)
 writeLines("", con = summary_connection)
 
 writeLines("\n--- placebo_did_models_post_from_0 ---", con = summary_connection)
@@ -2291,19 +1964,8 @@ write_model_summary_sections(
   summary_connection = summary_connection
 )
 
-writeLines("\n--- placebo_did_models_post_from_minus1 ---", con = summary_connection)
-write_model_summary_sections(
-  model_names = placebo_model_results_post_from_minus1$model_name,
-  coefficients_table = placebo_model_coefficients_post_from_minus1,
-  fit_table = placebo_model_fit_post_from_minus1,
-  summary_connection = summary_connection
-)
-
 writeLines("\n--- did_real_vs_placebo_post_from_0 ---", con = summary_connection)
 write_formatted_table(did_comparison_post_from_0, summary_connection)
-
-writeLines("\n--- did_real_vs_placebo_post_from_minus1 ---", con = summary_connection)
-write_formatted_table(did_comparison_post_from_minus1, summary_connection)
 
 if (nrow(oct7_coefficient) > 0) {
   writeLines("", con = summary_connection)
@@ -2314,19 +1976,6 @@ if (nrow(oct7_coefficient) > 0) {
     model_label = "oct7_event",
     coefficients_table = oct7_coefficient,
     fit_table = if (!is.null(oct7_model)) extract_model_fit(oct7_model, "oct7_event", nrow(oct7_event_window)) else tibble::tibble(),
-    summary_connection = summary_connection
-  )
-}
-
-if (nrow(oct7_coefficient_post_from_minus1) > 0) {
-  writeLines("", con = summary_connection)
-  writeLines(strrep("=", 73L), con = summary_connection)
-  writeLines("Dedicated October 7 DiD (single event) -- PostEvent from rel_week >= -1", con = summary_connection)
-  writeLines(strrep("=", 73L), con = summary_connection)
-  write_paper_style_model_section(
-    model_label = "oct7_event",
-    coefficients_table = oct7_coefficient_post_from_minus1,
-    fit_table = if (!is.null(oct7_model_post_from_minus1)) extract_model_fit(oct7_model_post_from_minus1, "oct7_event", nrow(oct7_event_window_post_from_minus1)) else tibble::tibble(),
     summary_connection = summary_connection
   )
 }
@@ -2344,27 +1993,11 @@ if (nrow(oct7_group_results) > 0) {
   )
 }
 
-if (nrow(oct7_group_results_post_from_minus1) > 0) {
-  writeLines("", con = summary_connection)
-  writeLines(strrep("=", 73L), con = summary_connection)
-  writeLines("October 7 DiD by entity group -- PostEvent from rel_week >= -1 (robustness)", con = summary_connection)
-  writeLines(strrep("=", 73L), con = summary_connection)
-  write_paper_style_summary(
-    model_names = oct7_group_results_post_from_minus1$model_name,
-    coefficients_table = oct7_group_coefficients_post_from_minus1,
-    fit_table = oct7_group_fit_post_from_minus1,
-    summary_connection = summary_connection
-  )
-}
-
 # -------------------------
 # Console output for RStudio users
 # -------------------------
 print_section("DiD Design Overview")
 print(format_output_table(did_design_overview))
-
-print_section("DiD Design Overview (Post From -1)")
-print(format_output_table(did_design_overview_post_from_minus1))
 
 print_section("DiD Sample Summary")
 print(format_output_table(all_model_sample_summary))
@@ -2382,11 +2015,6 @@ if (nrow(placebo_model_coefficients) > 0) {
   print(format_output_table(placebo_model_coefficients))
 }
 
-if (nrow(all_model_coefficients_post_from_minus1) > 0) {
-  print_section("DiD Coefficients (Post From -1)")
-  print(format_output_table(all_model_coefficients_post_from_minus1))
-}
-
 if (nrow(oct7_group_fit) > 0) {
   print_section("October 7 DiD Model Fit (By Group)")
   print(format_output_table(oct7_group_fit))
@@ -2397,38 +2025,20 @@ cat("Saved DiD-style outputs to: ", normalizePath(output_directory), "\n", sep =
 cat("- summaries/regression_summary.txt\n")
 cat("- tables/*\n")
 cat("- post_from_0/*\n")
-cat("- post_from_minus1/*\n")
 cat("- placebo/post_from_0/*\n")
-cat("- placebo/post_from_minus1/*\n")
 if (nrow(all_model_coefficients) > 0) {
   cat("- post_from_0/did_coefficients_by_model.png\n")
-}
-if (nrow(all_model_coefficients_post_from_minus1) > 0) {
-  cat("- post_from_minus1/did_coefficients_by_model.png\n")
 }
 if (nrow(placebo_model_coefficients) > 0) {
   cat("- placebo/post_from_0/did_coefficients_by_model.png\n")
 }
-if (nrow(placebo_model_coefficients_post_from_minus1) > 0) {
-  cat("- placebo/post_from_minus1/did_coefficients_by_model.png\n")
-}
 if (nrow(oct7_coefficient) > 0) {
   cat("- oct7/post_from_0/did_coefs_0710.csv\n")
   cat("- oct7/post_from_0/did_sample_summary_0710.csv\n")
-}
-if (nrow(oct7_coefficient_post_from_minus1) > 0) {
-  cat("- oct7/post_from_minus1/did_coefs_0710.csv\n")
-  cat("- oct7/post_from_minus1/did_sample_summary_0710.csv\n")
 }
 if (nrow(oct7_group_coefficients) > 0) {
   cat("- oct7/post_from_0/did_coefs_0710_by_group.csv\n")
   cat("- oct7/post_from_0/did_model_fit_0710_by_group.csv\n")
   cat("- oct7/post_from_0/did_sample_summary_0710_by_group.csv\n")
   cat("- oct7/post_from_0/did_coefficients_0710_by_group.png\n")
-}
-if (nrow(oct7_group_coefficients_post_from_minus1) > 0) {
-  cat("- oct7/post_from_minus1/did_coefs_0710_by_group.csv\n")
-  cat("- oct7/post_from_minus1/did_model_fit_0710_by_group.csv\n")
-  cat("- oct7/post_from_minus1/did_sample_summary_0710_by_group.csv\n")
-  cat("- oct7/post_from_minus1/did_coefficients_0710_by_group.png\n")
 }
