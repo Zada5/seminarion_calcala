@@ -17,6 +17,10 @@ The script is designed to support:
 
 The output is a single, clean CSV file where **each row represents one party in one week**, with standardized time indexing.
 
+For the full repo-level lineage of raw files, cleaning stages, scripts, and outputs, start with:
+
+* [`DATA_PIPELINE.md`](DATA_PIPELINE.md) - complete map from raw Meta/Google/event inputs through cleaning, analysis scripts, and output folders
+
 ---
 
 ## Setup
@@ -51,6 +55,8 @@ Both scripts use these default inputs unless command-line arguments override the
 ./second_cleaning/weekly_party_spend_meta.csv
 ./Consolidated List of Terror and Political incidents 2020-2025 v3.csv
 ```
+
+The weekly files in `second_cleaning/` are the preferred seminar inputs after manual cleaning and hygiene checks. Earlier script-produced weekly files live in `first_cleaning/`, and older cleaned files remain in `cleaned_data/` for compatibility. See [`DATA_PIPELINE.md`](DATA_PIPELINE.md) for the complete file lineage.
 
 The default analysis sample is restricted to the seminar window: Sunday-start
 weeks from `2020-01-05` through `2025-12-28`. Events are also restricted to
@@ -130,7 +136,7 @@ The earlier version of these scripts used `log1p(weekly_spend_ils)` for the depe
 
 * `analysis_outputs/summaries/regression_summary.txt`: readable regression summary covering real event-study, placebo event-study, October 7, and the `baseline_minus1` robustness outputs
 * `analysis_outputs/tables/`: paper-style correlation comparison tables (`.csv` and `.md`) including real vs placebo side-by-side outputs, plus `event_study_key_results_baseline_minus1.tex` and `.html` for direct paper use
-* `analysis_outputs/descriptive/`: descriptive CSV tables with total, mean, median, standard deviation, min, quartiles, max, row counts, week counts, entity counts, and first/last week
+* `analysis_outputs/descriptive/`: dedicated descriptive-output folder with CSV tables for total spend, group/year summaries, pre/post October 7 summaries, mean, median, standard deviation, min, quartiles, max, row counts, week counts, entity counts, and first/last week. These files are produced by the descriptive R step and can also be refreshed by the descriptive block in `event_study_0710.R`.
 * `analysis_outputs/correlations/real_events/`: real-event correlation CSV + graphs
 * `analysis_outputs/correlations/placebo_events/`: placebo-event correlation CSV + graphs
 * `analysis_outputs/event_study/baseline_0/`: main event-study CSVs + figures
@@ -329,7 +335,7 @@ Use `google_csvs_to_final_file.py` to convert the cleaned Google Ads XLSX export
 | `Week_Start_Date` | Week start date (Excel serial or date)  |
 | `Spend_ILS`       | Total spend per week (ILS)              |
 
-The output file is `cleaned_data/weekly_party_spend_google.csv`, with the same `week_index_since_2020` logic as the Meta pipeline.
+The default output file is `first_cleaning/weekly_party_spend_google.csv`, with the same `week_index_since_2020` logic as the Meta pipeline. The preferred analysis input after later manual cleaning is `second_cleaning/weekly_party_spend_google.csv`.
 
 ## For AI Agents (Important)
 
@@ -373,9 +379,10 @@ Common extensions that can be added safely:
 3. Run:
 
    ```bash
-   python build_weekly_spend.py
+   python3 meta_csvs_to_final_file.py
    ```
-4. Use `cleaned_data/weekly_party_spend_meta.csv` for analysis
+4. Review the generated `first_cleaning/weekly_party_spend_meta.csv`
+5. Use `second_cleaning/weekly_party_spend_meta.csv` for the default seminar analysis after manual cleaning
 
 ---
 
@@ -393,9 +400,4 @@ Every number in the output can be traced back to:
 
 That is intentional.
 
-If you want, I can also:
-
-* Add a **methodology appendix**
-* Write a **data limitations section**
-* Produce a **schema.json** for automated validation
-* Adapt this README for an academic paper or report
+For a higher-level file-by-file explanation of the full project workflow, see [`DATA_PIPELINE.md`](DATA_PIPELINE.md).
