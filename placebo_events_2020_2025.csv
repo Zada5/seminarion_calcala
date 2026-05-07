@@ -1,5 +1,4 @@
 event_date,event_type_group
-2020-01-12,terror
 2020-01-26,political
 2020-02-09,political
 2020-04-19,political
@@ -37,9 +36,11 @@ event_date,event_type_group
 2022-09-11,terror
 2022-09-25,political
 2022-10-09,terror
+2023-05-07,political
 2023-05-14,political
 2023-06-04,political
 2023-06-11,political
+2023-09-03,terror
 2024-05-05,terror
 2024-05-12,terror
 2024-09-01,political
@@ -64,4 +65,3 @@ event_date,event_type_group
 2025-11-30,political
 2025-12-07,terror
 2025-12-14,political
-2025-12-28,political

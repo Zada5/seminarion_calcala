@@ -1061,6 +1061,40 @@ create_placebo_events <- function(real_events_table, candidate_weeks, min_gap_we
     dplyr::mutate(event_id = dplyr::row_number())
 }
 
+filter_complete_placebo_windows <- function(placebo_events_table,
+                                            analysis_start_week,
+                                            analysis_end_week,
+                                            window_weeks) {
+  earliest_valid_week <- analysis_start_week + lubridate::weeks(window_weeks)
+  latest_valid_week <- analysis_end_week - lubridate::weeks(window_weeks)
+
+  invalid_placebo_events <- placebo_events_table %>%
+    dplyr::filter(
+      event_week_start_sunday < earliest_valid_week |
+        event_week_start_sunday > latest_valid_week
+    )
+
+  if (nrow(invalid_placebo_events) > 0) {
+    warning(
+      "Dropping ",
+      nrow(invalid_placebo_events),
+      " placebo event(s) without a complete +/-",
+      window_weeks,
+      " week window inside the analysis sample. Dropped weeks: ",
+      paste(invalid_placebo_events$event_week_start_sunday, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  placebo_events_table %>%
+    dplyr::filter(
+      event_week_start_sunday >= earliest_valid_week,
+      event_week_start_sunday <= latest_valid_week
+    ) %>%
+    dplyr::arrange(event_week_start_sunday) %>%
+    dplyr::mutate(event_id = dplyr::row_number())
+}
+
 load_placebo_events_from_repo <- function(
   placebo_file_path,
   real_events_table,
@@ -1808,8 +1842,8 @@ placebo_events_table <- load_placebo_events_from_repo(
 if (is.null(placebo_events_table)) {
   candidate_placebo_weeks <- sort(unique(
     weekly_spend_panel$week_start_sunday[
-      weekly_spend_panel$week_start_sunday >= placebo_window_start &
-        weekly_spend_panel$week_start_sunday <= placebo_window_end
+      weekly_spend_panel$week_start_sunday >= placebo_window_start + lubridate::weeks(analysis_window_weeks) &
+        weekly_spend_panel$week_start_sunday <= placebo_window_end - lubridate::weeks(analysis_window_weeks)
     ]
   ))
   placebo_events_table <- create_placebo_events(
@@ -1819,6 +1853,13 @@ if (is.null(placebo_events_table)) {
     seed = 7102023L
   )
 }
+
+placebo_events_table <- filter_complete_placebo_windows(
+  placebo_events_table = placebo_events_table,
+  analysis_start_week = analysis_start_week,
+  analysis_end_week = analysis_end_week,
+  window_weeks = analysis_window_weeks
+)
 
 placebo_weekly_event_counts_wide <- build_event_count_wide(placebo_events_table)
 placebo_correlation_outputs <- build_correlation_outputs(
