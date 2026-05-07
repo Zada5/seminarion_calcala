@@ -1,0 +1,3 @@
+data_source,analysis_start_week,analysis_end_week,total_spend_ils,share_of_combined_spend_pct,publishers,rows,active_week_rows,average_weekly_row_spend_ils,median_weekly_row_spend_ils,sd_weekly_row_spend_ils,min_weekly_row_spend_ils,p25_weekly_row_spend_ils,p75_weekly_row_spend_ils,max_weekly_row_spend_ils,first_week,last_week
+google,2020-01-05,2025-12-28,8355250,14.467,30,1155,275,7233.983,750,26238.451,250,250,2250,415000,2020-06-07,2025-12-14
+meta,2020-01-05,2025-12-28,49399212.838,85.533,49,8303,313,5949.562,2200.8,14517.002,0.973,955.668,5066.067,323814.063,2020-01-05,2025-12-28
