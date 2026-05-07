@@ -292,7 +292,9 @@ post_event                 -0.040      0.033        -4.0%     0.222
 -------------------------------------------------------------------------
 N (used): 4,058    R^2: 0.414    Adj. R^2: 0.403    Within R^2: 0.000
 
---- placebo_did_design_overview ---
+=========================================================================
+Placebo DiD design -- PostEvent = 1 from relative_week >= 0
+=========================================================================
 # A tibble: 1 × 8
   event_window_weeks total_rows total_entities total_events pre_event_rows
   <chr>              <chr>      <chr>          <chr>        <chr>
@@ -301,7 +303,8 @@ N (used): 4,058    R^2: 0.414    Adj. R^2: 0.403    Within R^2: 0.000
   <chr>           <date>     <date>
 1 5885            2020-01-05 2025-12-28
 
---- placebo_did_sample_summary_by_model ---
+Placebo sample summary by model (PostEvent = 1 from relative_week >= 0)
+-------------------------------------------------------------------------
 # A tibble: 18 × 8
    model_name                         period     rows  entities events
    <chr>                              <chr>      <chr> <chr>    <chr>
@@ -345,7 +348,9 @@ N (used): 4,058    R^2: 0.414    Adj. R^2: 0.403    Within R^2: 0.000
 18 5275.230             1901.304                7.579
 
 
---- placebo_did_design_overview_post_from_minus1 ---
+=========================================================================
+Placebo DiD design -- PostEvent = 1 from relative_week >= -1
+=========================================================================
 # A tibble: 1 × 8
   event_window_weeks total_rows total_entities total_events pre_event_rows
   <chr>              <chr>      <chr>          <chr>        <chr>
@@ -354,7 +359,8 @@ N (used): 4,058    R^2: 0.414    Adj. R^2: 0.403    Within R^2: 0.000
   <chr>           <date>     <date>
 1 7835            2020-01-05 2025-12-28
 
---- placebo_did_sample_summary_by_model_post_from_minus1 ---
+Placebo sample summary by model (PostEvent = 1 from relative_week >= -1)
+-------------------------------------------------------------------------
 # A tibble: 18 × 8
    model_name                         period     rows  entities events
    <chr>                              <chr>      <chr> <chr>    <chr>
@@ -398,335 +404,143 @@ N (used): 4,058    R^2: 0.414    Adj. R^2: 0.403    Within R^2: 0.000
 18 5305.249             1908.857                7.584
 
 
---- placebo_did_models_post_from_0 ---
+=========================================================================
+Placebo DiD models -- PostEvent = 1 from relative_week >= 0
+=========================================================================
 
---- all_entities_all_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name              term       estimate std.error statistic p.value
-  <chr>                   <chr>      <chr>    <chr>     <chr>     <chr>
-1 all_entities_all_events post_event 0.063    0.023     2.796     0.007
-  conf.low conf.high pct_change signif
-  <chr>    <chr>     <chr>      <chr>
-1 0.018    0.109     +6.5%      ***
-Model fit:
-# A tibble: 1 × 7
-  model_name              model_status input_rows used_rows r2    within_r2
-  <chr>                   <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_all_events ok           9740       9738      0.301 0.001
-  adjusted_r2
-  <chr>
-1 0.292
+(1) all_entities_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.063      0.023        +6.5%     0.007  ***
+-------------------------------------------------------------------------
+N (used): 9,738    R^2: 0.301    Adj. R^2: 0.292    Within R^2: 0.001
 
---- political_parties_all_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                   term       estimate std.error statistic p.value
-  <chr>                        <chr>      <chr>    <chr>     <chr>     <chr>
-1 political_parties_all_events post_event 0.145    0.061     2.376     0.030
-  conf.low conf.high pct_change signif
-  <chr>    <chr>     <chr>      <chr>
-1 0.016    0.275     +15.6%     **
-Model fit:
-# A tibble: 1 × 7
-  model_name                   model_status input_rows used_rows r2    within_r2
-  <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 political_parties_all_events ok           1822       1821      0.500 0.003
-  adjusted_r2
-  <chr>
-1 0.476
+(2) political_parties_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.145      0.061       +15.6%     0.030   **
+-------------------------------------------------------------------------
+N (used): 1,821    R^2: 0.500    Adj. R^2: 0.476    Within R^2: 0.003
 
---- other_orgs_people_all_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                   term       estimate std.error statistic p.value
-  <chr>                        <chr>      <chr>    <chr>     <chr>     <chr>
-1 other_orgs_people_all_events post_event 0.034    0.021     1.643     0.107
-  conf.low conf.high pct_change signif
-  <chr>    <chr>     <chr>      <chr>
-1 -0.008   0.075     +3.4%      ""
-Model fit:
-# A tibble: 1 × 7
-  model_name                   model_status input_rows used_rows r2    within_r2
-  <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 other_orgs_people_all_events ok           7918       7917      0.326 0.000
-  adjusted_r2
-  <chr>
-1 0.316
+(3) other_orgs_people_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.034      0.021        +3.4%     0.107     
+-------------------------------------------------------------------------
+N (used): 7,917    R^2: 0.326    Adj. R^2: 0.316    Within R^2: 0.000
 
---- all_entities_political_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                    term       estimate std.error statistic p.value
-  <chr>                         <chr>      <chr>    <chr>     <chr>     <chr>
-1 all_entities_political_events post_event 0.040    0.027     1.443     0.154
-  conf.low conf.high pct_change signif
-  <chr>    <chr>     <chr>      <chr>
-1 -0.015   0.095     +4.0%      ""
-Model fit:
-# A tibble: 1 × 7
-  model_name                    model_status input_rows used_rows r2
-  <chr>                         <chr>        <chr>      <chr>     <chr>
-1 all_entities_political_events ok           5206       5205      0.333
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.000     0.321
+(4) all_entities_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.040      0.027        +4.0%     0.154     
+-------------------------------------------------------------------------
+N (used): 5,205    R^2: 0.333    Adj. R^2: 0.321    Within R^2: 0.000
 
---- all_entities_terror_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                 term       estimate std.error statistic p.value
-  <chr>                      <chr>      <chr>    <chr>     <chr>     <chr>
-1 all_entities_terror_events post_event 0.082    0.040     2.050     0.045
-  conf.low conf.high pct_change signif
-  <chr>    <chr>     <chr>      <chr>
-1 0.002    0.162     +8.5%      **
-Model fit:
-# A tibble: 1 × 7
-  model_name                 model_status input_rows used_rows r2    within_r2
-  <chr>                      <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_terror_events ok           4534       4531      0.295 0.001
-  adjusted_r2
-  <chr>
-1 0.280
+(5) all_entities_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.082      0.040        +8.5%     0.045   **
+-------------------------------------------------------------------------
+N (used): 4,531    R^2: 0.295    Adj. R^2: 0.280    Within R^2: 0.001
 
---- political_parties_political_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                         term       estimate std.error statistic
-  <chr>                              <chr>      <chr>    <chr>     <chr>
-1 political_parties_political_events post_event 0.069    0.053     1.306
-  p.value conf.low conf.high pct_change signif
-  <chr>   <chr>    <chr>     <chr>      <chr>
-1 0.216   -0.046   0.185     +7.2%      ""
-Model fit:
-# A tibble: 1 × 7
-  model_name                         model_status input_rows used_rows r2
-  <chr>                              <chr>        <chr>      <chr>     <chr>
-1 political_parties_political_events ok           900        900       0.514
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.001     0.486
+(6) political_parties_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.069      0.053        +7.2%     0.216     
+-------------------------------------------------------------------------
+N (used): 900    R^2: 0.514    Adj. R^2: 0.486    Within R^2: 0.001
 
---- political_parties_terror_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                      term       estimate std.error statistic
-  <chr>                           <chr>      <chr>    <chr>     <chr>
-1 political_parties_terror_events post_event 0.186    0.094     1.986
-  p.value conf.low conf.high pct_change signif
-  <chr>   <chr>    <chr>     <chr>      <chr>
-1 0.064   -0.013   0.386     +20.5%     *
-Model fit:
-# A tibble: 1 × 7
-  model_name                      model_status input_rows used_rows r2
-  <chr>                           <chr>        <chr>      <chr>     <chr>
-1 political_parties_terror_events ok           922        921       0.513
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.005     0.487
+(7) political_parties_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.186      0.094       +20.5%     0.064    *
+-------------------------------------------------------------------------
+N (used): 921    R^2: 0.513    Adj. R^2: 0.487    Within R^2: 0.005
 
---- other_orgs_people_political_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                         term       estimate std.error statistic
-  <chr>                              <chr>      <chr>    <chr>     <chr>
-1 other_orgs_people_political_events post_event 0.023    0.029     0.789
-  p.value conf.low conf.high pct_change signif
-  <chr>   <chr>    <chr>     <chr>      <chr>
-1 0.434   -0.035   0.081     +2.3%      ""
-Model fit:
-# A tibble: 1 × 7
-  model_name                         model_status input_rows used_rows r2
-  <chr>                              <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_political_events ok           4306       4305      0.337
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.000     0.324
+(8) other_orgs_people_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.023      0.029        +2.3%     0.434     
+-------------------------------------------------------------------------
+N (used): 4,305    R^2: 0.337    Adj. R^2: 0.324    Within R^2: 0.000
 
---- other_orgs_people_terror_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                      term       estimate std.error statistic
-  <chr>                           <chr>      <chr>    <chr>     <chr>
-1 other_orgs_people_terror_events post_event 0.048    0.039     1.247
-  p.value conf.low conf.high pct_change signif
-  <chr>   <chr>    <chr>     <chr>      <chr>
-1 0.219   -0.030   0.126     +4.9%      ""
-Model fit:
-# A tibble: 1 × 7
-  model_name                      model_status input_rows used_rows r2
-  <chr>                           <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_terror_events ok           3612       3610      0.331
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.000     0.317
+(9) other_orgs_people_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.048      0.039        +4.9%     0.219     
+-------------------------------------------------------------------------
+N (used): 3,610    R^2: 0.331    Adj. R^2: 0.317    Within R^2: 0.000
 
---- placebo_did_models_post_from_minus1 ---
+=========================================================================
+Placebo DiD models -- PostEvent = 1 from relative_week >= -1 (robustness)
+=========================================================================
 
---- all_entities_all_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name              term       estimate std.error statistic p.value
-  <chr>                   <chr>      <chr>    <chr>     <chr>     <chr>
-1 all_entities_all_events post_event 0.048    0.023     2.063     0.043
-  conf.low conf.high pct_change signif
-  <chr>    <chr>     <chr>      <chr>
-1 0.002    0.095     +4.9%      **
-Model fit:
-# A tibble: 1 × 7
-  model_name              model_status input_rows used_rows r2    within_r2
-  <chr>                   <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_all_events ok           9740       9738      0.301 0.000
-  adjusted_r2
-  <chr>
-1 0.291
+(1) all_entities_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.048      0.023        +4.9%     0.043   **
+-------------------------------------------------------------------------
+N (used): 9,738    R^2: 0.301    Adj. R^2: 0.291    Within R^2: 0.000
 
---- political_parties_all_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                   term       estimate std.error statistic p.value
-  <chr>                        <chr>      <chr>    <chr>     <chr>     <chr>
-1 political_parties_all_events post_event 0.117    0.053     2.220     0.041
-  conf.low conf.high pct_change signif
-  <chr>    <chr>     <chr>      <chr>
-1 0.005    0.229     +12.4%     **
-Model fit:
-# A tibble: 1 × 7
-  model_name                   model_status input_rows used_rows r2    within_r2
-  <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 political_parties_all_events ok           1822       1821      0.499 0.001
-  adjusted_r2
-  <chr>
-1 0.475
+(2) political_parties_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.117      0.053       +12.4%     0.041   **
+-------------------------------------------------------------------------
+N (used): 1,821    R^2: 0.499    Adj. R^2: 0.475    Within R^2: 0.001
 
---- other_orgs_people_all_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                   term       estimate std.error statistic p.value
-  <chr>                        <chr>      <chr>    <chr>     <chr>     <chr>
-1 other_orgs_people_all_events post_event 0.023    0.023     1.004     0.321
-  conf.low conf.high pct_change signif
-  <chr>    <chr>     <chr>      <chr>
-1 -0.023   0.070     +2.4%      ""
-Model fit:
-# A tibble: 1 × 7
-  model_name                   model_status input_rows used_rows r2    within_r2
-  <chr>                        <chr>        <chr>      <chr>     <chr> <chr>
-1 other_orgs_people_all_events ok           7918       7917      0.326 0.000
-  adjusted_r2
-  <chr>
-1 0.316
+(3) other_orgs_people_all_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.023      0.023        +2.4%     0.321     
+-------------------------------------------------------------------------
+N (used): 7,917    R^2: 0.326    Adj. R^2: 0.316    Within R^2: 0.000
 
---- all_entities_political_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                    term       estimate std.error statistic p.value
-  <chr>                         <chr>      <chr>    <chr>     <chr>     <chr>
-1 all_entities_political_events post_event 0.031    0.027     1.147     0.256
-  conf.low conf.high pct_change signif
-  <chr>    <chr>     <chr>      <chr>
-1 -0.023   0.085     +3.2%      ""
-Model fit:
-# A tibble: 1 × 7
-  model_name                    model_status input_rows used_rows r2
-  <chr>                         <chr>        <chr>      <chr>     <chr>
-1 all_entities_political_events ok           5206       5205      0.333
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.000     0.321
+(4) all_entities_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.031      0.027        +3.2%     0.256     
+-------------------------------------------------------------------------
+N (used): 5,205    R^2: 0.333    Adj. R^2: 0.321    Within R^2: 0.000
 
---- all_entities_terror_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                 term       estimate std.error statistic p.value
-  <chr>                      <chr>      <chr>    <chr>     <chr>     <chr>
-1 all_entities_terror_events post_event 0.057    0.046     1.245     0.218
-  conf.low conf.high pct_change signif
-  <chr>    <chr>     <chr>      <chr>
-1 -0.034   0.148     +5.8%      ""
-Model fit:
-# A tibble: 1 × 7
-  model_name                 model_status input_rows used_rows r2    within_r2
-  <chr>                      <chr>        <chr>      <chr>     <chr> <chr>
-1 all_entities_terror_events ok           4534       4531      0.295 0.000
-  adjusted_r2
-  <chr>
-1 0.280
+(5) all_entities_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.057      0.046        +5.8%     0.218     
+-------------------------------------------------------------------------
+N (used): 4,531    R^2: 0.295    Adj. R^2: 0.280    Within R^2: 0.000
 
---- political_parties_political_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                         term       estimate std.error statistic
-  <chr>                              <chr>      <chr>    <chr>     <chr>
-1 political_parties_political_events post_event 0.015    0.045     0.324
-  p.value conf.low conf.high pct_change signif
-  <chr>   <chr>    <chr>     <chr>      <chr>
-1 0.751   -0.084   0.114     +1.5%      ""
-Model fit:
-# A tibble: 1 × 7
-  model_name                         model_status input_rows used_rows r2
-  <chr>                              <chr>        <chr>      <chr>     <chr>
-1 political_parties_political_events ok           900        900       0.514
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.000     0.486
+(6) political_parties_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.015      0.045        +1.5%     0.751     
+-------------------------------------------------------------------------
+N (used): 900    R^2: 0.514    Adj. R^2: 0.486    Within R^2: 0.000
 
---- political_parties_terror_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                      term       estimate std.error statistic
-  <chr>                           <chr>      <chr>    <chr>     <chr>
-1 political_parties_terror_events post_event 0.188    0.116     1.617
-  p.value conf.low conf.high pct_change signif
-  <chr>   <chr>    <chr>     <chr>      <chr>
-1 0.125   -0.059   0.435     +20.7%     ""
-Model fit:
-# A tibble: 1 × 7
-  model_name                      model_status input_rows used_rows r2
-  <chr>                           <chr>        <chr>      <chr>     <chr>
-1 political_parties_terror_events ok           922        921       0.512
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.003     0.486
+(7) political_parties_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.188      0.116       +20.7%     0.125     
+-------------------------------------------------------------------------
+N (used): 921    R^2: 0.512    Adj. R^2: 0.486    Within R^2: 0.003
 
---- other_orgs_people_political_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                         term       estimate std.error statistic
-  <chr>                              <chr>      <chr>    <chr>     <chr>
-1 other_orgs_people_political_events post_event 0.024    0.031     0.791
-  p.value conf.low conf.high pct_change signif
-  <chr>   <chr>    <chr>     <chr>      <chr>
-1 0.433   -0.037   0.086     +2.5%      ""
-Model fit:
-# A tibble: 1 × 7
-  model_name                         model_status input_rows used_rows r2
-  <chr>                              <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_political_events ok           4306       4305      0.337
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.000     0.324
+(8) other_orgs_people_political_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.024      0.031        +2.5%     0.433     
+-------------------------------------------------------------------------
+N (used): 4,305    R^2: 0.337    Adj. R^2: 0.324    Within R^2: 0.000
 
---- other_orgs_people_terror_events ---
-Coefficients:
-# A tibble: 1 × 10
-  model_name                      term       estimate std.error statistic
-  <chr>                           <chr>      <chr>    <chr>     <chr>
-1 other_orgs_people_terror_events post_event 0.023    0.042     0.547
-  p.value conf.low conf.high pct_change signif
-  <chr>   <chr>    <chr>     <chr>      <chr>
-1 0.587   -0.062   0.108     +2.3%      ""
-Model fit:
-# A tibble: 1 × 7
-  model_name                      model_status input_rows used_rows r2
-  <chr>                           <chr>        <chr>      <chr>     <chr>
-1 other_orgs_people_terror_events ok           3612       3610      0.331
-  within_r2 adjusted_r2
-  <chr>     <chr>
-1 0.000     0.317
+(9) other_orgs_people_terror_events
+-------------------------------------------------------------------------
+Variable                 Estimate  Std. Err.   Pct change   p-value  sig
+post_event                  0.023      0.042        +2.3%     0.587     
+-------------------------------------------------------------------------
+N (used): 3,610    R^2: 0.331    Adj. R^2: 0.317    Within R^2: 0.000
 
---- did_real_vs_placebo_post_from_0 ---
+=========================================================================
+Real vs placebo DiD comparison -- PostEvent from relative_week >= 0
+=========================================================================
 # A tibble: 9 × 20
   model_name                         model_label
   <chr>                              <chr>
@@ -795,7 +609,9 @@ Model fit:
 8 0.000
 9 0.000
 
---- did_real_vs_placebo_post_from_minus1 ---
+=========================================================================
+Real vs placebo DiD comparison -- PostEvent from relative_week >= -1
+=========================================================================
 # A tibble: 9 × 20
   model_name                         model_label
   <chr>                              <chr>

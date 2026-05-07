@@ -2267,42 +2267,62 @@ write_paper_style_summary(
   summary_connection = summary_connection
 )
 
-writeLines("\n--- placebo_did_design_overview ---", con = summary_connection)
+writeLines("", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("Placebo DiD design -- PostEvent = 1 from relative_week >= 0", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
 write_formatted_table(placebo_did_design_overview, summary_connection)
 writeLines("", con = summary_connection)
 
-writeLines("--- placebo_did_sample_summary_by_model ---", con = summary_connection)
+writeLines("Placebo sample summary by model (PostEvent = 1 from relative_week >= 0)", con = summary_connection)
+writeLines(strrep("-", 73L), con = summary_connection)
 write_formatted_table(placebo_model_sample_summary, summary_connection)
 writeLines("", con = summary_connection)
 
-writeLines("\n--- placebo_did_design_overview_post_from_minus1 ---", con = summary_connection)
+writeLines("", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("Placebo DiD design -- PostEvent = 1 from relative_week >= -1", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
 write_formatted_table(placebo_did_design_overview_post_from_minus1, summary_connection)
 writeLines("", con = summary_connection)
 
-writeLines("--- placebo_did_sample_summary_by_model_post_from_minus1 ---", con = summary_connection)
+writeLines("Placebo sample summary by model (PostEvent = 1 from relative_week >= -1)", con = summary_connection)
+writeLines(strrep("-", 73L), con = summary_connection)
 write_formatted_table(placebo_model_sample_summary_post_from_minus1, summary_connection)
 writeLines("", con = summary_connection)
 
-writeLines("\n--- placebo_did_models_post_from_0 ---", con = summary_connection)
-write_model_summary_sections(
+writeLines("", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("Placebo DiD models -- PostEvent = 1 from relative_week >= 0", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+write_paper_style_summary(
   model_names = placebo_model_results$model_name,
   coefficients_table = placebo_model_coefficients,
   fit_table = placebo_model_fit,
   summary_connection = summary_connection
 )
 
-writeLines("\n--- placebo_did_models_post_from_minus1 ---", con = summary_connection)
-write_model_summary_sections(
+writeLines("", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("Placebo DiD models -- PostEvent = 1 from relative_week >= -1 (robustness)", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+write_paper_style_summary(
   model_names = placebo_model_results_post_from_minus1$model_name,
   coefficients_table = placebo_model_coefficients_post_from_minus1,
   fit_table = placebo_model_fit_post_from_minus1,
   summary_connection = summary_connection
 )
 
-writeLines("\n--- did_real_vs_placebo_post_from_0 ---", con = summary_connection)
+writeLines("", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("Real vs placebo DiD comparison -- PostEvent from relative_week >= 0", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
 write_formatted_table(did_comparison_post_from_0, summary_connection)
 
-writeLines("\n--- did_real_vs_placebo_post_from_minus1 ---", con = summary_connection)
+writeLines("", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
+writeLines("Real vs placebo DiD comparison -- PostEvent from relative_week >= -1", con = summary_connection)
+writeLines(strrep("=", 73L), con = summary_connection)
 write_formatted_table(did_comparison_post_from_minus1, summary_connection)
 
 if (nrow(oct7_coefficient) > 0) {
