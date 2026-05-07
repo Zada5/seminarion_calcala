@@ -1,0 +1,2 @@
+analysis_start_week,analysis_end_week,expected_publishers,actual_publishers,publisher_count_status,google_publishers,meta_publishers,publishers_in_both_sources,google_only_publishers,meta_only_publishers,total_rows,total_spend_ils
+2020-01-05,2025-12-28,68,68,PASS,30,49,11,19,38,9458,57754462.838
