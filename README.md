@@ -33,7 +33,10 @@ pip install -r requirements.txt
 
 ## Analysis Scripts
 
-After the weekly Meta and Google files are prepared, the repository includes two R analysis entry points:
+After the weekly Meta and Google files are prepared, the repository includes three R analysis entry points:
+
+* `summarize_platform_publisher_spend.R`
+  Small descriptive-only script that summarizes total spend by platform and by publisher. It validates that the seminar-window publisher universe contains exactly 68 publishers. Default output directory: `./analysis_outputs/descriptive`
 
 * `event_study_0710.R`
   Main descriptive and event-study regression script. Default output directory: `./analysis_outputs`
@@ -56,8 +59,17 @@ the same 2020-2025 window after conversion to the Sunday event week.
 Run them from terminal with:
 
 ```bash
+Rscript summarize_platform_publisher_spend.R
 Rscript event_study_0710.R
 Rscript did_0710.R
+```
+
+`summarize_platform_publisher_spend.R` is intentionally separate from the regression scripts. It reads only the two second-cleaning weekly spend files, uses the same 2020-2025 seminar window, and writes clear descriptive tables answering how much was spent on Google, how much was spent on Meta, and how those totals split across the 68 publishers.
+
+Optional full argument form:
+
+```bash
+Rscript summarize_platform_publisher_spend.R <google_csv> <meta_csv> <output_dir>
 ```
 
 `did_0710.R` uses the same Sunday-start event windows as the event-study script and defines `PostEvent = 1` when `relative_week >= 0`.
@@ -106,6 +118,13 @@ Each folder contains a `README.txt` explaining the result and a `*_comparison.cs
 The earlier version of these scripts used `log1p(weekly_spend_ils)` for the dependent variable. That changed the estimand (especially for low-spend / zero-spend weeks) and was inconsistent with the agreed specs. Both scripts now use `log(weekly_spend_ils)` directly. Because `log(0)` is undefined, **rows with `weekly_spend_ils <= 0` are filtered out before estimation**, and each script prints the row count it dropped on stdout. Do not silently revert this to `log1p`.
 
 ### Main analysis outputs
+
+`summarize_platform_publisher_spend.R` writes:
+
+* `analysis_outputs/descriptive/platform_spend_summary.csv`: Google vs Meta total spend, publisher counts, rows, active weeks, and weekly-row spend statistics
+* `analysis_outputs/descriptive/publisher_platform_spend_summary.csv`: one row per publisher, with Google spend, Meta spend, combined spend, platform shares, row counts, active weeks, and weekly-row spend statistics
+* `analysis_outputs/descriptive/publisher_count_validation.csv`: explicit check that the analysis sample contains exactly 68 publishers
+* `analysis_outputs/descriptive/publisher_group_platform_spend_summary.csv`: platform totals split by `political_party` vs `other_org_or_person`
 
 `event_study_0710.R` now writes:
 

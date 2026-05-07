@@ -1,0 +1,5 @@
+publisher_group,data_source,total_spend_ils,publishers,rows,active_week_rows,average_weekly_row_spend_ils,median_weekly_row_spend_ils,sd_weekly_row_spend_ils
+other_org_or_person,google,2384000,15,687,235,3470.16,750,12794.306
+other_org_or_person,meta,42907305.521,39,7232,313,5932.979,2328.336,13928.321
+political_party,google,5971250,15,468,247,12759.081,1000,37541.284
+political_party,meta,6491907.317,10,1071,309,6061.538,1402.108,18002.481
