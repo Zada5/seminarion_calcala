@@ -1,17 +1,17 @@
 Event Study around 07/10/2023
-Event week start (Sunday):  2023-10-08 
+Event week start (Sunday):  2023-10-08
 Window: rel_week in [-2, 2], baseline = -1
 
-OLS estimation, Dep. Var.: y
-Observations: 162
-Fixed-effects: party_name: 37,  source: 2
-Standard-errors: Clustered (party_name) 
-              Estimate Std. Error   t value Pr(>|t|) 
-rel_week::-2  0.027865   0.138482  0.201219  0.84166 
-rel_week::0  -0.349496   0.283092 -1.234567  0.22499 
-rel_week::1   0.003332   0.301839  0.011039  0.99125 
-rel_week::2  -0.086837   0.312594 -0.277795  0.78276 
+OLS estimation, Dep. Var.: log_weekly_spend
+Observations: 144
+Fixed-effects: entity_name: 33,  data_source: 2
+Standard-errors: Clustered (entity_name) 
+                   Estimate Std. Error   t value Pr(>|t|) 
+relative_week::-2  0.087256   0.152930  0.570565  0.57228 
+relative_week::0  -0.375298   0.325633 -1.152518  0.25765 
+relative_week::1   0.021192   0.342475  0.061878  0.95104 
+relative_week::2  -0.073469   0.353027 -0.208110  0.83646 
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-RMSE: 0.826605     Adj. R2: 0.625336
-                 Within R2: 0.026046
+RMSE: 0.874741     Adj. R2: 0.56646 
+                 Within R2: 0.030613
