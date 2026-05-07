@@ -1,2 +1,0 @@
-model_name,term,estimate,std.error,statistic,p.value,conf.low,conf.high,pct_change,signif
-oct7_event,post_event,-0.186,0.194,-0.961,0.344,-0.581,0.209,-17.0%,
