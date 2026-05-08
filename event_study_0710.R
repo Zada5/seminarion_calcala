@@ -615,6 +615,72 @@ html_escape <- function(text_values) {
   text_values
 }
 
+write_html_presentation_table <- function(dataframe,
+                                          file_path,
+                                          title,
+                                          subtitle = NULL,
+                                          direction = "rtl") {
+  display_table <- dataframe %>%
+    dplyr::mutate(
+      dplyr::across(
+        .cols = dplyr::everything(),
+        .fns = ~ dplyr::if_else(is.na(.x), "", as.character(.x))
+      )
+    )
+
+  header_cells <- paste0("<th>", html_escape(names(display_table)), "</th>", collapse = "")
+  body_lines <- if (nrow(display_table) == 0) {
+    paste0("<tr><td colspan=\"", ncol(display_table), "\">No rows.</td></tr>")
+  } else {
+    apply(display_table, 1, function(row_values) {
+      paste0("<tr>", paste0("<td>", html_escape(row_values), "</td>", collapse = ""), "</tr>")
+    })
+  }
+
+  subtitle_line <- if (is.null(subtitle) || is.na(subtitle) || subtitle == "") {
+    character()
+  } else {
+    paste0("<p class=\"subtitle\">", html_escape(subtitle), "</p>")
+  }
+
+  html_lines <- c(
+    "<!doctype html>",
+    paste0("<html lang=\"he\" dir=\"", html_escape(direction), "\">"),
+    "<head>",
+    "<meta charset=\"utf-8\">",
+    "<style>",
+    "body { font-family: Arial, 'Noto Sans Hebrew', sans-serif; color: #222; margin: 32px; background: #fff; }",
+    ".table-wrap { max-width: 980px; margin: 0 auto; }",
+    "h1 { font-size: 18px; text-align: center; font-weight: 700; margin: 0 0 8px; }",
+    ".subtitle { text-align: center; font-size: 13px; margin: 0 0 18px; color: #555; }",
+    "table { width: 100%; border-collapse: collapse; font-size: 14px; }",
+    "thead th { border-bottom: 1px solid #999; font-weight: 700; padding: 10px 8px; text-align: center; }",
+    "tbody td { border-bottom: 1px solid #e5e5e5; padding: 10px 8px; text-align: center; vertical-align: middle; }",
+    "tbody tr:last-child td { border-bottom: 0; }",
+    "td, th { font-variant-numeric: tabular-nums; }",
+    "</style>",
+    "</head>",
+    "<body>",
+    "<div class=\"table-wrap\">",
+    paste0("<h1>", html_escape(title), "</h1>"),
+    subtitle_line,
+    "<table>",
+    "<thead>",
+    paste0("<tr>", header_cells, "</tr>"),
+    "</thead>",
+    "<tbody>",
+    body_lines,
+    "</tbody>",
+    "</table>",
+    "</div>",
+    "</body>",
+    "</html>"
+  )
+
+  writeLines(html_lines, con = file_path)
+  invisible(NULL)
+}
+
 write_html_matrix_table <- function(matrix_table,
                                     file_path,
                                     title,
@@ -1543,6 +1609,115 @@ pre_post_oct7_stats <- weekly_spend_panel %>%
   ) %>%
   dplyr::arrange(period_vs_oct7, entity_group)
 
+entity_group_label_he <- function(entity_group_values) {
+  dplyr::case_when(
+    entity_group_values == "other_org_or_person" ~ "גוף פרטי/אזרחי",
+    entity_group_values == "political_party" ~ "מפלגה ממוסדת",
+    TRUE ~ as.character(entity_group_values)
+  )
+}
+
+format_integer_he <- function(values) {
+  truncated_values <- sign(values) * floor(abs(values))
+
+  ifelse(
+    is.na(values),
+    NA_character_,
+    format(truncated_values, big.mark = ",", scientific = FALSE, trim = TRUE)
+  )
+}
+
+format_ils_he <- function(values) {
+  ifelse(
+    is.na(values),
+    NA_character_,
+    paste0(format_integer_he(values), " ש\"ח")
+  )
+}
+
+format_pct_he <- function(values) {
+  truncated_values <- sign(values) * floor(abs(values) * 10) / 10
+
+  ifelse(
+    is.na(values),
+    "-",
+    paste0(
+      ifelse(values >= 0, "+ ", ""),
+      formatC(truncated_values, format = "f", digits = 1),
+      "%"
+    )
+  )
+}
+
+format_million_gap_he <- function(values) {
+  truncated_millions <- floor(abs(values) / 100000) / 10
+
+  formatted_gap <- ifelse(
+    is.na(values),
+    NA_character_,
+    paste0(
+      ifelse(values >= 0, "+", "-"),
+      formatC(truncated_millions, format = "f", digits = 1),
+      " מיליון ש\"ח"
+    )
+  )
+
+  dplyr::if_else(
+    !is.na(values) & abs(values) < 1000000,
+    paste0(formatted_gap, " (שוויון כמעט מוחלט)"),
+    formatted_gap
+  )
+}
+
+# Presentation-ready Hebrew descriptive tables for the seminar paper/slides.
+# The audit/source tables remain descriptive_by_group.csv,
+# descriptive_by_year.csv, and descriptive_by_year_and_group.csv.
+descriptive_entity_type_summary_he <- spend_stats_by_group %>%
+  dplyr::mutate(
+    entity_group = factor(entity_group, levels = c("other_org_or_person", "political_party"))
+  ) %>%
+  dplyr::arrange(entity_group) %>%
+  dplyr::transmute(
+    "סוג גוף" = entity_group_label_he(as.character(entity_group)),
+    "סך הוצאה כוללת" = format_ils_he(total_spend_ils),
+    "ממוצע שבועי" = format_ils_he(average_weekly_row_spend_ils),
+    "חציון שבועי" = format_ils_he(median_weekly_row_spend_ils),
+    "סטיית תקן" = format_ils_he(sd_weekly_row_spend_ils),
+    "מקסימום לשבוע" = format_ils_he(max_weekly_row_spend_ils),
+    "סך תצפיות (N)" = format_integer_he(rows),
+    "מס' גופים" = format_integer_he(entities)
+  )
+
+descriptive_yearly_summary_he <- yearly_spend_stats %>%
+  dplyr::transmute(
+    "שנה" = as.character(calendar_year),
+    "סך הוצאה כוללת" = format_ils_he(total_spend_ils),
+    "שינוי משנה קודמת" = format_pct_he(yoy_total_change_pct),
+    "ממוצע שבועי" = format_ils_he(average_weekly_row_spend_ils),
+    "חציון שבועי" = format_ils_he(median_weekly_row_spend_ils),
+    "סטיית תקן" = format_ils_he(sd_weekly_row_spend_ils),
+    "מקסימום לשבוע" = format_ils_he(max_weekly_row_spend_ils),
+    "מס' גופים פעילים" = format_integer_he(entities)
+  )
+
+descriptive_yearly_group_gap_he <- yearly_spend_stats_by_group %>%
+  dplyr::select(calendar_year, entity_group, total_spend_ils) %>%
+  tidyr::pivot_wider(
+    names_from = entity_group,
+    values_from = total_spend_ils,
+    values_fill = 0
+  ) %>%
+  dplyr::mutate(
+    civic_minus_party_gap_ils = other_org_or_person - political_party
+  ) %>%
+  dplyr::arrange(calendar_year) %>%
+  dplyr::transmute(
+    "שנה" = as.character(calendar_year),
+    "סך הוצאות - גוף אזרחי/פרטי" = format_ils_he(other_org_or_person),
+    "סך הוצאות - מפלגה ממוסדת" = format_ils_he(political_party),
+    "פער (אזרחי פחות מפלגתי)" = format_million_gap_he(civic_minus_party_gap_ils)
+  )
+
 # -------------------------
 # Event-study dataset (all events)
 # -------------------------
@@ -2280,6 +2455,51 @@ write_clean_csv(spend_stats_by_group, file.path(output_paths$descriptive, "descr
 write_clean_csv(yearly_spend_stats, file.path(output_paths$descriptive, "descriptive_by_year.csv"))
 write_clean_csv(yearly_spend_stats_by_group, file.path(output_paths$descriptive, "descriptive_by_year_and_group.csv"))
 write_clean_csv(pre_post_oct7_stats, file.path(output_paths$descriptive, "descriptive_pre_post_oct7.csv"))
+readr::write_csv(
+  descriptive_entity_type_summary_he,
+  file.path(output_paths$tables, "descriptive_entity_type_summary_he.csv"),
+  na = ""
+)
+write_markdown_table(
+  descriptive_entity_type_summary_he,
+  file.path(output_paths$tables, "descriptive_entity_type_summary_he.md")
+)
+write_html_presentation_table(
+  descriptive_entity_type_summary_he,
+  file.path(output_paths$tables, "descriptive_entity_type_summary_he.html"),
+  title = "טבלה א: התפלגות הוצאות לפי סוג ישות (2020-2025)",
+  subtitle = "מבוסס על קבצי הניקוי השני; יחידת הניתוח היא הוצאה שבועית לפי גוף ופלטפורמה"
+)
+readr::write_csv(
+  descriptive_yearly_summary_he,
+  file.path(output_paths$tables, "descriptive_yearly_summary_he.csv"),
+  na = ""
+)
+write_markdown_table(
+  descriptive_yearly_summary_he,
+  file.path(output_paths$tables, "descriptive_yearly_summary_he.md")
+)
+write_html_presentation_table(
+  descriptive_yearly_summary_he,
+  file.path(output_paths$tables, "descriptive_yearly_summary_he.html"),
+  title = "טבלה ב: התפלגות ההוצאות בפרסום לפי שנים קלנדריות (כלל המדגם)",
+  subtitle = "הוצאות שבועיות בש\"ח, לפי שבועות Sunday-start בשנים 2020-2025"
+)
+readr::write_csv(
+  descriptive_yearly_group_gap_he,
+  file.path(output_paths$tables, "descriptive_yearly_group_gap_he.csv"),
+  na = ""
+)
+write_markdown_table(
+  descriptive_yearly_group_gap_he,
+  file.path(output_paths$tables, "descriptive_yearly_group_gap_he.md")
+)
+write_html_presentation_table(
+  descriptive_yearly_group_gap_he,
+  file.path(output_paths$tables, "descriptive_yearly_group_gap_he.html"),
+  title = "טבלה ג: התפלגות ההוצאות בפרסום מפלגתי מול אזרחי (השוואה שנתית)",
+  subtitle = "פער חיובי מציין הוצאה גבוהה יותר של גופים אזרחיים/פרטיים לעומת מפלגות ממוסדות"
+)
 write_clean_csv(correlation_summary, file.path(output_paths$correlations_real, "correlation_summary.csv"))
 write_clean_csv(placebo_events_table, file.path(output_paths$placebo_events, "placebo_events_dates.csv"))
 write_clean_csv(placebo_correlation_summary, file.path(output_paths$correlations_placebo, "placebo_correlation_summary.csv"))
@@ -2658,6 +2878,11 @@ print(format_output_table(spend_stats_by_group))
 print_section("Descriptive Statistics (By Year)")
 print(format_output_table(yearly_spend_stats))
 
+print_section("Presentation Descriptive Tables (Hebrew)")
+print(descriptive_entity_type_summary_he)
+print(descriptive_yearly_summary_he)
+print(descriptive_yearly_group_gap_he)
+
 print_section("Pre/Post October 7 Reference Week")
 print(format_output_table(pre_post_oct7_stats))
 
@@ -2679,6 +2904,7 @@ print_section("Output Files")
 cat("Saved descriptive stats and regressions to: ", normalizePath(output_directory), "\n", sep = "")
 cat("- summaries/regression_summary.txt\n")
 cat("- tables/*\n")
+cat("- tables/descriptive_*_he.{csv,md,html}\n")
 cat("- descriptive/*.csv\n")
 cat("- correlations/real_events/*\n")
 cat("- correlations/placebo_events/*\n")
