@@ -135,7 +135,11 @@ The earlier version of these scripts used `log1p(weekly_spend_ils)` for the depe
 `event_study_0710.R` now writes:
 
 * `analysis_outputs/summaries/regression_summary.txt`: readable regression summary covering real event-study, placebo event-study, October 7, and the `baseline_minus1` robustness outputs
-* `analysis_outputs/tables/`: paper-style correlation comparison tables (`.csv` and `.md`) including real vs placebo side-by-side outputs, plus `event_study_key_results_baseline_minus1.tex` and `.html` for direct paper use
+* `analysis_outputs/tables/`: paper-style correlation comparison tables (`.csv` and `.md`) including real vs placebo side-by-side outputs, plus event-study regression tables for direct paper use
+  * `correlation_paper_table.csv` / `.md`: final paper-style weekly correlation table
+  * `correlation_real_vs_placebo.csv` / `.md`: side-by-side real-vs-placebo weekly correlation comparison
+  * `event_study_key_results_baseline_minus1.csv` / `.tex` / `.html`: script-generated event-study key results, with `relative_week = -1` as the reference week and the reported coefficient taken from `relative_week = +1`
+  * `event_study_panel_summary_baseline_minus1.csv` / `.md` / `.html` / `.tex` / `.xlsx`: presentation copy of the same real event-study key results in the compact three-column panel format used for the seminar table
 * `analysis_outputs/descriptive/`: dedicated descriptive-output folder with CSV tables for total spend, group/year summaries, pre/post October 7 summaries, mean, median, standard deviation, min, quartiles, max, row counts, week counts, entity counts, and first/last week. These files are produced by the descriptive R step and can also be refreshed by the descriptive block in `event_study_0710.R`.
 * `analysis_outputs/correlations/real_events/`: real-event correlation CSV + graphs
 * `analysis_outputs/correlations/placebo_events/`: placebo-event correlation CSV + graphs
@@ -150,13 +154,45 @@ The earlier version of these scripts used `log1p(weekly_spend_ils)` for the depe
 `did_0710.R` writes DiD outputs into:
 
 * `analysis_outputs_did/summaries/regression_summary.txt`: readable summary covering the main DiD, placebo DiD, and October 7 split models
-* `analysis_outputs_did/tables/`: paper-style DiD tables (`.csv` and `.md`) for real DiD, placebo DiD, and real-vs-placebo comparisons, plus `did_key_results_post_from_0` exports as `.tex`, `.html`, `.png`, and `.pdf` for direct paper use
+* `analysis_outputs_did/tables/`: paper-style DiD tables (`.csv` and `.md`) for real DiD, placebo DiD, and real-vs-placebo comparisons, plus compact DiD tables for direct paper use
+  * `did_paper_table_post_from_0.csv` / `.md`: paper-style main DiD table by model split
+  * `placebo_did_paper_table_post_from_0.csv` / `.md`: paper-style placebo DiD table
+  * `did_real_vs_placebo_post_from_0.csv` / `.md`: side-by-side real-vs-placebo DiD comparison
+  * `did_key_results_post_from_0.csv` / `.tex` / `.html` / `.png` / `.pdf`: script-generated DiD key results, where `PostEvent = 1` for `relative_week >= 0`
+  * `did_panel_summary_post_from_0.csv` / `.md` / `.html` / `.tex` / `.xlsx`: presentation copy of the same real DiD key results in the compact three-column panel format used for the seminar table
 * `analysis_outputs_did/post_from_0/`: main DiD design, sample, coefficient, fit, and graph outputs
 * `analysis_outputs_did/placebo/post_from_0/`: placebo DiD outputs on the canonical placebo weeks with complete `+/-2` regression windows
 * `analysis_outputs_did/oct7/post_from_0/`: dedicated 2023-10-07 DiD outputs
 * `analysis_outputs_did/gamma_t_demonstration/`: paper artefact — single DiD regression with `gamma_t` (calendar-week FE) included, plus a `README.txt` and side-by-side comparison CSV showing β driven to numerical zero (see "Regression specifications" above)
 
 Numeric outputs in generated CSV and summary text files are formatted to 3 decimal places where relevant, without scientific notation. Very small p-values are displayed as `<0.001` rather than `0.000`. Correlation summaries now also include Pearson-test p-values. The root-level legacy October 7 files are kept only for backward compatibility and must stay script-generated.
+
+### Which final table should I use?
+
+For the seminar paper / presentation, use these compact final tables first:
+
+| Purpose | Final table to open | Canonical source data |
+| --- | --- | --- |
+| Event-study regression table | `analysis_outputs/tables/event_study_panel_summary_baseline_minus1.xlsx` | `analysis_outputs/tables/event_study_key_results_baseline_minus1.csv` |
+| Difference-in-differences regression table | `analysis_outputs_did/tables/did_panel_summary_post_from_0.xlsx` | `analysis_outputs_did/tables/did_key_results_post_from_0.csv` |
+| Weekly correlation summary | `analysis_outputs/tables/correlation_paper_table.csv` or `.md` | `analysis_outputs/correlations/real_events/correlation_summary.csv` and `analysis_outputs/correlations/placebo_events/placebo_correlation_summary.csv` |
+
+The `.xlsx` files are the human-friendly versions that match the requested seminar table shape. The `.csv` files listed under "Canonical source data" are the audit trail: use them when checking exactly which regression/correlation values fed the final table. For LaTeX or HTML drafts, use the matching `.tex` or `.html` file with the same base name.
+
+### Output lineage: what creates what?
+
+| Step | Input | Script / process | Main output |
+| --- | --- | --- | --- |
+| Meta weekly aggregation | `meta_csvs/*.csv` | `meta_csvs_to_final_file.py` | `cleaned_data/weekly_party_spend_meta.csv` |
+| Google weekly aggregation | `google_csv/*.xlsx` / raw Google export | `google_csvs_to_final_file.py` | `cleaned_data/weekly_party_spend_google.csv` |
+| Manual cleaning | `cleaned_data/` and manual review | first/second cleaning process | `first_cleaning/*.csv`, then preferred inputs in `second_cleaning/*.csv` |
+| Main event-study analysis | `second_cleaning/*.csv` + event timeline + placebo file | `Rscript event_study_0710.R` | `analysis_outputs/` |
+| Real/placebo weekly correlations | Same inputs as event study | `event_study_0710.R` correlation block | `analysis_outputs/correlations/*` and `analysis_outputs/tables/correlation_*` |
+| Event-study regression figures and tables | Same inputs as event study | `event_study_0710.R` event-study block | `analysis_outputs/event_study/*` and `analysis_outputs/tables/event_study_key_results_baseline_minus1.*` |
+| Compact event-study presentation table | `event_study_key_results_baseline_minus1.csv` | table-formatting step | `analysis_outputs/tables/event_study_panel_summary_baseline_minus1.*` |
+| DiD analysis | `second_cleaning/*.csv` + event timeline + placebo file | `Rscript did_0710.R` | `analysis_outputs_did/` |
+| DiD regression figures and tables | Same inputs as DiD | `did_0710.R` DiD block | `analysis_outputs_did/post_from_0/*` and `analysis_outputs_did/tables/did_key_results_post_from_0.*` |
+| Compact DiD presentation table | `did_key_results_post_from_0.csv` | table-formatting step | `analysis_outputs_did/tables/did_panel_summary_post_from_0.*` |
 
 ---
 
