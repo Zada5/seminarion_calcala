@@ -26,7 +26,7 @@ cat("\014")
 # practice in the stacked-DiD literature, we omit gamma_t for stacked specs.
 # A dedicated demonstration regression that DOES include gamma_t is computed
 # once in this script and saved under
-#   analysis_outputs_did/gamma_t_demonstration/
+#   outputs/did/gamma_t_demonstration/
 # so the paper can show the broken output that motivated dropping gamma_t.
 #
 # Note on the dependent variable: the model uses log(Spending), not
@@ -35,7 +35,7 @@ cat("\014")
 # log1p() version; row counts dropped per panel are reported on stdout.
 #
 # Run in RStudio or command line:
-# Rscript did_0710.R [google_csv] [meta_csv] [events_csv] [output_dir] [window_weeks]
+# Rscript scripts/06_did_0710.R [google_csv] [meta_csv] [events_csv] [output_dir] [window_weeks]
 
 required_packages <- c(
   "readr", "dplyr", "tidyr", "lubridate", "stringr",
@@ -1471,7 +1471,7 @@ load_placebo_events_from_repo <- function(
     stop(
       "Missing canonical placebo event file: ",
       placebo_file_path,
-      ". Run `python3 generate_placebo_events.py` before running the analysis.",
+      ". Run `python3 scripts/03_generate_placebo_events.py` before running the analysis.",
       call. = FALSE
     )
   }
@@ -1780,21 +1780,21 @@ plot_did_coefficients <- function(coefficients_table, plot_title, plot_subtitle)
 script_arguments <- commandArgs(trailingOnly = TRUE)
 
 default_google_path <- resolve_default_path(c(
-  "./second_cleaning/weekly_party_spend_google.csv",
-  "./cleaned_data/weekly_party_spend_google.csv"
+  "./data/processed/second_cleaning/weekly_party_spend_google.csv",
+  "./data/processed/cleaned_data/weekly_party_spend_google.csv"
 ))
 default_meta_path <- resolve_default_path(c(
-  "./second_cleaning/weekly_party_spend_meta.csv",
-  "./cleaned_data/weekly_party_spend_meta.csv"
+  "./data/processed/second_cleaning/weekly_party_spend_meta.csv",
+  "./data/processed/cleaned_data/weekly_party_spend_meta.csv"
 ))
 default_events_path <- resolve_default_path(c(
-  "./Consolidated List of Terror and Political incidents 2020-2025 v3.csv"
+  "./data/raw/events/Consolidated List of Terror and Political incidents 2020-2025 v3.csv"
 ))
 
 google_data_path <- if (length(script_arguments) >= 1) script_arguments[1] else default_google_path
 meta_data_path <- if (length(script_arguments) >= 2) script_arguments[2] else default_meta_path
 events_data_path <- if (length(script_arguments) >= 3) script_arguments[3] else default_events_path
-output_directory <- if (length(script_arguments) >= 4) script_arguments[4] else "./analysis_outputs_did"
+output_directory <- if (length(script_arguments) >= 4) script_arguments[4] else "./outputs/did"
 analysis_window_weeks <- if (length(script_arguments) >= 5) as.integer(script_arguments[5]) else 2L
 
 if (is.na(analysis_window_weeks) || analysis_window_weeks < 1L) {
@@ -1961,7 +1961,7 @@ if (nrow(events_table) == 0) {
   stop("No valid political/terror events found in events file.")
 }
 
-repo_placebo_dates_path <- "./placebo_events_2020_2025.csv"
+repo_placebo_dates_path <- "./data/generated/placebo_events_2020_2025.csv"
 placebo_boundary_buffer_weeks <- analysis_window_weeks + 1L
 placebo_events_table <- load_placebo_events_from_repo(
   placebo_file_path = repo_placebo_dates_path,
@@ -2402,7 +2402,7 @@ writeLines(
     "Two regressions are reported here side-by-side in",
     "did_coefficient_comparison.csv:",
     "",
-    "  (A) without_gamma_t  (the spec used in the rest of analysis_outputs_did/)",
+    "  (A) without_gamma_t  (the spec used in the rest of outputs/did/)",
     "      log_y ~ post_event | entity_name + data_source + event_id",
     "",
     "  (B) with_gamma_t     (the textbook canonical TWFE-DiD spec we tried first)",

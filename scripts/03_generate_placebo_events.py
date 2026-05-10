@@ -8,8 +8,8 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 
-EVENTS_CSV = Path("Consolidated List of Terror and Political incidents 2020-2025 v3.csv")
-OUTPUT_CSV = Path("placebo_events_2020_2025.csv")
+EVENTS_CSV = Path("data/raw/events/Consolidated List of Terror and Political incidents 2020-2025 v3.csv")
+OUTPUT_CSV = Path("data/generated/placebo_events_2020_2025.csv")
 SEED = 20260510
 
 # Three weeks after the first Sunday week of 2020, and three weeks before
