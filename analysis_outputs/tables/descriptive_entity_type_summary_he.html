@@ -3,14 +3,17 @@
 <head>
 <meta charset="utf-8">
 <style>
-body { font-family: Arial, 'Noto Sans Hebrew', sans-serif; color: #222; margin: 32px; background: #fff; }
+body { font-family: Arial, 'Noto Sans Hebrew', sans-serif; color: #111; margin: 32px; background: #fff; }
 .table-wrap { max-width: 980px; margin: 0 auto; }
 h1 { font-size: 18px; text-align: center; font-weight: 700; margin: 0 0 8px; }
 .subtitle { text-align: center; font-size: 13px; margin: 0 0 18px; color: #555; }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-thead th { border-bottom: 1px solid #999; font-weight: 700; padding: 10px 8px; text-align: center; }
-tbody td { border-bottom: 1px solid #e5e5e5; padding: 10px 8px; text-align: center; vertical-align: middle; }
-tbody tr:last-child td { border-bottom: 0; }
+table { width: 100%; border-collapse: collapse; border-top: 2px solid #111; border-bottom: 2px solid #111; font-size: 14px; direction: rtl; }
+thead th { border-bottom: 1.5px solid #111; font-weight: 700; padding: 10px 8px; text-align: center; }
+tbody td, tbody th { border-bottom: 1px solid #e5e5e5; padding: 10px 8px; text-align: center; vertical-align: middle; }
+tbody th:first-child { text-align: right; font-weight: 600; }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+td.num { direction: ltr; unicode-bidi: isolate; }
+.panel-row th { background: #f3f4f6; border-top: 1.5px solid #111; font-weight: 700; text-align: right; }
 td, th { font-variant-numeric: tabular-nums; }
 </style>
 </head>
@@ -23,8 +26,8 @@ td, th { font-variant-numeric: tabular-nums; }
 <tr><th>סוג גוף</th><th>סך הוצאה כוללת</th><th>ממוצע שבועי</th><th>חציון שבועי</th><th>סטיית תקן</th><th>מקסימום לשבוע</th><th>סך תצפיות (N)</th><th>מס' גופים</th></tr>
 </thead>
 <tbody>
-<tr><td>גוף פרטי/אזרחי</td><td>45,291,305 ש&quot;ח</td><td>5,719 ש&quot;ח</td><td>2,132 ש&quot;ח</td><td>13,850 ש&quot;ח</td><td>323,814 ש&quot;ח</td><td>7,919</td><td>50</td></tr>
-<tr><td>מפלגה ממוסדת</td><td>12,463,157 ש&quot;ח</td><td>8,098 ש&quot;ח</td><td>1,250 ש&quot;ח</td><td>25,746 ש&quot;ח</td><td>415,000 ש&quot;ח</td><td>1,539</td><td>18</td></tr>
+<tr><th>גוף פרטי/אזרחי</th><td>45,291,305 ש&quot;ח</td><td>5,719 ש&quot;ח</td><td>2,132 ש&quot;ח</td><td>13,850 ש&quot;ח</td><td>323,814 ש&quot;ח</td><td class="num">7,919</td><td class="num">50</td></tr>
+<tr><th>מפלגה ממוסדת</th><td>12,463,157 ש&quot;ח</td><td>8,098 ש&quot;ח</td><td>1,250 ש&quot;ח</td><td>25,746 ש&quot;ח</td><td>415,000 ש&quot;ח</td><td class="num">1,539</td><td class="num">18</td></tr>
 </tbody>
 </table>
 </div>

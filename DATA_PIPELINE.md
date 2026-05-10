@@ -102,6 +102,21 @@ The generator is intentionally simple but keeps the placebo clean. It reads the 
 
 Both analysis scripts read this root file directly. They validate that placebo dates are unique Sundays, inside the analysis buffer, and more than `3` weeks away from every real event week. They do not write separate expanded placebo-date tables. If the file is missing or malformed, the scripts stop and tell the user to regenerate it.
 
+### Row-count definitions used in outputs
+
+The descriptive outputs count the cleaned weekly spend panel: one row per
+entity/platform/Sunday-start week inside `2020-01-05` through `2025-12-28`.
+In the current preferred second-cleaning inputs this is `9,458` rows.
+
+The event-study and DiD outputs use stacked event-window panels. Each cleaned
+weekly row is crossed with the 66 real or placebo events and only rows inside
+the chosen `+/-W` event window are retained. A single weekly spend row can
+therefore appear more than once if it is inside multiple event windows.
+Regression `N` is the number of stacked event-window observations used by
+`fixest`, not the number of original weekly rows. The scripts write both
+stacked observations and unique weekly rows to the model-fit and compact
+panel-summary outputs.
+
 ### Placebo refresh checklist
 
 When updating placebo events, do all of these steps together:

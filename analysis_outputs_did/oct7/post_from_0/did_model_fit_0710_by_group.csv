@@ -1,4 +1,4 @@
-model_name,model_status,input_rows,used_rows,r2,within_r2,adjusted_r2
-oct7_all_entities,ok,146,144,0.672,0.010,0.569
-oct7_political_parties,ok,15,13,0.606,0.403,0.325
-oct7_other_orgs_people,ok,131,131,0.661,0.005,0.560
+model_name,model_status,used_rows,r2,within_r2,adjusted_r2,input_rows,unique_weekly_rows,stacked_extra_rows,input_entities,input_events,first_week,last_week
+oct7_all_entities,ok,144,0.672,0.010,0.569,146,146,0,35,1,2023-09-24,2023-10-22
+oct7_political_parties,ok,13,0.606,0.403,0.325,15,15,0,6,1,2023-09-24,2023-10-15
+oct7_other_orgs_people,ok,131,0.661,0.005,0.560,131,131,0,29,1,2023-09-24,2023-10-22
