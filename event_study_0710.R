@@ -1091,7 +1091,7 @@ build_correlation_outputs <- function(event_count_wide_table, spend_totals_for_c
   )
 }
 
-create_placebo_events <- function(real_events_table, candidate_weeks, min_gap_weeks = 3L, seed = 7102023L) {
+create_placebo_events <- function(real_events_table, candidate_weeks, min_gap_weeks = 3L, seed = 20260510L) {
   real_event_weeks <- unique(real_events_table$event_week_start_sunday)
 
   valid_placebo_weeks <- candidate_weeks[
@@ -2008,6 +2008,8 @@ if (nrow(correlation_summary) > 0) {
 repo_placebo_dates_path <- "./placebo_events_2020_2025.csv"
 placebo_window_start <- as.Date("2020-01-05")
 placebo_window_end <- as.Date("2025-12-28")
+placebo_boundary_buffer_weeks <- analysis_window_weeks + 1L
+placebo_random_seed <- 20260510L
 placebo_events_table <- load_placebo_events_from_repo(
   placebo_file_path = repo_placebo_dates_path,
   real_events_table = events_table,
@@ -2017,15 +2019,15 @@ placebo_events_table <- load_placebo_events_from_repo(
 if (is.null(placebo_events_table)) {
   candidate_placebo_weeks <- sort(unique(
     weekly_spend_panel$week_start_sunday[
-      weekly_spend_panel$week_start_sunday >= placebo_window_start + lubridate::weeks(analysis_window_weeks) &
-        weekly_spend_panel$week_start_sunday <= placebo_window_end - lubridate::weeks(analysis_window_weeks)
+      weekly_spend_panel$week_start_sunday >= placebo_window_start + lubridate::weeks(placebo_boundary_buffer_weeks) &
+        weekly_spend_panel$week_start_sunday <= placebo_window_end - lubridate::weeks(placebo_boundary_buffer_weeks)
     ]
   ))
   placebo_events_table <- create_placebo_events(
     real_events_table = events_table,
     candidate_weeks = candidate_placebo_weeks,
     min_gap_weeks = analysis_window_weeks + 1L,
-    seed = 7102023L
+    seed = placebo_random_seed
   )
 }
 

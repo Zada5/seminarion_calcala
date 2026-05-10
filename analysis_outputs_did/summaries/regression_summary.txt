@@ -174,54 +174,54 @@ Placebo design overview (PostEvent = 1 from placebo relative_week >= 0)
 # A tibble: 1 × 8
   event_window_weeks total_rows total_entities total_events pre_event_rows
   <chr>              <chr>      <chr>          <chr>        <chr>
-1 2                  9885       66             66           3903
+1 2                  9941       66             66           3877
   post_event_rows first_week last_week
   <chr>           <date>     <date>
-1 5982            2020-01-12 2025-12-28
+1 6064            2020-01-12 2025-12-21
 
 Placebo sample summary by model
 -------------------------------------------------------------------------
 # A tibble: 18 × 8
    model_name                         period     rows  entities events
    <chr>                              <chr>      <chr> <chr>    <chr>
- 1 all_entities_all_events            post_event 5982  63       66
- 2 all_entities_all_events            pre_event  3903  64       66
- 3 political_parties_all_events       post_event 1129  15       66
- 4 political_parties_all_events       pre_event  710   15       66
- 5 other_orgs_people_all_events       post_event 4853  48       66
- 6 other_orgs_people_all_events       pre_event  3193  49       66
- 7 all_entities_political_events      post_event 3188  59       36
- 8 all_entities_political_events      pre_event  2099  59       36
- 9 all_entities_terror_events         post_event 2794  63       30
-10 all_entities_terror_events         pre_event  1804  62       30
-11 political_parties_political_events post_event 552   13       36
-12 political_parties_political_events pre_event  357   12       36
-13 political_parties_terror_events    post_event 577   15       30
-14 political_parties_terror_events    pre_event  353   15       30
-15 other_orgs_people_political_events post_event 2636  46       36
-16 other_orgs_people_political_events pre_event  1742  47       36
-17 other_orgs_people_terror_events    post_event 2217  48       30
-18 other_orgs_people_terror_events    pre_event  1451  47       30
+ 1 all_entities_all_events            post_event 6064  64       66
+ 2 all_entities_all_events            pre_event  3877  63       66
+ 3 political_parties_all_events       post_event 1192  16       66
+ 4 political_parties_all_events       pre_event  722   15       66
+ 5 other_orgs_people_all_events       post_event 4872  48       66
+ 6 other_orgs_people_all_events       pre_event  3155  48       66
+ 7 all_entities_political_events      post_event 3245  63       36
+ 8 all_entities_political_events      pre_event  2085  60       36
+ 9 all_entities_terror_events         post_event 2819  63       30
+10 all_entities_terror_events         pre_event  1792  58       30
+11 political_parties_political_events post_event 605   16       36
+12 political_parties_political_events pre_event  371   13       36
+13 political_parties_terror_events    post_event 587   15       30
+14 political_parties_terror_events    pre_event  351   15       30
+15 other_orgs_people_political_events post_event 2640  47       36
+16 other_orgs_people_political_events pre_event  1714  47       36
+17 other_orgs_people_terror_events    post_event 2232  48       30
+18 other_orgs_people_terror_events    pre_event  1441  43       30
    avg_weekly_spend_ils median_weekly_spend_ils avg_log_weekly_spend
    <chr>                <chr>                   <chr>
- 1 5917.923             1986.916                7.562
- 2 5099.063             1906.900                7.513
- 3 9240.830             1684.276                7.483
- 4 5913.990             1297.268                7.268
- 5 5144.883             2000.000                7.581
- 6 4917.854             1999.200                7.568
- 7 5089.408             1936.785                7.519
- 8 4550.769             1979.868                7.473
- 9 6863.272             2009.755                7.612
-10 5737.016             1894.039                7.560
-11 6208.181             1500.000                7.337
-12 4140.258             1250.000                7.090
-13 12142.082            1835.670                7.623
-14 7707.821             1424.417                7.448
-15 4855.127             1990.301                7.557
-16 4634.898             2070.187                7.551
-17 5489.401             2044.004                7.609
-18 5257.557             1907.700                7.587
+ 1 6357.768             2035.128                7.606
+ 2 5579.547             2004.442                7.572
+ 3 10411.378            1904.247                7.602
+ 4 7708.679             1616.688                7.453
+ 5 5365.998             2052.778                7.606
+ 6 5092.310             2059.505                7.599
+ 7 6453.494             2048.500                7.624
+ 8 5810.642             1998.855                7.581
+ 9 6247.576             2010.900                7.585
+10 5310.666             2066.513                7.561
+11 10297.748            1900.583                7.558
+12 7544.364             1500.000                7.361
+13 10528.492            1941.292                7.648
+14 7882.356             1799.000                7.549
+15 5572.519             2059.678                7.639
+16 5435.374             2026.625                7.629
+17 5121.726             2036.925                7.568
+18 4684.252             2090.747                7.564
 
 
 =========================================================================
@@ -231,65 +231,65 @@ Placebo DiD models -- PostEvent = 1 from placebo relative_week >= 0
 (1) all_entities_all_events
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-post_event                  0.056      0.023        +5.8%     0.019   **
+post_event                  0.044      0.023        +4.5%     0.054    *
 -------------------------------------------------------------------------
-N (used): 9,884    R^2: 0.302    Adj. R^2: 0.292    Within R^2: 0.000
+N (used): 9,939    R^2: 0.283    Adj. R^2: 0.274    Within R^2: 0.000
 
 (2) political_parties_all_events
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-post_event                  0.147      0.054       +15.8%     0.016   **
+post_event                  0.113      0.061       +11.9%     0.084    *
 -------------------------------------------------------------------------
-N (used): 1,839    R^2: 0.497    Adj. R^2: 0.474    Within R^2: 0.003
+N (used): 1,914    R^2: 0.484    Adj. R^2: 0.460    Within R^2: 0.002
 
 (3) other_orgs_people_all_events
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-post_event                  0.026      0.022        +2.7%     0.229     
+post_event                  0.022      0.021        +2.2%     0.296     
 -------------------------------------------------------------------------
-N (used): 8,045    R^2: 0.328    Adj. R^2: 0.319    Within R^2: 0.000
+N (used): 8,025    R^2: 0.314    Adj. R^2: 0.304    Within R^2: 0.000
 
 (4) all_entities_political_events
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-post_event                  0.037      0.027        +3.8%     0.170     
+post_event                  0.050      0.027        +5.2%     0.068    *
 -------------------------------------------------------------------------
-N (used): 5,286    R^2: 0.330    Adj. R^2: 0.317    Within R^2: 0.000
+N (used): 5,327    R^2: 0.323    Adj. R^2: 0.311    Within R^2: 0.000
 
 (5) all_entities_terror_events
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-post_event                  0.074      0.041        +7.7%     0.073    *
+post_event                  0.044      0.029        +4.5%     0.140     
 -------------------------------------------------------------------------
-N (used): 4,596    R^2: 0.300    Adj. R^2: 0.285    Within R^2: 0.001
+N (used): 4,609    R^2: 0.266    Adj. R^2: 0.251    Within R^2: 0.000
 
 (6) political_parties_political_events
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-post_event                  0.094      0.038        +9.9%     0.029   **
+post_event                  0.171      0.064       +18.7%     0.019   **
 -------------------------------------------------------------------------
-N (used): 909    R^2: 0.503    Adj. R^2: 0.475    Within R^2: 0.002
+N (used): 975    R^2: 0.524    Adj. R^2: 0.498    Within R^2: 0.004
 
 (7) political_parties_terror_events
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-post_event                  0.167      0.092       +18.2%     0.089    *
+post_event                  0.072      0.085        +7.4%     0.408     
 -------------------------------------------------------------------------
-N (used): 930    R^2: 0.520    Adj. R^2: 0.494    Within R^2: 0.004
+N (used): 938    R^2: 0.458    Adj. R^2: 0.429    Within R^2: 0.001
 
 (8) other_orgs_people_political_events
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-post_event                  0.016      0.029        +1.6%     0.593     
+post_event                  0.020      0.028        +2.0%     0.482     
 -------------------------------------------------------------------------
-N (used): 4,377    R^2: 0.335    Adj. R^2: 0.322    Within R^2: 0.000
+N (used): 4,352    R^2: 0.350    Adj. R^2: 0.338    Within R^2: 0.000
 
 (9) other_orgs_people_terror_events
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-post_event                  0.044      0.039        +4.5%     0.260     
+post_event                  0.027      0.025        +2.7%     0.289     
 -------------------------------------------------------------------------
-N (used): 3,666    R^2: 0.340    Adj. R^2: 0.326    Within R^2: 0.000
+N (used): 3,671    R^2: 0.295    Adj. R^2: 0.280    Within R^2: 0.000
 
 =========================================================================
 Real vs placebo DiD comparison -- PostEvent from relative_week >= 0
@@ -298,15 +298,15 @@ This is a diagnostic check: placebo coefficients should not be read as real even
 
 Model                                         Real beta    Real p   Placebo beta   Plac. p     Real N    Placebo N
 -------------------------------------------------------------------------------------------------------------------
-All entities x all events                     -0.087***    <0.001        0.056**     0.019     10,038        9,884
-Political parties x all events                  -0.140*     0.087        0.147**     0.016      1,411        1,839
-Other orgs/people x all events                -0.059***     0.010          0.026     0.229      8,627        8,045
-All entities x political events               -0.176***    <0.001          0.037     0.170      5,323        5,286
-All entities x terror events                      0.016     0.599         0.074*     0.073      4,714        4,596
-Political parties x political events            -0.337*     0.059        0.094**     0.029        755          909
-Political parties x terror events                 0.050     0.449         0.167*     0.089        656          930
-Other orgs/people x political events          -0.125***    <0.001          0.016     0.593      4,568        4,377
-Other orgs/people x terror events                 0.016     0.621          0.044     0.260      4,058        3,666
+All entities x all events                     -0.087***    <0.001         0.044*     0.054     10,038        9,939
+Political parties x all events                  -0.140*     0.087         0.113*     0.084      1,411        1,914
+Other orgs/people x all events                -0.059***     0.010          0.022     0.296      8,627        8,025
+All entities x political events               -0.176***    <0.001         0.050*     0.068      5,323        5,327
+All entities x terror events                      0.016     0.599          0.044     0.140      4,714        4,609
+Political parties x political events            -0.337*     0.059        0.171**     0.019        755          975
+Political parties x terror events                 0.050     0.449          0.072     0.408        656          938
+Other orgs/people x political events          -0.125***    <0.001          0.020     0.482      4,568        4,352
+Other orgs/people x terror events                 0.016     0.621          0.027     0.289      4,058        3,671
 
 =========================================================================
 Dedicated October 7 DiD (single event) -- PostEvent from rel_week >= 0
