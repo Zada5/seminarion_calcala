@@ -1,3 +1,3 @@
-model_name,period,rows,entities,events,avg_weekly_spend_ils,median_weekly_spend_ils,avg_log_weekly_spend
-oct7_event,post_event,84,31,1,5746.379,1801.319,7.436
-oct7_event,pre_event,62,32,1,3909.050,1701.165,7.278
+model_name,period,rows,unique_weekly_rows,entities,events,avg_weekly_spend_ils,median_weekly_spend_ils,avg_log_weekly_spend
+oct7_event,post_event,84,84,31,1,5746.379,1801.319,7.436
+oct7_event,pre_event,62,62,32,1,3909.050,1701.165,7.278
