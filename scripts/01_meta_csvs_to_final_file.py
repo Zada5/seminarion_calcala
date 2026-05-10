@@ -219,6 +219,6 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
 if __name__ == "__main__":
     # Example usage:
     # Put this script in your project, and set input folder to the folder containing the 50 CSVs.
-    input_folder = "./meta_csvs"  # <-- change this
-    output_csv_path = "./first_cleaning/weekly_party_spend_meta.csv"
+    input_folder = "./data/raw/meta_csvs"  # <-- change this
+    output_csv_path = "./data/processed/first_cleaning/weekly_party_spend_meta.csv"
     process_meta_folder(input_folder, output_csv_path)
