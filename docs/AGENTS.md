@@ -14,163 +14,169 @@ Main research question:
 - Unit used for analysis: weekly spend (Sunday-start week)
 
 ## Repository map
-- `/meta_csvs/`: raw Meta exports
-- `/google_csv/`: raw Google export inputs
-- `/first_cleaning/`: first manual-cleaning weekly files
-- `/second_cleaning/`: second manual-cleaning weekly files (preferred analysis input)
-- `/cleaned_data/`: earlier cleaned weekly files
-- `meta_csvs_to_final_file.py`: convert Meta raw files to weekly format
-- `google_csvs_to_final_file.py`: convert Google raw files to weekly format
-- `Consolidated List of Terror and Political incidents 2020-2025 v3.csv`: event timeline used for event-study windows
-- `placebo_events_2020_2025.csv`: canonical placebo event weeks used by the placebo checks
-- `generate_placebo_events.py`: regenerate the canonical random placebo event-week file from clean weeks away from the real event timeline
-- `summarize_platform_publisher_spend.R`: descriptive-only platform/publisher spend summary script; validates exactly 68 publishers in the seminar window
-- `event_study_0710.R`: main analysis script (descriptive stats + regressions + figure)
-- `did_0710.R`: separate DiD-style post-event regression script on the same cleaned weekly inputs
+- `data/raw/meta_csvs/`: raw Meta exports
+- `data/raw/google_csv/`: raw Google export inputs
+- `data/raw/events/Consolidated List of Terror and Political incidents 2020-2025 v3.csv`: real event timeline
+- `data/processed/first_cleaning/`: first manual-cleaning weekly files
+- `data/processed/second_cleaning/`: second manual-cleaning weekly files (preferred analysis input)
+- `data/processed/cleaned_data/`: earlier cleaned weekly files (still consumed as fallback inputs by the R scripts)
+- `data/generated/`: script-generated tables (canonical placebo event list)
+- `data/reference/Total_Spend_Per_Party_or_Entity.xlsx`: standalone combined-total reference workbook
+- `outputs/analysis/`: event-study and descriptive outputs (was `analysis_outputs/`)
+- `outputs/did/`: DiD outputs (was `analysis_outputs_did/`)
+- `outputs/oct7_legacy/`: legacy October 7 compatibility files (`data_window.csv`, `event_study_coefs.csv`, `regression_summary.txt`)
+- `scripts/01_meta_csvs_to_final_file.py`: convert Meta raw files to weekly format
+- `scripts/02_google_csvs_to_final_file.py`: convert Google raw files to weekly format
+- `data/raw/events/Consolidated List of Terror and Political incidents 2020-2025 v3.csv`: event timeline used for event-study windows
+- `data/generated/placebo_events_2020_2025.csv`: canonical placebo event weeks used by the placebo checks
+- `scripts/03_generate_placebo_events.py`: regenerate the canonical random placebo event-week file from clean weeks away from the real event timeline
+- `scripts/04_summarize_platform_publisher_spend.R`: descriptive-only platform/publisher spend summary script; validates exactly 68 publishers in the seminar window
+- `scripts/05_event_study_0710.R`: main analysis script (descriptive stats + regressions + figure)
+- `scripts/06_did_0710.R`: separate DiD-style post-event regression script on the same cleaned weekly inputs
 
 ## Canonical analysis pipeline
 1. Build weekly spend files from raw source exports.
 2. Apply manual cleaning (first and second cleaning stages).
-3. Regenerate `placebo_events_2020_2025.csv` with `python3 generate_placebo_events.py` if the event timeline or placebo strategy changes.
-4. Run `summarize_platform_publisher_spend.R` when you need the simple Google-vs-Meta and publisher-level descriptive spend totals.
-5. Run `event_study_0710.R` against second-cleaning files.
-6. Optionally run `did_0710.R` on the same cleaned files for separate post-event FE estimates. This now includes placebo DiD on the canonical placebo weeks.
-7. Use outputs in `analysis_outputs/` and `analysis_outputs_did/` for interpretation and visualization.
+3. Regenerate `data/generated/placebo_events_2020_2025.csv` with `python3 scripts/03_generate_placebo_events.py` if the event timeline or placebo strategy changes.
+4. Run `scripts/04_summarize_platform_publisher_spend.R` when you need the simple Google-vs-Meta and publisher-level descriptive spend totals.
+5. Run `scripts/05_event_study_0710.R` against second-cleaning files.
+6. Optionally run `scripts/06_did_0710.R` on the same cleaned files for separate post-event FE estimates. This now includes placebo DiD on the canonical placebo weeks.
+7. Use outputs in `outputs/analysis/` and `outputs/did/` for interpretation and visualization.
 
 For the full file-by-file lineage of this process, see `DATA_PIPELINE.md`. It documents the raw Meta/Google/event inputs, first and second cleaning files, analysis scripts, combined-total reference workbook, and output folders.
 
 ## Default analysis inputs
-`event_study_0710.R` uses these defaults if no command-line args are supplied:
-- `./second_cleaning/weekly_party_spend_google.csv`
-- `./second_cleaning/weekly_party_spend_meta.csv`
-- `./Consolidated List of Terror and Political incidents 2020-2025 v3.csv`
-- output directory: `./analysis_outputs`
+`scripts/05_event_study_0710.R` uses these defaults if no command-line args are supplied:
+- `./data/processed/second_cleaning/weekly_party_spend_google.csv`
+- `./data/processed/second_cleaning/weekly_party_spend_meta.csv`
+- `./data/raw/events/Consolidated List of Terror and Political incidents 2020-2025 v3.csv`
+- output directory: `./outputs/analysis`
 - event window: `+/- 2` weeks
 - analysis sample: Sunday-start weeks `2020-01-05` through `2025-12-28`
 
-`did_0710.R` uses the same default input files, with:
-- output directory: `./analysis_outputs_did`
+`scripts/06_did_0710.R` uses the same default input files, with:
+- output directory: `./outputs/did`
 - event window: `+/- 2` weeks
 - analysis sample: Sunday-start weeks `2020-01-05` through `2025-12-28`
 
-`summarize_platform_publisher_spend.R` uses the same default cleaned weekly spend inputs, with:
-- output directory: `./analysis_outputs/descriptive`
+`scripts/04_summarize_platform_publisher_spend.R` uses the same default cleaned weekly spend inputs, with:
+- output directory: `./outputs/analysis/descriptive`
 - analysis sample: Sunday-start weeks `2020-01-05` through `2025-12-28`
 - expected publisher count: exactly `68`
 
 ## How to run
 In RStudio:
-- Open `event_study_0710.R`
+- Open `scripts/05_event_study_0710.R`
 - Run the full script
 
 From terminal:
 ```bash
-Rscript summarize_platform_publisher_spend.R
-Rscript event_study_0710.R
+Rscript scripts/04_summarize_platform_publisher_spend.R
+Rscript scripts/05_event_study_0710.R
 ```
 
 Optional platform/publisher summary argument form:
 ```bash
-Rscript summarize_platform_publisher_spend.R <google_csv> <meta_csv> <output_dir>
+Rscript scripts/04_summarize_platform_publisher_spend.R <google_csv> <meta_csv> <output_dir>
 ```
 
 Optional full argument form:
 ```bash
-Rscript event_study_0710.R <google_csv> <meta_csv> <events_csv> <output_dir> <window_weeks>
+Rscript scripts/05_event_study_0710.R <google_csv> <meta_csv> <events_csv> <output_dir> <window_weeks>
 ```
 
 To run the separate DiD-style regression:
 ```bash
-Rscript did_0710.R
+Rscript scripts/06_did_0710.R
 ```
 
 Optional full argument form:
 ```bash
-Rscript did_0710.R <google_csv> <meta_csv> <events_csv> <output_dir> <window_weeks>
+Rscript scripts/06_did_0710.R <google_csv> <meta_csv> <events_csv> <output_dir> <window_weeks>
 ```
 
 ## Output files generated
-- `analysis_outputs/descriptive/platform_spend_summary.csv` generated by `summarize_platform_publisher_spend.R`
-- `analysis_outputs/descriptive/publisher_platform_spend_summary.csv` generated by `summarize_platform_publisher_spend.R`
-- `analysis_outputs/descriptive/publisher_count_validation.csv` generated by `summarize_platform_publisher_spend.R`
-- `analysis_outputs/descriptive/publisher_group_platform_spend_summary.csv` generated by `summarize_platform_publisher_spend.R`
-- `analysis_outputs/summaries/regression_summary.txt`
-- `analysis_outputs/tables/*`
-- `analysis_outputs/tables/event_study_key_results_baseline_minus1.tex`
-- `analysis_outputs/tables/event_study_key_results_baseline_minus1.html`
-- `analysis_outputs/tables/event_study_panel_summary_baseline_minus1.csv`
-- `analysis_outputs/tables/event_study_panel_summary_baseline_minus1.md`
-- `analysis_outputs/tables/event_study_panel_summary_baseline_minus1.html`
-- `analysis_outputs/tables/event_study_panel_summary_baseline_minus1.tex`
-- `analysis_outputs/tables/event_study_panel_summary_baseline_minus1.xlsx`
-- `analysis_outputs/tables/descriptive_entity_type_summary_he.csv`
-- `analysis_outputs/tables/descriptive_entity_type_summary_he.md`
-- `analysis_outputs/tables/descriptive_entity_type_summary_he.html`
-- `analysis_outputs/tables/descriptive_yearly_summary_he.csv`
-- `analysis_outputs/tables/descriptive_yearly_summary_he.md`
-- `analysis_outputs/tables/descriptive_yearly_summary_he.html`
-- `analysis_outputs/tables/descriptive_yearly_group_gap_he.csv`
-- `analysis_outputs/tables/descriptive_yearly_group_gap_he.md`
-- `analysis_outputs/tables/descriptive_yearly_group_gap_he.html`
-- `analysis_outputs/descriptive/*.csv`
-- `analysis_outputs/descriptive/descriptive_yearly_group_spend_line.png`
-- `analysis_outputs/descriptive/descriptive_yearly_group_spend_line.pdf`
-- `analysis_outputs/correlations/real_events/*`
-- `analysis_outputs/correlations/placebo_events/*`
-- `analysis_outputs/event_study/baseline_0/*`
-- `analysis_outputs/event_study/baseline_0/figures_by_model/*.png`
-- `analysis_outputs/event_study/baseline_minus1/*`
-- `analysis_outputs/event_study/baseline_minus1/figures_by_model/*.png`
-- `analysis_outputs/placebo_event_study/baseline_0/*`
-- `analysis_outputs/placebo_event_study/baseline_0/figures_by_model/*.png`
-- `analysis_outputs/placebo_event_study/baseline_minus1/*`
-- `analysis_outputs/placebo_event_study/baseline_minus1/figures_by_model/*.png`
-- `analysis_outputs/oct7_event_study/baseline_0/*`
-- `analysis_outputs/oct7_event_study/baseline_minus1/*`
-- `analysis_outputs/event_study/gamma_t_demonstration/*` (paper artefact -- see "gamma_t demonstration regression" below)
-- Root-level legacy October 7 files generated by `event_study_0710.R`: `data_window.csv`, `event_study_coefs.csv`, `event_study_figure.png`, `regression_summary.txt`
+- `outputs/analysis/descriptive/platform_spend_summary.csv` generated by `scripts/04_summarize_platform_publisher_spend.R`
+- `outputs/analysis/descriptive/publisher_platform_spend_summary.csv` generated by `scripts/04_summarize_platform_publisher_spend.R`
+- `outputs/analysis/descriptive/publisher_count_validation.csv` generated by `scripts/04_summarize_platform_publisher_spend.R`
+- `outputs/analysis/descriptive/publisher_group_platform_spend_summary.csv` generated by `scripts/04_summarize_platform_publisher_spend.R`
+- `outputs/analysis/summaries/regression_summary.txt`
+- `outputs/analysis/tables/*`
+- `outputs/analysis/tables/event_study_key_results_baseline_minus1.tex`
+- `outputs/analysis/tables/event_study_key_results_baseline_minus1.html`
+- `outputs/analysis/tables/event_study_panel_summary_baseline_minus1.csv`
+- `outputs/analysis/tables/event_study_panel_summary_baseline_minus1.md`
+- `outputs/analysis/tables/event_study_panel_summary_baseline_minus1.html`
+- `outputs/analysis/tables/event_study_panel_summary_baseline_minus1.tex`
+- `outputs/analysis/tables/event_study_panel_summary_baseline_minus1.xlsx`
+- `outputs/analysis/tables/descriptive_entity_type_summary_he.csv`
+- `outputs/analysis/tables/descriptive_entity_type_summary_he.md`
+- `outputs/analysis/tables/descriptive_entity_type_summary_he.html`
+- `outputs/analysis/tables/descriptive_yearly_summary_he.csv`
+- `outputs/analysis/tables/descriptive_yearly_summary_he.md`
+- `outputs/analysis/tables/descriptive_yearly_summary_he.html`
+- `outputs/analysis/tables/descriptive_yearly_group_gap_he.csv`
+- `outputs/analysis/tables/descriptive_yearly_group_gap_he.md`
+- `outputs/analysis/tables/descriptive_yearly_group_gap_he.html`
+- `outputs/analysis/descriptive/*.csv`
+- `outputs/analysis/descriptive/descriptive_yearly_group_spend_line.png`
+- `outputs/analysis/descriptive/descriptive_yearly_group_spend_line.pdf`
+- `outputs/analysis/correlations/real_events/*`
+- `outputs/analysis/correlations/placebo_events/*`
+- `outputs/analysis/event_study/baseline_0/*`
+- `outputs/analysis/event_study/baseline_0/figures_by_model/*.png`
+- `outputs/analysis/event_study/baseline_minus1/*`
+- `outputs/analysis/event_study/baseline_minus1/figures_by_model/*.png`
+- `outputs/analysis/placebo_event_study/baseline_0/*`
+- `outputs/analysis/placebo_event_study/baseline_0/figures_by_model/*.png`
+- `outputs/analysis/placebo_event_study/baseline_minus1/*`
+- `outputs/analysis/placebo_event_study/baseline_minus1/figures_by_model/*.png`
+- `outputs/analysis/oct7_event_study/baseline_0/*`
+- `outputs/analysis/oct7_event_study/baseline_minus1/*`
+- `outputs/analysis/event_study/gamma_t_demonstration/*` (paper artefact -- see "gamma_t demonstration regression" below)
+- `outputs/oct7_legacy/` legacy October 7 files generated by `scripts/05_event_study_0710.R`: `data_window.csv`, `event_study_coefs.csv`, `regression_summary.txt`. The earlier `event_study_figure.png` was removed because it was byte-identical to `outputs/analysis/oct7_event_study/baseline_minus1/event_study_figure_0710.png`; that block was removed from the script as well.
 
 Descriptive outputs note:
-- `analysis_outputs/descriptive/` is a dedicated descriptive-output folder for cleaned weekly Google + Meta spend summaries. It may be produced by a standalone descriptive R step and is also refreshable from the descriptive block in `event_study_0710.R`. Keep it documented as part of the pipeline, not as an incidental regression byproduct.
+- `outputs/analysis/descriptive/` is a dedicated descriptive-output folder for cleaned weekly Google + Meta spend summaries. It may be produced by a standalone descriptive R step and is also refreshable from the descriptive block in `scripts/05_event_study_0710.R`. Keep it documented as part of the pipeline, not as an incidental regression byproduct.
 
-Additional DiD-style outputs generated by `did_0710.R`:
-- `analysis_outputs_did/summaries/regression_summary.txt`
-- `analysis_outputs_did/tables/*`
-- `analysis_outputs_did/tables/did_key_results_post_from_0.tex`
-- `analysis_outputs_did/tables/did_key_results_post_from_0.html`
-- `analysis_outputs_did/tables/did_key_results_post_from_0.png`
-- `analysis_outputs_did/tables/did_key_results_post_from_0.pdf`
-- `analysis_outputs_did/tables/did_panel_summary_post_from_0.csv`
-- `analysis_outputs_did/tables/did_panel_summary_post_from_0.md`
-- `analysis_outputs_did/tables/did_panel_summary_post_from_0.html`
-- `analysis_outputs_did/tables/did_panel_summary_post_from_0.tex`
-- `analysis_outputs_did/tables/did_panel_summary_post_from_0.xlsx`
-- `analysis_outputs_did/post_from_0/*`
-- `analysis_outputs_did/placebo/post_from_0/*`
-- `analysis_outputs_did/oct7/post_from_0/*`
-- `analysis_outputs_did/gamma_t_demonstration/*` (paper artefact -- see "gamma_t demonstration regression" below)
+Additional DiD-style outputs generated by `scripts/06_did_0710.R`:
+- `outputs/did/summaries/regression_summary.txt`
+- `outputs/did/tables/*`
+- `outputs/did/tables/did_key_results_post_from_0.tex`
+- `outputs/did/tables/did_key_results_post_from_0.html`
+- `outputs/did/tables/did_key_results_post_from_0.png`
+- `outputs/did/tables/did_key_results_post_from_0.pdf`
+- `outputs/did/tables/did_panel_summary_post_from_0.csv`
+- `outputs/did/tables/did_panel_summary_post_from_0.md`
+- `outputs/did/tables/did_panel_summary_post_from_0.html`
+- `outputs/did/tables/did_panel_summary_post_from_0.tex`
+- `outputs/did/tables/did_panel_summary_post_from_0.xlsx`
+- `outputs/did/post_from_0/*`
+- `outputs/did/placebo/post_from_0/*`
+- `outputs/did/oct7/post_from_0/*`
+- `outputs/did/gamma_t_demonstration/*` (paper artefact -- see "gamma_t demonstration regression" below)
 
 ## Recent analysis decisions for future agents
-- Correlation summaries are weekly aggregate correlations, not per-event correlations. `event_study_0710.R` builds weekly event counts for `all_events`, `political`, and `terror`, then correlates those counts with total weekly spend for `all_entities`, `political_party`, and `other_org_or_person`.
-- Correlation summaries now also report Pearson-test p-values, and `analysis_outputs/tables/` contains side-by-side real-vs-placebo comparison tables plus a paper-style correlation table.
+- Correlation summaries are weekly aggregate correlations, not per-event correlations. `scripts/05_event_study_0710.R` builds weekly event counts for `all_events`, `political`, and `terror`, then correlates those counts with total weekly spend for `all_entities`, `political_party`, and `other_org_or_person`.
+- Correlation summaries now also report Pearson-test p-values, and `outputs/analysis/tables/` contains side-by-side real-vs-placebo comparison tables plus a paper-style correlation table.
 - Row counts use two different units. Descriptive tables count the cleaned weekly spend panel (`9,458` entity-platform-week rows in the current 2020-2025 second-cleaning sample). Regression `N` counts stacked event-window observations after crossing weekly rows with events and keeping the `+/-2` week window; this can be larger because a weekly row can appear in multiple event windows. Model-fit and compact panel-summary files report both stacked regression observations and unique weekly rows in the windows.
 - Final human-facing seminar tables:
-  - Event study: open `analysis_outputs/tables/event_study_panel_summary_baseline_minus1.xlsx` first. It is the compact three-column panel table copied from the real event-study key results. Its audit/source table is `analysis_outputs/tables/event_study_key_results_baseline_minus1.csv`, which uses `relative_week = -1` as baseline and reports `relative_week = +1`.
-  - DiD: open `analysis_outputs_did/tables/did_panel_summary_post_from_0.xlsx` first. It is the compact three-column panel table copied from the real DiD key results. Its audit/source table is `analysis_outputs_did/tables/did_key_results_post_from_0.csv`, where `PostEvent = 1` for `relative_week >= 0`.
-  - Descriptive Hebrew tables: open `analysis_outputs/tables/descriptive_entity_type_summary_he.html`, `analysis_outputs/tables/descriptive_yearly_summary_he.html`, and `analysis_outputs/tables/descriptive_yearly_group_gap_he.html` for the seminar-style summary tables. Their audit/source files are the generated CSVs in `analysis_outputs/descriptive/`.
-  - Descriptive yearly group chart: open `analysis_outputs/descriptive/descriptive_yearly_group_spend_line.png` or `.pdf` for the ggplot line chart comparing civic/private-body spend with formal-party spend by calendar year.
-  - Correlations: use `analysis_outputs/tables/correlation_paper_table.csv` / `.md` for the paper-style weekly correlation summary. Its audit/source files are `analysis_outputs/correlations/real_events/correlation_summary.csv` and `analysis_outputs/correlations/placebo_events/placebo_correlation_summary.csv`.
+  - Event study: open `outputs/analysis/tables/event_study_panel_summary_baseline_minus1.xlsx` first. It is the compact three-column panel table copied from the real event-study key results. Its audit/source table is `outputs/analysis/tables/event_study_key_results_baseline_minus1.csv`, which uses `relative_week = -1` as baseline and reports `relative_week = +1`.
+  - DiD: open `outputs/did/tables/did_panel_summary_post_from_0.xlsx` first. It is the compact three-column panel table copied from the real DiD key results. Its audit/source table is `outputs/did/tables/did_key_results_post_from_0.csv`, where `PostEvent = 1` for `relative_week >= 0`.
+  - Descriptive Hebrew tables: open `outputs/analysis/tables/descriptive_entity_type_summary_he.html`, `outputs/analysis/tables/descriptive_yearly_summary_he.html`, and `outputs/analysis/tables/descriptive_yearly_group_gap_he.html` for the seminar-style summary tables. Their audit/source files are the generated CSVs in `outputs/analysis/descriptive/`.
+  - Descriptive yearly group chart: open `outputs/analysis/descriptive/descriptive_yearly_group_spend_line.png` or `.pdf` for the ggplot line chart comparing civic/private-body spend with formal-party spend by calendar year.
+  - Correlations: use `outputs/analysis/tables/correlation_paper_table.csv` / `.md` for the paper-style weekly correlation summary. Its audit/source files are `outputs/analysis/correlations/real_events/correlation_summary.csv` and `outputs/analysis/correlations/placebo_events/placebo_correlation_summary.csv`.
 - The compact `*_panel_summary_*` files are presentation copies only. Do not manually edit their numbers; regenerate them from the corresponding `*_key_results_*.csv` source if the regressions change.
 - Correlation graphs are intentionally simple presentation outputs: heatmaps for coefficient values and scatter panels with OLS lines and 95% confidence bands.
-- Placebo dates live in exactly one canonical table: `placebo_events_2020_2025.csv`. It is generated by `python3 generate_placebo_events.py`, which reads the real event timeline, excludes candidate Sunday weeks within 3 weeks of any real event week, samples 66 distinct clean Sunday weeks with seed `20260510` from the allowed pool `2020-01-26` through `2025-12-07`, then assigns 36 political and 30 terror labels.
+- Placebo dates live in exactly one canonical table: `data/generated/placebo_events_2020_2025.csv`. It is generated by `python3 scripts/03_generate_placebo_events.py`, which reads the real event timeline, excludes candidate Sunday weeks within 3 weeks of any real event week, samples 66 distinct clean Sunday weeks with seed `20260510` from the allowed pool `2020-01-26` through `2025-12-07`, then assigns 36 political and 30 terror labels.
 - Both analysis scripts read this root file directly, validate required columns (`event_date`, `event_type_group`), validate that dates are unique Sundays inside the required analysis buffer and more than 3 weeks away from every real event week, and stop if the file is missing or malformed. They do not generate a hidden fallback placebo list and do not write expanded `placebo_events_dates.csv` copies.
 - Placebo checks reuse the same model split table as the real event-study models. This is deliberate so real and placebo results are comparable.
 - October 7, 2023 is kept both as an all-entity dedicated model and as split models for political parties and other organizations/people. Do not collapse this back into only one combined result. The canonical split coefficient files are `event_study_coefs_0710_by_group.csv` and `did_coefs_0710_by_group.csv` inside the relevant October 7 output subfolders; do not recreate the old duplicate `*_0710_all_party_org.csv` aliases.
 - Graph confidence intervals should remain 95%. The scripts call `broom::tidy(..., conf.int = TRUE, conf.level = 0.95)` for model coefficient outputs, and the correlation scatter graphs use ggplot's `geom_smooth(..., se = TRUE)` default 95% interval.
 - Generated CSV and summary text outputs are formatted through `write_clean_csv()` / `format_output_table()` for readability, no scientific notation, and p-values below display precision shown as `<0.001` rather than `0.000`.
-- Do not add manually created report files at the repository root. The only root-level report files intentionally kept are the legacy October 7 compatibility files, and they must be generated by `event_study_0710.R`.
-- DiD-style analysis stays in `did_0710.R` and writes to `analysis_outputs_did/`. Do not merge DiD outputs into the main `analysis_outputs/` folder unless the project owner explicitly changes the reporting structure.
-- `did_0710.R` mirrors the placebo-date logic from `event_study_0710.R`: it reads and validates `placebo_events_2020_2025.csv` as the only placebo-date source and writes side-by-side real/placebo DiD comparison tables under `analysis_outputs_did/tables/`.
+- Do not add manually created report files at the repository root. The only legacy October 7 compatibility files intentionally kept live under `outputs/oct7_legacy/` and must be generated by `scripts/05_event_study_0710.R`.
+- DiD-style analysis stays in `scripts/06_did_0710.R` and writes to `outputs/did/`. Do not merge DiD outputs into the main `outputs/analysis/` folder unless the project owner explicitly changes the reporting structure.
+- `scripts/06_did_0710.R` mirrors the placebo-date logic from `scripts/05_event_study_0710.R`: it reads and validates `data/generated/placebo_events_2020_2025.csv` as the only placebo-date source and writes side-by-side real/placebo DiD comparison tables under `outputs/did/tables/`.
 
 ## Regression splits implemented
 The script estimates event-study regressions with fixed effects and clustered SE by entity for:
@@ -191,8 +197,8 @@ The script estimates event-study regressions with fixed effects and clustered SE
 - Event type split comes from `Type` in the consolidated incidents file.
 - Event-study baseline is relative week `0`.
 - Additional event-study robustness outputs use relative week `-1` as the reference week and live under `baseline_minus1` folders without replacing the baseline-0 outputs.
-- In `did_0710.R`, `PostEvent = 1` when `relative_week >= 0` within the chosen event window.
-- The canonical placebo list is a source-like analysis input, not just a generated artifact. Keep it in the repo root so collaborators and future agents can inspect the dates directly.
+- In `scripts/06_did_0710.R`, `PostEvent = 1` when `relative_week >= 0` within the chosen event window.
+- The canonical placebo list is a source-like analysis input, not just a generated artifact. Keep it at `data/generated/placebo_events_2020_2025.csv` so collaborators and future agents can inspect the dates directly.
 
 ## Regression specifications (do not silently change)
 
@@ -234,8 +240,8 @@ This is a structural property of the design (no never-treated control units at t
 
 Each script runs one dedicated regression on the `all_entities_all_events` panel with `gamma_t` switched on (`include_gamma_t = TRUE`) and writes outputs to:
 
-- `analysis_outputs/event_study/gamma_t_demonstration/`
-- `analysis_outputs_did/gamma_t_demonstration/`
+- `outputs/analysis/event_study/gamma_t_demonstration/`
+- `outputs/did/gamma_t_demonstration/`
 
 Each folder contains:
 
@@ -252,4 +258,4 @@ These folders are deliberately preserved so the seminar paper can show "we start
 - Prefer adding new output files over overwriting historical inputs.
 - Keep reproducibility: deterministic transforms, explicit file paths, no hidden state.
 - Validate required columns before analysis; fail early with clear error messages.
-- If changing the placebo strategy, follow the "Placebo refresh checklist" in `DATA_PIPELINE.md`: regenerate `placebo_events_2020_2025.csv`, review the clean-week diagnostics, verify count/type/date/distance constraints, rerun `event_study_0710.R`, rerun `did_0710.R`, confirm no `placebo_events_dates.csv` copy was recreated, and update `DATA_PIPELINE.md`, this guide, and `README.md` if counts/range/exclusion/seed change.
+- If changing the placebo strategy, follow the "Placebo refresh checklist" in `DATA_PIPELINE.md`: regenerate `data/generated/placebo_events_2020_2025.csv`, review the clean-week diagnostics, verify count/type/date/distance constraints, rerun `scripts/05_event_study_0710.R`, rerun `scripts/06_did_0710.R`, confirm no `placebo_events_dates.csv` copy was recreated, and update `DATA_PIPELINE.md`, this guide, and `README.md` if counts/range/exclusion/seed change.
