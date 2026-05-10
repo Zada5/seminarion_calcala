@@ -45,7 +45,7 @@ cat("\014")
 
 required_packages <- c(
   "readr", "dplyr", "tidyr", "lubridate", "stringr",
-  "ggplot2", "fixest", "broom", "purrr", "tibble"
+  "ggplot2", "fixest", "broom", "purrr", "tibble", "scales"
 )
 
 install_missing_packages <- function(package_names) {
@@ -1719,6 +1719,47 @@ descriptive_yearly_group_gap_he <- yearly_spend_stats_by_group %>%
     "פער (אזרחי פחות מפלגתי)" = format_million_gap_he(civic_minus_party_gap_ils)
   )
 
+descriptive_yearly_group_spend_plot_data <- yearly_spend_stats_by_group %>%
+  dplyr::mutate(
+    entity_group_he = factor(
+      entity_group_label_he(entity_group),
+      levels = c("גוף פרטי/אזרחי", "מפלגה ממוסדת")
+    )
+  )
+
+descriptive_yearly_group_spend_plot <- ggplot2::ggplot(
+  descriptive_yearly_group_spend_plot_data,
+  ggplot2::aes(
+    x = calendar_year,
+    y = total_spend_ils,
+    color = entity_group_he,
+    group = entity_group_he
+  )
+) +
+  ggplot2::geom_line(linewidth = 1.2) +
+  ggplot2::geom_point(size = 3.5) +
+  ggplot2::scale_x_continuous(breaks = seq(2020, 2025, by = 1)) +
+  ggplot2::scale_y_continuous(labels = scales::label_number(suffix = " M", scale = 1e-6)) +
+  ggplot2::scale_color_manual(
+    values = c("גוף פרטי/אזרחי" = "#1f77b4", "מפלגה ממוסדת" = "#ff7f0e")
+  ) +
+  ggplot2::labs(
+    title = "הוצאות פרסום ממומן בישראל לפי סוג ישות",
+    subtitle = "2020-2025, מבוסס על קבצי הניקוי השני ומסוכם לפי שנים קלנדריות",
+    x = "שנה קלנדרית",
+    y = "סך הוצאות (במיליוני שקלים)",
+    color = "סוג ישות"
+  ) +
+  ggplot2::theme_minimal(base_size = 12) +
+  ggplot2::theme(
+    plot.title = ggplot2::element_text(face = "bold", size = 14, hjust = 0.5),
+    plot.subtitle = ggplot2::element_text(size = 11, hjust = 0.5, color = "gray40"),
+    legend.position = "bottom",
+    plot.background = ggplot2::element_rect(fill = "white", color = NA),
+    panel.background = ggplot2::element_rect(fill = "white", color = NA),
+    legend.background = ggplot2::element_rect(fill = "white", color = NA)
+  )
+
 # -------------------------
 # Event-study dataset (all events)
 # -------------------------
@@ -2485,6 +2526,21 @@ write_html_presentation_table(
   title = "טבלה ג: התפלגות ההוצאות בפרסום מפלגתי מול אזרחי (השוואה שנתית)",
   subtitle = "פער חיובי מציין הוצאה גבוהה יותר של גופים אזרחיים/פרטיים לעומת מפלגות ממוסדות"
 )
+ggplot2::ggsave(
+  filename = file.path(output_paths$descriptive, "descriptive_yearly_group_spend_line.png"),
+  plot = descriptive_yearly_group_spend_plot,
+  width = 9,
+  height = 5,
+  dpi = 300,
+  bg = "white"
+)
+ggplot2::ggsave(
+  filename = file.path(output_paths$descriptive, "descriptive_yearly_group_spend_line.pdf"),
+  plot = descriptive_yearly_group_spend_plot,
+  width = 9,
+  height = 5,
+  bg = "white"
+)
 write_clean_csv(correlation_summary, file.path(output_paths$correlations_real, "correlation_summary.csv"))
 write_clean_csv(placebo_correlation_summary, file.path(output_paths$correlations_placebo, "placebo_correlation_summary.csv"))
 write_clean_csv(correlation_comparison_table, file.path(output_paths$tables, "correlation_real_vs_placebo.csv"))
@@ -2890,6 +2946,7 @@ cat("- summaries/regression_summary.txt\n")
 cat("- tables/*\n")
 cat("- tables/descriptive_*_he.{csv,md,html}\n")
 cat("- descriptive/*.csv\n")
+cat("- descriptive/descriptive_yearly_group_spend_line.{png,pdf}\n")
 cat("- correlations/real_events/*\n")
 cat("- correlations/placebo_events/*\n")
 cat("- event_study/baseline_0/*\n")
