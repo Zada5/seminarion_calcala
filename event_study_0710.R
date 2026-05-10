@@ -1091,42 +1091,6 @@ build_correlation_outputs <- function(event_count_wide_table, spend_totals_for_c
   )
 }
 
-create_placebo_events <- function(real_events_table, candidate_weeks, min_gap_weeks = 3L, seed = 20260510L) {
-  real_event_weeks <- unique(real_events_table$event_week_start_sunday)
-
-  valid_placebo_weeks <- candidate_weeks[
-    sapply(candidate_weeks, function(candidate_week) {
-      all(abs(as.integer(candidate_week - real_event_weeks) / 7) > min_gap_weeks)
-    })
-  ]
-
-  required_n <- nrow(real_events_table)
-  if (length(valid_placebo_weeks) < required_n) {
-    stop(
-      "Not enough valid placebo weeks after excluding weeks near real events. Needed: ",
-      required_n,
-      ", available: ",
-      length(valid_placebo_weeks)
-    )
-  }
-
-  set.seed(seed)
-  placebo_weeks <- sample(valid_placebo_weeks, size = required_n, replace = FALSE)
-  placebo_types <- sample(real_events_table$event_type_group, size = required_n, replace = FALSE)
-
-  tibble::tibble(
-    event_date = placebo_weeks,
-    event_type_raw = paste0("placebo_", placebo_types),
-    event_type_group = placebo_types,
-    event_name = paste0("placebo_event_", seq_len(required_n)),
-    event_details = "Random placebo week (seeded) with buffer from real events",
-    event_id = seq_len(required_n),
-    event_week_start_sunday = placebo_weeks
-  ) %>%
-    dplyr::arrange(event_week_start_sunday) %>%
-    dplyr::mutate(event_id = dplyr::row_number())
-}
-
 filter_complete_placebo_windows <- function(placebo_events_table,
                                             analysis_start_week,
                                             analysis_end_week,
@@ -1138,15 +1102,15 @@ filter_complete_placebo_windows <- function(placebo_events_table,
     dplyr::filter(
       event_week_start_sunday < earliest_valid_week |
         event_week_start_sunday > latest_valid_week
-    )
+  )
 
   if (nrow(invalid_placebo_events) > 0) {
-    warning(
-      "Dropping ",
+    stop(
+      "Placebo file contains ",
       nrow(invalid_placebo_events),
-      " placebo event(s) without a complete +/-",
+      " event(s) outside the required +/-",
       window_weeks,
-      " week window inside the analysis sample. Dropped weeks: ",
+      " week buffer inside the analysis sample. Regenerate placebo_events_2020_2025.csv. Invalid weeks: ",
       paste(invalid_placebo_events$event_week_start_sunday, collapse = ", "),
       call. = FALSE
     )
@@ -1162,12 +1126,15 @@ filter_complete_placebo_windows <- function(placebo_events_table,
 }
 
 load_placebo_events_from_repo <- function(
-  placebo_file_path,
-  real_events_table,
-  min_gap_weeks = 3L
+  placebo_file_path
 ) {
   if (!file.exists(placebo_file_path)) {
-    return(NULL)
+    stop(
+      "Missing canonical placebo event file: ",
+      placebo_file_path,
+      ". Run `python3 generate_placebo_events.py` before running the analysis.",
+      call. = FALSE
+    )
   }
 
   placebo_file <- readr::read_csv(placebo_file_path, show_col_types = FALSE)
@@ -1188,15 +1155,48 @@ load_placebo_events_from_repo <- function(
     dplyr::transmute(
       event_date = parse_date_flexible(event_date),
       event_type_group = as.character(event_type_group)
-    ) %>%
-    dplyr::filter(!is.na(event_date), event_type_group %in% c("political", "terror")) %>%
-    dplyr::arrange(event_date)
+    )
+
+  invalid_rows <- placebo_events %>%
+    dplyr::filter(is.na(event_date) | !event_type_group %in% c("political", "terror"))
+
+  if (nrow(invalid_rows) > 0) {
+    stop(
+      "Placebo file contains invalid rows. Required: parseable event_date and event_type_group in political/terror. File: ",
+      placebo_file_path,
+      call. = FALSE
+    )
+  }
 
   if (nrow(placebo_events) == 0) {
     stop("Placebo file has no valid rows after parsing: ", placebo_file_path)
   }
 
+  duplicate_dates <- placebo_events %>%
+    dplyr::count(event_date) %>%
+    dplyr::filter(n > 1)
+
+  if (nrow(duplicate_dates) > 0) {
+    stop(
+      "Placebo file contains duplicate event_date values: ",
+      paste(duplicate_dates$event_date, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  non_sunday_dates <- placebo_events %>%
+    dplyr::filter(format(event_date, "%w") != "0")
+
+  if (nrow(non_sunday_dates) > 0) {
+    stop(
+      "Placebo file contains non-Sunday dates: ",
+      paste(non_sunday_dates$event_date, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
   placebo_events <- placebo_events %>%
+    dplyr::arrange(event_date) %>%
     dplyr::mutate(
       event_week_start_sunday = event_date,
       event_type_raw = paste0("placebo_", event_type_group),
@@ -1213,21 +1213,6 @@ load_placebo_events_from_repo <- function(
       event_id,
       event_week_start_sunday
     )
-
-  real_event_weeks <- unique(real_events_table$event_week_start_sunday)
-  minimum_gap <- min(sapply(placebo_events$event_week_start_sunday, function(candidate_week) {
-    min(abs(as.integer(candidate_week - real_event_weeks) / 7))
-  }))
-
-  if (minimum_gap <= min_gap_weeks) {
-    stop(
-      "Placebo list violates minimum gap from real events. Min gap observed: ",
-      minimum_gap,
-      " weeks, required: > ",
-      min_gap_weeks,
-      " weeks."
-    )
-  }
 
   placebo_events
 }
@@ -1278,7 +1263,6 @@ output_paths <- list(
   descriptive = file.path(output_directory, "descriptive"),
   correlations_real = file.path(output_directory, "correlations", "real_events"),
   correlations_placebo = file.path(output_directory, "correlations", "placebo_events"),
-  placebo_events = file.path(output_directory, "placebo_events"),
   event_study_baseline_0 = file.path(output_directory, "event_study", "baseline_0"),
   event_study_baseline_0_figures = file.path(output_directory, "event_study", "baseline_0", "figures_by_model"),
   event_study_baseline_minus1 = file.path(output_directory, "event_study", "baseline_minus1"),
@@ -1304,7 +1288,6 @@ legacy_output_paths <- file.path(
     "correlation_summary.csv",
     "correlation_coefficients_heatmap.png",
     "correlation_scatter_panels.png",
-    "placebo_events_dates.csv",
     "placebo_correlation_summary.csv",
     "placebo_correlation_coefficients_heatmap.png",
     "placebo_correlation_scatter_panels.png",
@@ -2003,39 +1986,19 @@ if (nrow(correlation_summary) > 0) {
 }
 
 # -------------------------
-# Placebo events (seeded random dates with distance from real events)
+# Placebo events (single canonical root CSV)
 # -------------------------
 repo_placebo_dates_path <- "./placebo_events_2020_2025.csv"
-placebo_window_start <- as.Date("2020-01-05")
-placebo_window_end <- as.Date("2025-12-28")
 placebo_boundary_buffer_weeks <- analysis_window_weeks + 1L
-placebo_random_seed <- 20260510L
 placebo_events_table <- load_placebo_events_from_repo(
-  placebo_file_path = repo_placebo_dates_path,
-  real_events_table = events_table,
-  min_gap_weeks = analysis_window_weeks + 1L
+  placebo_file_path = repo_placebo_dates_path
 )
-
-if (is.null(placebo_events_table)) {
-  candidate_placebo_weeks <- sort(unique(
-    weekly_spend_panel$week_start_sunday[
-      weekly_spend_panel$week_start_sunday >= placebo_window_start + lubridate::weeks(placebo_boundary_buffer_weeks) &
-        weekly_spend_panel$week_start_sunday <= placebo_window_end - lubridate::weeks(placebo_boundary_buffer_weeks)
-    ]
-  ))
-  placebo_events_table <- create_placebo_events(
-    real_events_table = events_table,
-    candidate_weeks = candidate_placebo_weeks,
-    min_gap_weeks = analysis_window_weeks + 1L,
-    seed = placebo_random_seed
-  )
-}
 
 placebo_events_table <- filter_complete_placebo_windows(
   placebo_events_table = placebo_events_table,
   analysis_start_week = analysis_start_week,
   analysis_end_week = analysis_end_week,
-  window_weeks = analysis_window_weeks
+  window_weeks = placebo_boundary_buffer_weeks
 )
 
 placebo_weekly_event_counts_wide <- build_event_count_wide(placebo_events_table)
@@ -2503,7 +2466,6 @@ write_html_presentation_table(
   subtitle = "פער חיובי מציין הוצאה גבוהה יותר של גופים אזרחיים/פרטיים לעומת מפלגות ממוסדות"
 )
 write_clean_csv(correlation_summary, file.path(output_paths$correlations_real, "correlation_summary.csv"))
-write_clean_csv(placebo_events_table, file.path(output_paths$placebo_events, "placebo_events_dates.csv"))
 write_clean_csv(placebo_correlation_summary, file.path(output_paths$correlations_placebo, "placebo_correlation_summary.csv"))
 write_clean_csv(correlation_comparison_table, file.path(output_paths$tables, "correlation_real_vs_placebo.csv"))
 write_markdown_table(correlation_comparison_table, file.path(output_paths$tables, "correlation_real_vs_placebo.md"))
@@ -2910,7 +2872,6 @@ cat("- tables/descriptive_*_he.{csv,md,html}\n")
 cat("- descriptive/*.csv\n")
 cat("- correlations/real_events/*\n")
 cat("- correlations/placebo_events/*\n")
-cat("- placebo_events/placebo_events_dates.csv\n")
 cat("- event_study/baseline_0/*\n")
 cat("- event_study/baseline_0/figures_by_model/*.png\n")
 cat("- event_study/baseline_minus1/*\n")
