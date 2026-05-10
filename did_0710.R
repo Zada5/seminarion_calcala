@@ -1056,7 +1056,9 @@ filter_complete_placebo_windows <- function(placebo_events_table,
 }
 
 load_placebo_events_from_repo <- function(
-  placebo_file_path
+  placebo_file_path,
+  real_events_table,
+  min_gap_weeks = 3L
 ) {
   if (!file.exists(placebo_file_path)) {
     stop(
@@ -1143,6 +1145,22 @@ load_placebo_events_from_repo <- function(
       event_id,
       event_week_start_sunday
     )
+
+  real_event_weeks <- unique(real_events_table$event_week_start_sunday)
+  minimum_gap <- min(sapply(placebo_events$event_week_start_sunday, function(candidate_week) {
+    min(abs(as.integer(candidate_week - real_event_weeks) / 7))
+  }))
+
+  if (minimum_gap <= min_gap_weeks) {
+    stop(
+      "Placebo file violates minimum distance from real events. Min gap observed: ",
+      minimum_gap,
+      " weeks; required: > ",
+      min_gap_weeks,
+      " weeks. Regenerate placebo_events_2020_2025.csv.",
+      call. = FALSE
+    )
+  }
 
   placebo_events
 }
@@ -1490,7 +1508,9 @@ if (nrow(events_table) == 0) {
 repo_placebo_dates_path <- "./placebo_events_2020_2025.csv"
 placebo_boundary_buffer_weeks <- analysis_window_weeks + 1L
 placebo_events_table <- load_placebo_events_from_repo(
-  placebo_file_path = repo_placebo_dates_path
+  placebo_file_path = repo_placebo_dates_path,
+  real_events_table = events_table,
+  min_gap_weeks = placebo_boundary_buffer_weeks
 )
 
 placebo_events_table <- filter_complete_placebo_windows(
