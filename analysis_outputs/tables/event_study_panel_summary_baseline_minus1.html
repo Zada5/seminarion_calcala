@@ -3,43 +3,49 @@
 <head>
 <meta charset="utf-8">
 <style>
-body { font-family: Arial, "Noto Sans Hebrew", sans-serif; color: #111; margin: 32px; }
-.wrap { max-width: 940px; margin: 0 auto; }
-h1 { font-size: 18px; margin: 0 0 14px; text-align: center; }
-table { border-collapse: collapse; width: 100%; border-top: 2px solid #111; border-bottom: 2px solid #111; direction: rtl; }
-th, td { padding: 8px 10px; border-bottom: 1px solid #ddd; text-align: center; vertical-align: middle; }
-th:first-child, td:first-child { text-align: right; }
-thead th { font-weight: 700; border-bottom: 1.5px solid #111; }
-.panel-row th { background: #f3f4f6; border-top: 1.5px solid #111; font-weight: 700; }
-.note { font-size: 12px; line-height: 1.4; margin-top: 10px; direction: rtl; }
+body { font-family: Arial, 'Noto Sans Hebrew', sans-serif; color: #222; margin: 32px; background: #fff; }
+.table-wrap { max-width: 980px; margin: 0 auto; }
+h1 { font-size: 18px; text-align: center; font-weight: 700; margin: 0 0 8px; }
+.subtitle { text-align: center; font-size: 13px; margin: 0 0 18px; color: #555; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+thead th { border-bottom: 1px solid #999; font-weight: 700; padding: 10px 8px; text-align: center; }
+tbody td { border-bottom: 1px solid #e5e5e5; padding: 10px 8px; text-align: center; vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0; }
+td, th { font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="table-wrap">
 <h1>טבלת סיכום - Event Study</h1>
+<p class="subtitle">N בטבלת הרגרסיה הוא מספר תצפיות חלון-אירוע מוערמות; שורות המדגם התיאורי מוצגות בנפרד</p>
 <table>
-<thead><tr><th>המשתנה התלוי: log(הוצאה שבועית)</th><th>(1) כל המפרסמים</th><th>(2) מפלגות</th><th>(3) גופים פרטיים</th></tr></thead>
+<thead>
+<tr><th>המשתנה התלוי: log(הוצאה שבועית)</th><th>(1) כל המפרסמים</th><th>(2) מפלגות</th><th>(3) גופים פרטיים</th></tr>
+</thead>
 <tbody>
-<tr class="panel-row"><th colspan="4">פאנל א': כל האירועים</th></tr>
-<tr><th>מקדם שבוע +1 (β)</th><td>-0.081***</td><td>-0.091</td><td>-0.057**</td></tr>
-<tr><th>(טעות תקן)</th><td>(0.027)</td><td>(0.101)</td><td>(0.027)</td></tr>
-<tr class="panel-row"><th colspan="4">פאנל ב': אירועים פוליטיים</th></tr>
-<tr><th>מקדם שבוע +1 (β)</th><td>-0.215***</td><td>-0.359</td><td>-0.164***</td></tr>
-<tr><th>(טעות תקן)</th><td>(0.047)</td><td>(0.228)</td><td>(0.044)</td></tr>
-<tr class="panel-row"><th colspan="4">פאנל ג': אירועי טרור</th></tr>
-<tr><th>מקדם שבוע +1 (β)</th><td>0.075*</td><td>0.174*</td><td>0.069*</td></tr>
-<tr><th>(טעות תקן)</th><td>(0.038)</td><td>(0.085)</td><td>(0.039)</td></tr>
-<tr class="panel-row"><th colspan="4">בקרות ונתוני מודל</th></tr>
-<tr><th>R2 - כל האירועים</th><td>0.347</td><td>0.436</td><td>0.362</td></tr>
-<tr><th>R2 - אירועים פוליטיים</th><td>0.329</td><td>0.454</td><td>0.342</td></tr>
-<tr><th>R2 - אירועי טרור</th><td>0.407</td><td>0.483</td><td>0.415</td></tr>
-<tr><th>Fixed Effects</th><td>Yes</td><td>Yes</td><td>Yes</td></tr>
-<tr><th>N - כל האירועים</th><td>10038</td><td>1411</td><td>8627</td></tr>
-<tr><th>N - אירועים פוליטיים</th><td>5323</td><td>755</td><td>4568</td></tr>
-<tr><th>N - אירועי טרור</th><td>4714</td><td>656</td><td>4058</td></tr>
+<tr><td>פאנל א': כל האירועים</td><td></td><td></td><td></td></tr>
+<tr><td>מקדם שבוע +1 (β)</td><td>-0.081***</td><td>-0.091</td><td>-0.057**</td></tr>
+<tr><td>(טעות תקן)</td><td>(0.027)</td><td>(0.101)</td><td>(0.027)</td></tr>
+<tr><td>פאנל ב': אירועים פוליטיים</td><td></td><td></td><td></td></tr>
+<tr><td>מקדם שבוע +1 (β)</td><td>-0.215***</td><td>-0.359</td><td>-0.164***</td></tr>
+<tr><td>(טעות תקן)</td><td>(0.047)</td><td>(0.228)</td><td>(0.044)</td></tr>
+<tr><td>פאנל ג': אירועי טרור</td><td></td><td></td><td></td></tr>
+<tr><td>מקדם שבוע +1 (β)</td><td>0.075*</td><td>0.174*</td><td>0.069*</td></tr>
+<tr><td>(טעות תקן)</td><td>(0.038)</td><td>(0.085)</td><td>(0.039)</td></tr>
+<tr><td>בקרות ונתוני מודל</td><td></td><td></td><td></td></tr>
+<tr><td>R2 - כל האירועים</td><td>0.347</td><td>0.436</td><td>0.362</td></tr>
+<tr><td>R2 - אירועים פוליטיים</td><td>0.329</td><td>0.454</td><td>0.342</td></tr>
+<tr><td>R2 - אירועי טרור</td><td>0.407</td><td>0.483</td><td>0.415</td></tr>
+<tr><td>Fixed Effects</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>שורות שבועיות במדגם התיאורי</td><td>9,458</td><td>1,539</td><td>7,919</td></tr>
+<tr><td>N - תצפיות חלון-אירוע מוערמות - כל האירועים</td><td>10,038</td><td>1,411</td><td>8,627</td></tr>
+<tr><td>שורות שבועיות ייחודיות בחלון - כל האירועים</td><td>5,543</td><td>817</td><td>4,726</td></tr>
+<tr><td>N - תצפיות חלון-אירוע מוערמות - אירועים פוליטיים</td><td>5,323</td><td>755</td><td>4,568</td></tr>
+<tr><td>שורות שבועיות ייחודיות בחלון - אירועים פוליטיים</td><td>4,090</td><td>599</td><td>3,491</td></tr>
+<tr><td>N - תצפיות חלון-אירוע מוערמות - אירועי טרור</td><td>4,714</td><td>656</td><td>4,058</td></tr>
+<tr><td>שורות שבועיות ייחודיות בחלון - אירועי טרור</td><td>3,391</td><td>470</td><td>2,921</td></tr>
 </tbody>
 </table>
-<p class="note">המקדמים מבוססים על קבצי התוצאות האמיתיים של event study, עם שבוע -1 כשבוע הייחוס. טעויות תקן מקובצות לפי מפרסם.</p>
 </div>
 </body>
 </html>

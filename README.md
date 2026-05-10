@@ -62,6 +62,20 @@ The default analysis sample is restricted to the seminar window: Sunday-start
 weeks from `2020-01-05` through `2025-12-28`. Events are also restricted to
 the same 2020-2025 window after conversion to the Sunday event week.
 
+### Row-count definitions
+
+Descriptive tables count the cleaned weekly spend panel: one
+entity-platform-week row in the 2020-2025 seminar window. In the current
+second-cleaning inputs this is `9,458` rows.
+
+Regression tables count stacked event-window observations. The scripts first
+cross the weekly spend panel with the event list, keep only rows inside the
+`+/-2` week event window, and then estimate the models on that stacked panel.
+Because one original weekly row can fall inside several event windows, the
+regression `N` can be larger than the descriptive row count. The model-fit and
+compact panel-summary outputs therefore report both stacked regression
+observations and unique weekly rows in the event windows.
+
 The canonical placebo event-week file is generated with:
 
 ```bash
