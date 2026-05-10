@@ -295,7 +295,7 @@ write_paper_style_model_section <- function(model_label,
       format(round(fit_row$used_rows), big.mark = ",")
     } else { "NA" }
     writeLines(
-      sprintf("N (used): %s    R^2: %s    Adj. R^2: %s    Within R^2: %s",
+      sprintf("N (stacked event-window obs. used): %s    R^2: %s    Adj. R^2: %s    Within R^2: %s",
               n_used_text,
               .fmt_paper_number(fit_row$r2, 3L),
               .fmt_paper_number(fit_row$adjusted_r2, 3L),
@@ -453,6 +453,297 @@ write_markdown_table <- function(dataframe, file_path, digits = 3L) {
   invisible(NULL)
 }
 
+format_table_count <- function(values) {
+  ifelse(
+    is.na(values),
+    "",
+    format(round(as.numeric(values)), big.mark = ",", scientific = FALSE, trim = TRUE)
+  )
+}
+
+format_table_r2 <- function(values) {
+  ifelse(
+    is.na(values),
+    "",
+    formatC(round(as.numeric(values), digits = 3L), format = "f", digits = 3L)
+  )
+}
+
+xml_escape <- function(text_values) {
+  text_values <- as.character(text_values)
+  text_values <- gsub("&", "&amp;", text_values, fixed = TRUE)
+  text_values <- gsub("<", "&lt;", text_values, fixed = TRUE)
+  text_values <- gsub(">", "&gt;", text_values, fixed = TRUE)
+  text_values <- gsub('"', "&quot;", text_values, fixed = TRUE)
+  text_values <- gsub("'", "&apos;", text_values, fixed = TRUE)
+  text_values
+}
+
+xlsx_column_name <- function(column_number) {
+  letters_out <- character()
+  while (column_number > 0L) {
+    remainder <- (column_number - 1L) %% 26L
+    letters_out <- c(LETTERS[remainder + 1L], letters_out)
+    column_number <- (column_number - 1L) %/% 26L
+  }
+  paste0(letters_out, collapse = "")
+}
+
+write_basic_xlsx <- function(dataframe, file_path, sheet_name = "Table") {
+  output_directory <- dirname(file_path)
+  dir.create(output_directory, recursive = TRUE, showWarnings = FALSE)
+  output_path <- file.path(normalizePath(output_directory, mustWork = TRUE), basename(file_path))
+
+  temp_directory <- tempfile("xlsx_export_")
+  dir.create(temp_directory, recursive = TRUE)
+  on.exit(unlink(temp_directory, recursive = TRUE), add = TRUE)
+
+  dir.create(file.path(temp_directory, "_rels"), recursive = TRUE)
+  dir.create(file.path(temp_directory, "xl", "_rels"), recursive = TRUE)
+  dir.create(file.path(temp_directory, "xl", "worksheets"), recursive = TRUE)
+
+  sheet_name <- substr(sheet_name, 1L, 31L)
+  sheet_values <- rbind(names(dataframe), as.matrix(dataframe))
+  row_xml <- vapply(seq_len(nrow(sheet_values)), function(row_index) {
+    cell_xml <- vapply(seq_len(ncol(sheet_values)), function(column_index) {
+      value <- sheet_values[row_index, column_index]
+      cell_reference <- paste0(xlsx_column_name(column_index), row_index)
+      if (is.na(value) || identical(value, "")) {
+        paste0("<c r=\"", cell_reference, "\"/>")
+      } else {
+        paste0(
+          "<c r=\"", cell_reference, "\" t=\"inlineStr\"><is><t>",
+          xml_escape(value),
+          "</t></is></c>"
+        )
+      }
+    }, character(1))
+
+    paste0("<row r=\"", row_index, "\">", paste(cell_xml, collapse = ""), "</row>")
+  }, character(1))
+
+  writeLines(
+    c(
+      "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>",
+      "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">",
+      "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>",
+      "<Default Extension=\"xml\" ContentType=\"application/xml\"/>",
+      "<Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/>",
+      "<Override PartName=\"/xl/worksheets/sheet1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>",
+      "</Types>"
+    ),
+    con = file.path(temp_directory, "[Content_Types].xml")
+  )
+
+  writeLines(
+    c(
+      "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>",
+      "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">",
+      "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/>",
+      "</Relationships>"
+    ),
+    con = file.path(temp_directory, "_rels", ".rels")
+  )
+
+  writeLines(
+    c(
+      "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>",
+      "<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">",
+      "<sheets>",
+      paste0("<sheet name=\"", xml_escape(sheet_name), "\" sheetId=\"1\" r:id=\"rId1\"/>"),
+      "</sheets>",
+      "</workbook>"
+    ),
+    con = file.path(temp_directory, "xl", "workbook.xml")
+  )
+
+  writeLines(
+    c(
+      "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>",
+      "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">",
+      "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/>",
+      "</Relationships>"
+    ),
+    con = file.path(temp_directory, "xl", "_rels", "workbook.xml.rels")
+  )
+
+  writeLines(
+    c(
+      "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>",
+      "<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">",
+      "<sheetData>",
+      row_xml,
+      "</sheetData>",
+      "</worksheet>"
+    ),
+    con = file.path(temp_directory, "xl", "worksheets", "sheet1.xml")
+  )
+
+  if (file.exists(output_path)) {
+    unlink(output_path)
+  }
+
+  old_working_directory <- getwd()
+  on.exit(setwd(old_working_directory), add = TRUE)
+  setwd(temp_directory)
+
+  zip_binary <- Sys.which("zip")
+  if (nzchar(zip_binary)) {
+    status <- system2(zip_binary, args = c("-q", "-r", output_path, "."))
+    if (!identical(status, 0L)) {
+      stop("Failed to write xlsx file: ", output_path)
+    }
+  } else {
+    utils::zip(zipfile = output_path, files = list.files(".", recursive = TRUE, all.files = TRUE))
+  }
+
+  invisible(output_path)
+}
+
+write_latex_panel_summary <- function(dataframe, file_path, caption, label, note_text) {
+  table_lines <- c(
+    "\\begin{table}[!htbp]",
+    "\\centering",
+    paste0("\\caption{", latex_escape(caption), "}"),
+    paste0("\\label{", label, "}"),
+    "\\begin{tabular}{lccc}",
+    "\\hline\\hline",
+    paste0(paste(latex_escape(names(dataframe)), collapse = " & "), " \\\\"),
+    "\\hline"
+  )
+
+  for (row_index in seq_len(nrow(dataframe))) {
+    row_values <- as.character(dataframe[row_index, , drop = TRUE])
+    empty_data_cells <- all(is.na(row_values[-1]) | row_values[-1] == "")
+    if (empty_data_cells) {
+      table_lines <- c(
+        table_lines,
+        paste0("\\multicolumn{4}{l}{", latex_escape(row_values[[1]]), "} \\\\")
+      )
+    } else {
+      table_lines <- c(
+        table_lines,
+        paste0(paste(latex_escape(row_values), collapse = " & "), " \\\\")
+      )
+    }
+  }
+
+  table_lines <- c(
+    table_lines,
+    "\\hline",
+    paste0("\\multicolumn{4}{l}{\\footnotesize ", latex_escape(note_text), "} \\\\"),
+    "\\hline\\hline",
+    "\\end{tabular}",
+    "\\end{table}"
+  )
+
+  writeLines(table_lines, con = file_path)
+  invisible(NULL)
+}
+
+build_regression_panel_summary_he <- function(matrix_table,
+                                              coefficient_row_label,
+                                              full_sample_rows_by_entity) {
+  output_columns <- c(
+    "המשתנה התלוי: log(הוצאה שבועית)",
+    "(1) כל המפרסמים",
+    "(2) מפלגות",
+    "(3) גופים פרטיים"
+  )
+  entity_labels <- c("All entities", "Political parties", "Organizations/people")
+  event_panels <- tibble::tribble(
+    ~panel_label, ~event_label, ~r2_label, ~n_label, ~unique_label,
+    "פאנל א': כל האירועים", "All events", "R2 - כל האירועים",
+    "N - תצפיות חלון-אירוע מוערמות - כל האירועים",
+    "שורות שבועיות ייחודיות בחלון - כל האירועים",
+    "פאנל ב': אירועים פוליטיים", "Political events", "R2 - אירועים פוליטיים",
+    "N - תצפיות חלון-אירוע מוערמות - אירועים פוליטיים",
+    "שורות שבועיות ייחודיות בחלון - אירועים פוליטיים",
+    "פאנל ג': אירועי טרור", "Terror events", "R2 - אירועי טרור",
+    "N - תצפיות חלון-אירוע מוערמות - אירועי טרור",
+    "שורות שבועיות ייחודיות בחלון - אירועי טרור"
+  )
+
+  make_row <- function(row_label, values = c("", "", "")) {
+    row <- as.data.frame(
+      as.list(c(row_label, values)),
+      stringsAsFactors = FALSE,
+      check.names = FALSE
+    )
+    names(row) <- output_columns
+    row
+  }
+
+  get_values <- function(event_label, value_column, formatter = as.character) {
+    raw_values <- vapply(entity_labels, function(entity_label) {
+      selected_row <- matrix_table %>%
+        dplyr::filter(entity_label == !!entity_label, event_label == !!event_label) %>%
+        dplyr::slice_head(n = 1)
+
+      if (nrow(selected_row) == 0 || !value_column %in% names(selected_row)) {
+        return(NA_character_)
+      }
+
+      as.character(selected_row[[value_column]][[1]])
+    }, character(1))
+
+    formatter(raw_values)
+  }
+
+  panel_rows <- purrr::map_dfr(seq_len(nrow(event_panels)), function(panel_index) {
+    panel <- event_panels[panel_index, ]
+    dplyr::bind_rows(
+      make_row(panel$panel_label),
+      make_row(coefficient_row_label, get_values(panel$event_label, "estimate_display")),
+      make_row("(טעות תקן)", get_values(panel$event_label, "std_error_display"))
+    )
+  })
+
+  controls_rows <- dplyr::bind_rows(
+    make_row("בקרות ונתוני מודל"),
+    purrr::map_dfr(seq_len(nrow(event_panels)), function(panel_index) {
+      panel <- event_panels[panel_index, ]
+      make_row(panel$r2_label, get_values(panel$event_label, "r2", format_table_r2))
+    }),
+    make_row("Fixed Effects", c("Yes", "Yes", "Yes")),
+    make_row("שורות שבועיות במדגם התיאורי", format_table_count(full_sample_rows_by_entity[entity_labels])),
+    purrr::map_dfr(seq_len(nrow(event_panels)), function(panel_index) {
+      panel <- event_panels[panel_index, ]
+      dplyr::bind_rows(
+        make_row(panel$n_label, get_values(panel$event_label, "used_rows", format_table_count)),
+        make_row(panel$unique_label, get_values(panel$event_label, "unique_weekly_rows", format_table_count))
+      )
+    })
+  )
+
+  dplyr::bind_rows(panel_rows, controls_rows)
+}
+
+write_panel_summary_outputs <- function(summary_table,
+                                        output_base_path,
+                                        title,
+                                        subtitle,
+                                        latex_caption,
+                                        latex_label,
+                                        note_text) {
+  readr::write_csv(summary_table, paste0(output_base_path, ".csv"), na = "")
+  write_markdown_table(summary_table, paste0(output_base_path, ".md"))
+  write_html_presentation_table(
+    summary_table,
+    paste0(output_base_path, ".html"),
+    title = title,
+    subtitle = subtitle
+  )
+  write_latex_panel_summary(
+    summary_table,
+    paste0(output_base_path, ".tex"),
+    caption = latex_caption,
+    label = latex_label,
+    note_text = note_text
+  )
+  write_basic_xlsx(summary_table, paste0(output_base_path, ".xlsx"), sheet_name = "summary")
+}
+
 pretty_model_label <- function(model_name) {
   dplyr::case_when(
     model_name == "all_entities_all_events" ~ "All entities x all events",
@@ -529,7 +820,15 @@ build_did_key_results_matrix <- function(coefficients_table,
     dplyr::select(model_name, estimate_display, std_error_display, p.value)
 
   fit_compact <- model_fit_table %>%
-    dplyr::select(model_name, used_rows, r2, within_r2)
+    dplyr::select(
+      model_name,
+      input_rows,
+      used_rows,
+      unique_weekly_rows,
+      stacked_extra_rows,
+      r2,
+      within_r2
+    )
 
   model_specifications_table %>%
     dplyr::mutate(
@@ -617,6 +916,113 @@ html_escape <- function(text_values) {
   text_values <- gsub(">", "&gt;", text_values, fixed = TRUE)
   text_values <- gsub('"', "&quot;", text_values, fixed = TRUE)
   text_values
+}
+
+write_html_presentation_table <- function(dataframe,
+                                          file_path,
+                                          title,
+                                          subtitle = NULL,
+                                          direction = "rtl") {
+  display_table <- dataframe %>%
+    dplyr::mutate(
+      dplyr::across(
+        .cols = dplyr::everything(),
+        .fns = ~ dplyr::if_else(is.na(.x), "", as.character(.x))
+      )
+    )
+
+  is_number_like <- function(cell_value) {
+    cell_value <- trimws(cell_value)
+    cell_value != "" &&
+      grepl("^[-()0-9,.*+<>% ]+$", cell_value)
+  }
+
+  header_cells <- paste0("<th>", html_escape(names(display_table)), "</th>", collapse = "")
+  body_lines <- if (nrow(display_table) == 0) {
+    paste0("<tr><td colspan=\"", ncol(display_table), "\">No rows.</td></tr>")
+  } else {
+    apply(display_table, 1, function(row_values) {
+      empty_data_cells <- all(trimws(row_values[-1]) == "")
+      if (empty_data_cells) {
+        return(
+          paste0(
+            "<tr class=\"panel-row\"><th colspan=\"",
+            ncol(display_table),
+            "\">",
+            html_escape(row_values[[1]]),
+            "</th></tr>"
+          )
+        )
+      }
+
+      row_cells <- vapply(seq_along(row_values), function(column_index) {
+        tag_name <- if (column_index == 1L) "th" else "td"
+        class_attribute <- if (column_index > 1L && is_number_like(row_values[[column_index]])) {
+          " class=\"num\""
+        } else {
+          ""
+        }
+        paste0(
+          "<",
+          tag_name,
+          class_attribute,
+          ">",
+          html_escape(row_values[[column_index]]),
+          "</",
+          tag_name,
+          ">"
+        )
+      }, character(1))
+
+      paste0("<tr>", paste(row_cells, collapse = ""), "</tr>")
+    })
+  }
+
+  subtitle_line <- if (is.null(subtitle) || is.na(subtitle) || subtitle == "") {
+    character()
+  } else {
+    paste0("<p class=\"subtitle\">", html_escape(subtitle), "</p>")
+  }
+
+  html_lines <- c(
+    "<!doctype html>",
+    paste0("<html lang=\"he\" dir=\"", html_escape(direction), "\">"),
+    "<head>",
+    "<meta charset=\"utf-8\">",
+    "<style>",
+    "body { font-family: Arial, 'Noto Sans Hebrew', sans-serif; color: #111; margin: 32px; background: #fff; }",
+    ".table-wrap { max-width: 980px; margin: 0 auto; }",
+    "h1 { font-size: 18px; text-align: center; font-weight: 700; margin: 0 0 8px; }",
+    ".subtitle { text-align: center; font-size: 13px; margin: 0 0 18px; color: #555; }",
+    "table { width: 100%; border-collapse: collapse; border-top: 2px solid #111; border-bottom: 2px solid #111; font-size: 14px; direction: rtl; }",
+    "thead th { border-bottom: 1.5px solid #111; font-weight: 700; padding: 10px 8px; text-align: center; }",
+    "tbody td, tbody th { border-bottom: 1px solid #e5e5e5; padding: 10px 8px; text-align: center; vertical-align: middle; }",
+    "tbody th:first-child { text-align: right; font-weight: 600; }",
+    "tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }",
+    "td.num { direction: ltr; unicode-bidi: isolate; }",
+    ".panel-row th { background: #f3f4f6; border-top: 1.5px solid #111; font-weight: 700; text-align: right; }",
+    "td, th { font-variant-numeric: tabular-nums; }",
+    "</style>",
+    "</head>",
+    "<body>",
+    "<div class=\"table-wrap\">",
+    paste0("<h1>", html_escape(title), "</h1>"),
+    subtitle_line,
+    "<table>",
+    "<thead>",
+    paste0("<tr>", header_cells, "</tr>"),
+    "</thead>",
+    "<tbody>",
+    body_lines,
+    "</tbody>",
+    "</table>",
+    "</div>",
+    "</body>",
+    "</html>"
+  )
+
+  writeLines(html_lines, con = file_path)
+  invisible(NULL)
 }
 
 write_html_matrix_table <- function(matrix_table,
@@ -897,7 +1303,8 @@ build_did_publication_table <- function(
     "PostEvent", "estimate_display",
     "Std. Error", "std_error_display",
     "P-value", "p.value",
-    "Observations", "used_rows",
+    "Stacked event-window observations", "used_rows",
+    "Unique weekly rows in event windows", "unique_weekly_rows",
     "Entities", "entities",
     "Events", "events",
     "R-squared", "r2",
@@ -1248,29 +1655,67 @@ extract_post_event_coefficient <- function(model_object, model_name_label) {
     )
 }
 
-extract_model_fit <- function(model_object, model_name_label, input_row_count) {
-  if (is.null(model_object)) {
+summarize_model_input <- function(input_data, fallback_input_rows) {
+  if (is.null(input_data) || nrow(input_data) == 0) {
     return(
       tibble::tibble(
-        model_name = model_name_label,
-        model_status = "failed_or_insufficient_data",
-        input_rows = input_row_count,
-        used_rows = NA_real_,
-        r2 = NA_real_,
-        within_r2 = NA_real_,
-        adjusted_r2 = NA_real_
+        input_rows = fallback_input_rows,
+        unique_weekly_rows = NA_real_,
+        stacked_extra_rows = NA_real_,
+        input_entities = NA_real_,
+        input_events = NA_real_,
+        first_week = as.Date(NA),
+        last_week = as.Date(NA)
       )
     )
   }
 
+  unique_weekly_rows <- if ("spend_row_id" %in% names(input_data)) {
+    dplyr::n_distinct(input_data$spend_row_id)
+  } else {
+    NA_real_
+  }
+
   tibble::tibble(
-    model_name = model_name_label,
-    model_status = "ok",
-    input_rows = input_row_count,
-    used_rows = nobs(model_object),
-    r2 = safe_fitstat(model_object, "r2"),
-    within_r2 = safe_fitstat(model_object, "wr2"),
-    adjusted_r2 = safe_fitstat(model_object, "ar2")
+    input_rows = nrow(input_data),
+    unique_weekly_rows = unique_weekly_rows,
+    stacked_extra_rows = ifelse(is.na(unique_weekly_rows), NA_real_, nrow(input_data) - unique_weekly_rows),
+    input_entities = dplyr::n_distinct(input_data$entity_name),
+    input_events = dplyr::n_distinct(input_data$event_id),
+    first_week = min(input_data$week_start_sunday, na.rm = TRUE),
+    last_week = max(input_data$week_start_sunday, na.rm = TRUE)
+  )
+}
+
+extract_model_fit <- function(model_object, model_name_label, input_row_count, input_data = NULL) {
+  input_summary <- summarize_model_input(input_data, input_row_count)
+
+  if (is.null(model_object)) {
+    return(
+      dplyr::bind_cols(
+        tibble::tibble(
+          model_name = model_name_label,
+          model_status = "failed_or_insufficient_data",
+          used_rows = NA_real_,
+          r2 = NA_real_,
+          within_r2 = NA_real_,
+          adjusted_r2 = NA_real_
+        ),
+        input_summary
+      )
+    )
+  }
+
+  dplyr::bind_cols(
+    tibble::tibble(
+      model_name = model_name_label,
+      model_status = "ok",
+      used_rows = nobs(model_object),
+      r2 = safe_fitstat(model_object, "r2"),
+      within_r2 = safe_fitstat(model_object, "wr2"),
+      adjusted_r2 = safe_fitstat(model_object, "ar2")
+    ),
+    input_summary
   )
 }
 
@@ -1287,6 +1732,7 @@ build_sample_summary <- function(model_data, model_name_label) {
     dplyr::summarise(
       model_name = model_name_label,
       rows = dplyr::n(),
+      unique_weekly_rows = dplyr::n_distinct(spend_row_id),
       entities = dplyr::n_distinct(entity_name),
       events = dplyr::n_distinct(event_id),
       avg_weekly_spend_ils = mean(weekly_spend_ils, na.rm = TRUE),
@@ -1298,6 +1744,7 @@ build_sample_summary <- function(model_data, model_name_label) {
       model_name,
       period,
       rows,
+      unique_weekly_rows,
       entities,
       events,
       avg_weekly_spend_ils,
@@ -1454,11 +1901,20 @@ weekly_spend_panel <- dplyr::bind_rows(google_weekly_spend, meta_weekly_spend) %
   ) %>%
   dplyr::filter(!is.na(week_start_sunday), !is.na(weekly_spend_ils)) %>%
   dplyr::filter(week_start_sunday >= analysis_start_week, week_start_sunday <= analysis_end_week) %>%
-  dplyr::mutate(calendar_year = lubridate::year(week_start_sunday))
+  dplyr::mutate(
+    calendar_year = lubridate::year(week_start_sunday),
+    spend_row_id = dplyr::row_number()
+  )
 
 if (nrow(weekly_spend_panel) == 0) {
   stop("No valid weekly spending rows after cleaning.")
 }
+
+full_sample_rows_by_entity <- c(
+  "All entities" = nrow(weekly_spend_panel),
+  "Political parties" = sum(weekly_spend_panel$entity_group == "political_party", na.rm = TRUE),
+  "Organizations/people" = sum(weekly_spend_panel$entity_group == "other_org_or_person", na.rm = TRUE)
+)
 
 # -------------------------
 # Load and clean events data
@@ -1525,7 +1981,7 @@ placebo_events_table <- filter_complete_placebo_windows(
 # -------------------------
 event_window_panel <- tidyr::crossing(
   weekly_spend_panel %>%
-    dplyr::select(data_source, entity_name, entity_group, week_start_sunday, weekly_spend_ils),
+    dplyr::select(data_source, spend_row_id, entity_name, entity_group, week_start_sunday, weekly_spend_ils),
   events_table %>%
     dplyr::select(event_id, event_date, event_week_start_sunday, event_type_group, event_name)
 ) %>%
@@ -1554,13 +2010,20 @@ if (nrow(event_window_panel) == 0) {
 did_design_overview <- event_window_panel %>%
   dplyr::summarise(
     event_window_weeks = analysis_window_weeks,
+    full_descriptive_weekly_rows = nrow(weekly_spend_panel),
     total_rows = dplyr::n(),
+    unique_weekly_rows_in_windows = dplyr::n_distinct(spend_row_id),
+    extra_rows_from_stacking = total_rows - unique_weekly_rows_in_windows,
     total_entities = dplyr::n_distinct(entity_name),
     total_events = dplyr::n_distinct(event_id),
     pre_event_rows = sum(post_event == 0L),
     post_event_rows = sum(post_event == 1L),
     first_week = min(week_start_sunday, na.rm = TRUE),
-    last_week = max(week_start_sunday, na.rm = TRUE)
+    last_week = max(week_start_sunday, na.rm = TRUE),
+    out_of_analysis_window_rows = sum(
+      week_start_sunday < analysis_start_week | week_start_sunday > analysis_end_week,
+      na.rm = TRUE
+    )
   )
 
 # -------------------------
@@ -1597,7 +2060,7 @@ fit_did_specs <- function(input_panel, specifications) {
       input_rows = purrr::map_int(model_data, nrow),
       model = purrr::map(model_data, run_did_model),
       coefficient = purrr::map2(model, model_name, extract_post_event_coefficient),
-      fit = purrr::pmap(list(model, model_name, input_rows), extract_model_fit),
+      fit = purrr::pmap(list(model, model_name, input_rows, model_data), extract_model_fit),
       sample_summary = purrr::map2(model_data, model_name, build_sample_summary)
     )
 }
@@ -1629,7 +2092,8 @@ gamma_t_demo_coefficient <- extract_post_event_coefficient(
 gamma_t_demo_fit <- extract_model_fit(
   gamma_t_demo_model,
   "all_entities_all_events__with_gamma_t",
-  nrow(event_window_panel)
+  nrow(event_window_panel),
+  event_window_panel
 )
 
 gamma_t_baseline_compare <- all_model_coefficients %>%
@@ -1643,7 +2107,7 @@ gamma_t_compare_table <- dplyr::bind_rows(
 
 placebo_event_window_panel <- tidyr::crossing(
   weekly_spend_panel %>%
-    dplyr::select(data_source, entity_name, entity_group, week_start_sunday, weekly_spend_ils),
+    dplyr::select(data_source, spend_row_id, entity_name, entity_group, week_start_sunday, weekly_spend_ils),
   placebo_events_table %>%
     dplyr::select(event_id, event_date, event_week_start_sunday, event_type_group, event_name)
 ) %>%
@@ -1670,13 +2134,20 @@ if (nrow(placebo_event_window_panel) == 0) {
 placebo_did_design_overview <- placebo_event_window_panel %>%
   dplyr::summarise(
     event_window_weeks = analysis_window_weeks,
+    full_descriptive_weekly_rows = nrow(weekly_spend_panel),
     total_rows = dplyr::n(),
+    unique_weekly_rows_in_windows = dplyr::n_distinct(spend_row_id),
+    extra_rows_from_stacking = total_rows - unique_weekly_rows_in_windows,
     total_entities = dplyr::n_distinct(entity_name),
     total_events = dplyr::n_distinct(event_id),
     pre_event_rows = sum(post_event == 0L),
     post_event_rows = sum(post_event == 1L),
     first_week = min(week_start_sunday, na.rm = TRUE),
-    last_week = max(week_start_sunday, na.rm = TRUE)
+    last_week = max(week_start_sunday, na.rm = TRUE),
+    out_of_analysis_window_rows = sum(
+      week_start_sunday < analysis_start_week | week_start_sunday > analysis_end_week,
+      na.rm = TRUE
+    )
   )
 
 placebo_model_results <- fit_did_specs(
@@ -1751,6 +2222,12 @@ did_key_results_post_from_0 <- build_did_key_results_matrix(
   model_specifications_table = model_specifications
 )
 
+did_panel_summary_post_from_0 <- build_regression_panel_summary_he(
+  matrix_table = did_key_results_post_from_0,
+  coefficient_row_label = "מקדם PostEvent (β)",
+  full_sample_rows_by_entity = full_sample_rows_by_entity
+)
+
 # -------------------------
 # Dedicated 07/10/2023 DiD-style model
 # -------------------------
@@ -1799,7 +2276,7 @@ if (nrow(oct7_event) == 1) {
       input_rows = purrr::map_int(model_data, nrow),
       model = purrr::map(model_data, run_did_model),
       coefficient = purrr::map2(model, model_name, extract_post_event_coefficient),
-      fit = purrr::pmap(list(model, model_name, input_rows), extract_model_fit),
+      fit = purrr::pmap(list(model, model_name, input_rows, model_data), extract_model_fit),
       sample_summary = purrr::map2(model_data, model_name, build_sample_summary)
     )
 
@@ -1838,6 +2315,15 @@ write_clean_csv(placebo_model_fit, file.path(output_paths$placebo_post_from_0, "
 write_clean_csv(did_paper_table_post_from_0, file.path(output_paths$tables, "did_paper_table_post_from_0.csv"))
 write_markdown_table(did_paper_table_post_from_0, file.path(output_paths$tables, "did_paper_table_post_from_0.md"))
 write_clean_csv(did_key_results_post_from_0, file.path(output_paths$tables, "did_key_results_post_from_0.csv"))
+write_panel_summary_outputs(
+  summary_table = did_panel_summary_post_from_0,
+  output_base_path = file.path(output_paths$tables, "did_panel_summary_post_from_0"),
+  title = "טבלת סיכום - Difference-in-Differences",
+  subtitle = "N בטבלת הרגרסיה הוא מספר תצפיות חלון-אירוע מוערמות; שורות המדגם התיאורי מוצגות בנפרד",
+  latex_caption = "טבלת סיכום - Difference-in-Differences",
+  latex_label = "tab:did_panel_summary_post_from_0",
+  note_text = "המקדמים מבוססים על קבצי התוצאות האמיתיים של DiD, כאשר PostEvent=1 עבור relative_week >= 0. N הוא מספר תצפיות חלון-אירוע מוערמות לאחר אומדן המודל; שורות שבועיות ייחודיות והמדגם התיאורי מדווחות בנפרד. טעויות תקן מקובצות לפי מפרסם."
+)
 write_latex_matrix_table(
   matrix_table = did_key_results_post_from_0,
   file_path = file.path(output_paths$tables, "did_key_results_post_from_0.tex"),
@@ -1997,7 +2483,11 @@ write_paper_style_header(
     "gamma_t is added (beta -> ~1e-11, VCOV not positive semi-definite). Following",
     "standard stacked-DiD practice we omit gamma_t for stacked specs. A",
     "demonstration run with gamma_t included is preserved under",
-    "gamma_t_demonstration/ for the paper."
+    "gamma_t_demonstration/ for the paper.",
+    "Count note: descriptive tables count the cleaned weekly spend panel",
+    "(entity-platform-week rows). Regression N counts stacked event-window",
+    "observations after crossing weekly rows with events and keeping +/-W weeks;",
+    "the scripts also report unique weekly rows in model-fit and panel-summary files."
   )
 )
 
@@ -2060,7 +2550,7 @@ if (nrow(oct7_coefficient) > 0) {
   write_paper_style_model_section(
     model_label = "oct7_event",
     coefficients_table = oct7_coefficient,
-    fit_table = if (!is.null(oct7_model)) extract_model_fit(oct7_model, "oct7_event", nrow(oct7_event_window)) else tibble::tibble(),
+    fit_table = if (!is.null(oct7_model)) extract_model_fit(oct7_model, "oct7_event", nrow(oct7_event_window), oct7_event_window) else tibble::tibble(),
     summary_connection = summary_connection
   )
 }
