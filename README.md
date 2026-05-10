@@ -68,9 +68,9 @@ The canonical placebo event-week file is generated with:
 python3 generate_placebo_events.py
 ```
 
-The generator writes the only placebo-date table, `placebo_events_2020_2025.csv`. It samples 66 distinct Sunday-start weeks with seed `20260510` from the allowed pool `2020-01-26` through `2025-12-07`, then assigns 36 political and 30 terror labels. The R scripts read this one root file directly and do not create extra placebo-date copies.
+The generator writes the only placebo-date table, `placebo_events_2020_2025.csv`. It samples 66 distinct Sunday-start weeks with seed `20260510` from clean weeks in the allowed pool `2020-01-26` through `2025-12-07`. Clean weeks are more than 3 weeks away from every real event week. The script then assigns 36 political and 30 terror labels. The R scripts read this one root file directly, validate the same real-event distance rule, and do not create extra placebo-date copies.
 
-When changing placebo dates, follow the full placebo refresh checklist in [`DATA_PIPELINE.md`](DATA_PIPELINE.md): regenerate the root CSV, verify row/count/date constraints, rerun both R scripts, and confirm no duplicate placebo-date table was recreated.
+When changing placebo dates, follow the full placebo refresh checklist in [`DATA_PIPELINE.md`](DATA_PIPELINE.md): regenerate the root CSV, review the clean-week diagnostics, verify row/count/date/distance constraints, rerun both R scripts, and confirm no duplicate placebo-date table was recreated.
 
 Run them from terminal with:
 
