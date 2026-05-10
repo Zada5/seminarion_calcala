@@ -6,25 +6,25 @@
 #   - How much was spent on Meta?
 #   - How much did each of the 68 publishers spend on each platform?
 #
-# This script is intentionally separate from event_study_0710.R and did_0710.R.
-# It does not estimate regressions and does not use the events file. It only
-# summarizes the cleaned weekly spend inputs.
+# This script is intentionally separate from 05_event_study_0710.R and
+# 06_did_0710.R. It does not estimate regressions and does not use the events
+# file. It only summarizes the cleaned weekly spend inputs.
 #
 # Default inputs:
-#   second_cleaning/weekly_party_spend_google.csv
-#   second_cleaning/weekly_party_spend_meta.csv
+#   data/processed/second_cleaning/weekly_party_spend_google.csv
+#   data/processed/second_cleaning/weekly_party_spend_meta.csv
 #
 # Default outputs:
-#   analysis_outputs/descriptive/platform_spend_summary.csv
-#   analysis_outputs/descriptive/publisher_platform_spend_summary.csv
-#   analysis_outputs/descriptive/publisher_count_validation.csv
-#   analysis_outputs/descriptive/publisher_group_platform_spend_summary.csv
+#   outputs/analysis/descriptive/platform_spend_summary.csv
+#   outputs/analysis/descriptive/publisher_platform_spend_summary.csv
+#   outputs/analysis/descriptive/publisher_count_validation.csv
+#   outputs/analysis/descriptive/publisher_group_platform_spend_summary.csv
 #
-# Run:
-#   Rscript summarize_platform_publisher_spend.R
+# Run from repo root:
+#   Rscript scripts/04_summarize_platform_publisher_spend.R
 #
 # Optional arguments:
-#   Rscript summarize_platform_publisher_spend.R <google_csv> <meta_csv> <output_dir>
+#   Rscript scripts/04_summarize_platform_publisher_spend.R <google_csv> <meta_csv> <output_dir>
 
 suppressPackageStartupMessages({
   library(dplyr)
@@ -41,19 +41,19 @@ args <- commandArgs(trailingOnly = TRUE)
 google_data_path <- if (length(args) >= 1) {
   args[[1]]
 } else {
-  "./second_cleaning/weekly_party_spend_google.csv"
+  "./data/processed/second_cleaning/weekly_party_spend_google.csv"
 }
 
 meta_data_path <- if (length(args) >= 2) {
   args[[2]]
 } else {
-  "./second_cleaning/weekly_party_spend_meta.csv"
+  "./data/processed/second_cleaning/weekly_party_spend_meta.csv"
 }
 
 output_directory <- if (length(args) >= 3) {
   args[[3]]
 } else {
-  "./analysis_outputs/descriptive"
+  "./outputs/analysis/descriptive"
 }
 
 analysis_start_week <- as.Date("2020-01-05")
