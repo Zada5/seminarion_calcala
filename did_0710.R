@@ -931,12 +931,50 @@ write_html_presentation_table <- function(dataframe,
       )
     )
 
+  is_number_like <- function(cell_value) {
+    cell_value <- trimws(cell_value)
+    cell_value != "" &&
+      grepl("^[-()0-9,.*+<>% ]+$", cell_value)
+  }
+
   header_cells <- paste0("<th>", html_escape(names(display_table)), "</th>", collapse = "")
   body_lines <- if (nrow(display_table) == 0) {
     paste0("<tr><td colspan=\"", ncol(display_table), "\">No rows.</td></tr>")
   } else {
     apply(display_table, 1, function(row_values) {
-      paste0("<tr>", paste0("<td>", html_escape(row_values), "</td>", collapse = ""), "</tr>")
+      empty_data_cells <- all(trimws(row_values[-1]) == "")
+      if (empty_data_cells) {
+        return(
+          paste0(
+            "<tr class=\"panel-row\"><th colspan=\"",
+            ncol(display_table),
+            "\">",
+            html_escape(row_values[[1]]),
+            "</th></tr>"
+          )
+        )
+      }
+
+      row_cells <- vapply(seq_along(row_values), function(column_index) {
+        tag_name <- if (column_index == 1L) "th" else "td"
+        class_attribute <- if (column_index > 1L && is_number_like(row_values[[column_index]])) {
+          " class=\"num\""
+        } else {
+          ""
+        }
+        paste0(
+          "<",
+          tag_name,
+          class_attribute,
+          ">",
+          html_escape(row_values[[column_index]]),
+          "</",
+          tag_name,
+          ">"
+        )
+      }, character(1))
+
+      paste0("<tr>", paste(row_cells, collapse = ""), "</tr>")
     })
   }
 
@@ -952,14 +990,17 @@ write_html_presentation_table <- function(dataframe,
     "<head>",
     "<meta charset=\"utf-8\">",
     "<style>",
-    "body { font-family: Arial, 'Noto Sans Hebrew', sans-serif; color: #222; margin: 32px; background: #fff; }",
+    "body { font-family: Arial, 'Noto Sans Hebrew', sans-serif; color: #111; margin: 32px; background: #fff; }",
     ".table-wrap { max-width: 980px; margin: 0 auto; }",
     "h1 { font-size: 18px; text-align: center; font-weight: 700; margin: 0 0 8px; }",
     ".subtitle { text-align: center; font-size: 13px; margin: 0 0 18px; color: #555; }",
-    "table { width: 100%; border-collapse: collapse; font-size: 14px; }",
-    "thead th { border-bottom: 1px solid #999; font-weight: 700; padding: 10px 8px; text-align: center; }",
-    "tbody td { border-bottom: 1px solid #e5e5e5; padding: 10px 8px; text-align: center; vertical-align: middle; }",
-    "tbody tr:last-child td { border-bottom: 0; }",
+    "table { width: 100%; border-collapse: collapse; border-top: 2px solid #111; border-bottom: 2px solid #111; font-size: 14px; direction: rtl; }",
+    "thead th { border-bottom: 1.5px solid #111; font-weight: 700; padding: 10px 8px; text-align: center; }",
+    "tbody td, tbody th { border-bottom: 1px solid #e5e5e5; padding: 10px 8px; text-align: center; vertical-align: middle; }",
+    "tbody th:first-child { text-align: right; font-weight: 600; }",
+    "tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }",
+    "td.num { direction: ltr; unicode-bidi: isolate; }",
+    ".panel-row th { background: #f3f4f6; border-top: 1.5px solid #111; font-weight: 700; text-align: right; }",
     "td, th { font-variant-numeric: tabular-nums; }",
     "</style>",
     "</head>",
