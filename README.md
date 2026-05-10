@@ -153,7 +153,7 @@ The earlier version of these scripts used `log1p(weekly_spend_ils)` for the depe
   * `descriptive_yearly_group_gap_he.csv` / `.md` / `.html`: Hebrew presentation table comparing yearly civic/private-body spend against formal-party spend
   * `event_study_key_results_baseline_minus1.csv` / `.tex` / `.html`: script-generated event-study key results, with `relative_week = -1` as the reference week and the reported coefficient taken from `relative_week = +1`
   * `event_study_panel_summary_baseline_minus1.csv` / `.md` / `.html` / `.tex` / `.xlsx`: presentation copy of the same real event-study key results in the compact three-column panel format used for the seminar table
-* `analysis_outputs/descriptive/`: dedicated descriptive-output folder with CSV tables for total spend, group/year summaries, pre/post October 7 summaries, mean, median, standard deviation, min, quartiles, max, row counts, week counts, entity counts, and first/last week. These files are produced by the descriptive R step and can also be refreshed by the descriptive block in `event_study_0710.R`.
+* `analysis_outputs/descriptive/`: dedicated descriptive-output folder with CSV tables for total spend, group/year summaries, pre/post October 7 summaries, mean, median, standard deviation, min, quartiles, max, row counts, week counts, entity counts, and first/last week. It also contains `descriptive_yearly_group_spend_line.png` / `.pdf`, a presentation chart comparing yearly civic/private-body spend with formal-party spend. These files are produced by the descriptive R step and can also be refreshed by the descriptive block in `event_study_0710.R`.
 * `analysis_outputs/correlations/real_events/`: real-event correlation CSV + graphs
 * `analysis_outputs/correlations/placebo_events/`: placebo-event correlation CSV + graphs
 * `analysis_outputs/event_study/baseline_0/`: main event-study CSVs + figures
@@ -191,6 +191,7 @@ For the seminar paper / presentation, use these compact final tables first:
 | Descriptive summary by entity type | `analysis_outputs/tables/descriptive_entity_type_summary_he.html` or `.csv` | `analysis_outputs/descriptive/descriptive_by_group.csv` |
 | Descriptive summary by calendar year | `analysis_outputs/tables/descriptive_yearly_summary_he.html` or `.csv` | `analysis_outputs/descriptive/descriptive_by_year.csv` |
 | Civic/private vs formal-party yearly gap | `analysis_outputs/tables/descriptive_yearly_group_gap_he.html` or `.csv` | `analysis_outputs/descriptive/descriptive_by_year_and_group.csv` |
+| Civic/private vs formal-party yearly chart | `analysis_outputs/descriptive/descriptive_yearly_group_spend_line.png` or `.pdf` | `analysis_outputs/descriptive/descriptive_by_year_and_group.csv` |
 | Weekly correlation summary | `analysis_outputs/tables/correlation_paper_table.csv` or `.md` | `analysis_outputs/correlations/real_events/correlation_summary.csv` and `analysis_outputs/correlations/placebo_events/placebo_correlation_summary.csv` |
 
 The `.xlsx` files are the human-friendly versions that match the requested seminar table shape. The `.csv` files listed under "Canonical source data" are the audit trail: use them when checking exactly which regression/correlation values fed the final table. For LaTeX or HTML drafts, use the matching `.tex` or `.html` file with the same base name.
@@ -204,7 +205,7 @@ The `.xlsx` files are the human-friendly versions that match the requested semin
 | Manual cleaning | `cleaned_data/` and manual review | first/second cleaning process | `first_cleaning/*.csv`, then preferred inputs in `second_cleaning/*.csv` |
 | Placebo event generation | Fixed date/count/seed parameters in the script | `python3 generate_placebo_events.py` | `placebo_events_2020_2025.csv` |
 | Main event-study analysis | `second_cleaning/*.csv` + event timeline + placebo file | `Rscript event_study_0710.R` | `analysis_outputs/` |
-| Hebrew descriptive presentation tables | `analysis_outputs/descriptive/descriptive_by_group.csv`, `descriptive_by_year.csv`, `descriptive_by_year_and_group.csv` | `event_study_0710.R` descriptive presentation block | `analysis_outputs/tables/descriptive_*_he.{csv,md,html}` |
+| Hebrew descriptive presentation tables and chart | `analysis_outputs/descriptive/descriptive_by_group.csv`, `descriptive_by_year.csv`, `descriptive_by_year_and_group.csv` | `event_study_0710.R` descriptive presentation block | `analysis_outputs/tables/descriptive_*_he.{csv,md,html}` and `analysis_outputs/descriptive/descriptive_yearly_group_spend_line.{png,pdf}` |
 | Real/placebo weekly correlations | Same inputs as event study | `event_study_0710.R` correlation block | `analysis_outputs/correlations/*` and `analysis_outputs/tables/correlation_*` |
 | Event-study regression figures and tables | Same inputs as event study | `event_study_0710.R` event-study block | `analysis_outputs/event_study/*` and `analysis_outputs/tables/event_study_key_results_baseline_minus1.*` |
 | Compact event-study presentation table | `event_study_key_results_baseline_minus1.csv` | table-formatting step | `analysis_outputs/tables/event_study_panel_summary_baseline_minus1.*` |
