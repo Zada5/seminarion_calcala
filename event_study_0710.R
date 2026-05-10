@@ -45,7 +45,7 @@ cat("\014")
 
 required_packages <- c(
   "readr", "dplyr", "tidyr", "lubridate", "stringr",
-  "ggplot2", "fixest", "broom", "purrr", "tibble"
+  "ggplot2", "fixest", "broom", "purrr", "tibble", "scales"
 )
 
 install_missing_packages <- function(package_names) {
@@ -927,12 +927,50 @@ write_html_presentation_table <- function(dataframe,
       )
     )
 
+  is_number_like <- function(cell_value) {
+    cell_value <- trimws(cell_value)
+    cell_value != "" &&
+      grepl("^[-()0-9,.*+<>% ]+$", cell_value)
+  }
+
   header_cells <- paste0("<th>", html_escape(names(display_table)), "</th>", collapse = "")
   body_lines <- if (nrow(display_table) == 0) {
     paste0("<tr><td colspan=\"", ncol(display_table), "\">No rows.</td></tr>")
   } else {
     apply(display_table, 1, function(row_values) {
-      paste0("<tr>", paste0("<td>", html_escape(row_values), "</td>", collapse = ""), "</tr>")
+      empty_data_cells <- all(trimws(row_values[-1]) == "")
+      if (empty_data_cells) {
+        return(
+          paste0(
+            "<tr class=\"panel-row\"><th colspan=\"",
+            ncol(display_table),
+            "\">",
+            html_escape(row_values[[1]]),
+            "</th></tr>"
+          )
+        )
+      }
+
+      row_cells <- vapply(seq_along(row_values), function(column_index) {
+        tag_name <- if (column_index == 1L) "th" else "td"
+        class_attribute <- if (column_index > 1L && is_number_like(row_values[[column_index]])) {
+          " class=\"num\""
+        } else {
+          ""
+        }
+        paste0(
+          "<",
+          tag_name,
+          class_attribute,
+          ">",
+          html_escape(row_values[[column_index]]),
+          "</",
+          tag_name,
+          ">"
+        )
+      }, character(1))
+
+      paste0("<tr>", paste(row_cells, collapse = ""), "</tr>")
     })
   }
 
@@ -948,14 +986,17 @@ write_html_presentation_table <- function(dataframe,
     "<head>",
     "<meta charset=\"utf-8\">",
     "<style>",
-    "body { font-family: Arial, 'Noto Sans Hebrew', sans-serif; color: #222; margin: 32px; background: #fff; }",
+    "body { font-family: Arial, 'Noto Sans Hebrew', sans-serif; color: #111; margin: 32px; background: #fff; }",
     ".table-wrap { max-width: 980px; margin: 0 auto; }",
     "h1 { font-size: 18px; text-align: center; font-weight: 700; margin: 0 0 8px; }",
     ".subtitle { text-align: center; font-size: 13px; margin: 0 0 18px; color: #555; }",
-    "table { width: 100%; border-collapse: collapse; font-size: 14px; }",
-    "thead th { border-bottom: 1px solid #999; font-weight: 700; padding: 10px 8px; text-align: center; }",
-    "tbody td { border-bottom: 1px solid #e5e5e5; padding: 10px 8px; text-align: center; vertical-align: middle; }",
-    "tbody tr:last-child td { border-bottom: 0; }",
+    "table { width: 100%; border-collapse: collapse; border-top: 2px solid #111; border-bottom: 2px solid #111; font-size: 14px; direction: rtl; }",
+    "thead th { border-bottom: 1.5px solid #111; font-weight: 700; padding: 10px 8px; text-align: center; }",
+    "tbody td, tbody th { border-bottom: 1px solid #e5e5e5; padding: 10px 8px; text-align: center; vertical-align: middle; }",
+    "tbody th:first-child { text-align: right; font-weight: 600; }",
+    "tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }",
+    "td.num { direction: ltr; unicode-bidi: isolate; }",
+    ".panel-row th { background: #f3f4f6; border-top: 1.5px solid #111; font-weight: 700; text-align: right; }",
     "td, th { font-variant-numeric: tabular-nums; }",
     "</style>",
     "</head>",
@@ -2063,6 +2104,47 @@ descriptive_yearly_group_gap_he <- yearly_spend_stats_by_group %>%
     "פער (אזרחי פחות מפלגתי)" = format_million_gap_he(civic_minus_party_gap_ils)
   )
 
+descriptive_yearly_group_spend_plot_data <- yearly_spend_stats_by_group %>%
+  dplyr::mutate(
+    entity_group_he = factor(
+      entity_group_label_he(entity_group),
+      levels = c("גוף פרטי/אזרחי", "מפלגה ממוסדת")
+    )
+  )
+
+descriptive_yearly_group_spend_plot <- ggplot2::ggplot(
+  descriptive_yearly_group_spend_plot_data,
+  ggplot2::aes(
+    x = calendar_year,
+    y = total_spend_ils,
+    color = entity_group_he,
+    group = entity_group_he
+  )
+) +
+  ggplot2::geom_line(linewidth = 1.2) +
+  ggplot2::geom_point(size = 3.5) +
+  ggplot2::scale_x_continuous(breaks = seq(2020, 2025, by = 1)) +
+  ggplot2::scale_y_continuous(labels = scales::label_number(suffix = " M", scale = 1e-6)) +
+  ggplot2::scale_color_manual(
+    values = c("גוף פרטי/אזרחי" = "#1f77b4", "מפלגה ממוסדת" = "#ff7f0e")
+  ) +
+  ggplot2::labs(
+    title = "הוצאות פרסום ממומן בישראל לפי סוג ישות",
+    subtitle = "2020-2025, מבוסס על קבצי הניקוי השני ומסוכם לפי שנים קלנדריות",
+    x = "שנה קלנדרית",
+    y = "סך הוצאות (במיליוני שקלים)",
+    color = "סוג ישות"
+  ) +
+  ggplot2::theme_minimal(base_size = 12) +
+  ggplot2::theme(
+    plot.title = ggplot2::element_text(face = "bold", size = 14, hjust = 0.5),
+    plot.subtitle = ggplot2::element_text(size = 11, hjust = 0.5, color = "gray40"),
+    legend.position = "bottom",
+    plot.background = ggplot2::element_rect(fill = "white", color = NA),
+    panel.background = ggplot2::element_rect(fill = "white", color = NA),
+    legend.background = ggplot2::element_rect(fill = "white", color = NA)
+  )
+
 # -------------------------
 # Event-study dataset (all events)
 # -------------------------
@@ -2871,6 +2953,21 @@ write_html_presentation_table(
   title = "טבלה ג: התפלגות ההוצאות בפרסום מפלגתי מול אזרחי (השוואה שנתית)",
   subtitle = "פער חיובי מציין הוצאה גבוהה יותר של גופים אזרחיים/פרטיים לעומת מפלגות ממוסדות"
 )
+ggplot2::ggsave(
+  filename = file.path(output_paths$descriptive, "descriptive_yearly_group_spend_line.png"),
+  plot = descriptive_yearly_group_spend_plot,
+  width = 9,
+  height = 5,
+  dpi = 300,
+  bg = "white"
+)
+ggplot2::ggsave(
+  filename = file.path(output_paths$descriptive, "descriptive_yearly_group_spend_line.pdf"),
+  plot = descriptive_yearly_group_spend_plot,
+  width = 9,
+  height = 5,
+  bg = "white"
+)
 write_clean_csv(correlation_summary, file.path(output_paths$correlations_real, "correlation_summary.csv"))
 write_clean_csv(placebo_correlation_summary, file.path(output_paths$correlations_placebo, "placebo_correlation_summary.csv"))
 write_clean_csv(correlation_comparison_table, file.path(output_paths$tables, "correlation_real_vs_placebo.csv"))
@@ -3299,6 +3396,7 @@ cat("- summaries/regression_summary.txt\n")
 cat("- tables/*\n")
 cat("- tables/descriptive_*_he.{csv,md,html}\n")
 cat("- descriptive/*.csv\n")
+cat("- descriptive/descriptive_yearly_group_spend_line.{png,pdf}\n")
 cat("- correlations/real_events/*\n")
 cat("- correlations/placebo_events/*\n")
 cat("- event_study/baseline_0/*\n")

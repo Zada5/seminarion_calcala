@@ -3,14 +3,17 @@
 <head>
 <meta charset="utf-8">
 <style>
-body { font-family: Arial, 'Noto Sans Hebrew', sans-serif; color: #222; margin: 32px; background: #fff; }
+body { font-family: Arial, 'Noto Sans Hebrew', sans-serif; color: #111; margin: 32px; background: #fff; }
 .table-wrap { max-width: 980px; margin: 0 auto; }
 h1 { font-size: 18px; text-align: center; font-weight: 700; margin: 0 0 8px; }
 .subtitle { text-align: center; font-size: 13px; margin: 0 0 18px; color: #555; }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-thead th { border-bottom: 1px solid #999; font-weight: 700; padding: 10px 8px; text-align: center; }
-tbody td { border-bottom: 1px solid #e5e5e5; padding: 10px 8px; text-align: center; vertical-align: middle; }
-tbody tr:last-child td { border-bottom: 0; }
+table { width: 100%; border-collapse: collapse; border-top: 2px solid #111; border-bottom: 2px solid #111; font-size: 14px; direction: rtl; }
+thead th { border-bottom: 1.5px solid #111; font-weight: 700; padding: 10px 8px; text-align: center; }
+tbody td, tbody th { border-bottom: 1px solid #e5e5e5; padding: 10px 8px; text-align: center; vertical-align: middle; }
+tbody th:first-child { text-align: right; font-weight: 600; }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+td.num { direction: ltr; unicode-bidi: isolate; }
+.panel-row th { background: #f3f4f6; border-top: 1.5px solid #111; font-weight: 700; text-align: right; }
 td, th { font-variant-numeric: tabular-nums; }
 </style>
 </head>
@@ -23,27 +26,27 @@ td, th { font-variant-numeric: tabular-nums; }
 <tr><th>המשתנה התלוי: log(הוצאה שבועית)</th><th>(1) כל המפרסמים</th><th>(2) מפלגות</th><th>(3) גופים פרטיים</th></tr>
 </thead>
 <tbody>
-<tr><td>פאנל א': כל האירועים</td><td></td><td></td><td></td></tr>
-<tr><td>מקדם שבוע +1 (β)</td><td>-0.081***</td><td>-0.091</td><td>-0.057**</td></tr>
-<tr><td>(טעות תקן)</td><td>(0.027)</td><td>(0.101)</td><td>(0.027)</td></tr>
-<tr><td>פאנל ב': אירועים פוליטיים</td><td></td><td></td><td></td></tr>
-<tr><td>מקדם שבוע +1 (β)</td><td>-0.215***</td><td>-0.359</td><td>-0.164***</td></tr>
-<tr><td>(טעות תקן)</td><td>(0.047)</td><td>(0.228)</td><td>(0.044)</td></tr>
-<tr><td>פאנל ג': אירועי טרור</td><td></td><td></td><td></td></tr>
-<tr><td>מקדם שבוע +1 (β)</td><td>0.075*</td><td>0.174*</td><td>0.069*</td></tr>
-<tr><td>(טעות תקן)</td><td>(0.038)</td><td>(0.085)</td><td>(0.039)</td></tr>
-<tr><td>בקרות ונתוני מודל</td><td></td><td></td><td></td></tr>
-<tr><td>R2 - כל האירועים</td><td>0.347</td><td>0.436</td><td>0.362</td></tr>
-<tr><td>R2 - אירועים פוליטיים</td><td>0.329</td><td>0.454</td><td>0.342</td></tr>
-<tr><td>R2 - אירועי טרור</td><td>0.407</td><td>0.483</td><td>0.415</td></tr>
-<tr><td>Fixed Effects</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
-<tr><td>שורות שבועיות במדגם התיאורי</td><td>9,458</td><td>1,539</td><td>7,919</td></tr>
-<tr><td>N - תצפיות חלון-אירוע מוערמות - כל האירועים</td><td>10,038</td><td>1,411</td><td>8,627</td></tr>
-<tr><td>שורות שבועיות ייחודיות בחלון - כל האירועים</td><td>5,543</td><td>817</td><td>4,726</td></tr>
-<tr><td>N - תצפיות חלון-אירוע מוערמות - אירועים פוליטיים</td><td>5,323</td><td>755</td><td>4,568</td></tr>
-<tr><td>שורות שבועיות ייחודיות בחלון - אירועים פוליטיים</td><td>4,090</td><td>599</td><td>3,491</td></tr>
-<tr><td>N - תצפיות חלון-אירוע מוערמות - אירועי טרור</td><td>4,714</td><td>656</td><td>4,058</td></tr>
-<tr><td>שורות שבועיות ייחודיות בחלון - אירועי טרור</td><td>3,391</td><td>470</td><td>2,921</td></tr>
+<tr class="panel-row"><th colspan="4">פאנל א': כל האירועים</th></tr>
+<tr><th>מקדם שבוע +1 (β)</th><td class="num">-0.081***</td><td class="num">-0.091</td><td class="num">-0.057**</td></tr>
+<tr><th>(טעות תקן)</th><td class="num">(0.027)</td><td class="num">(0.101)</td><td class="num">(0.027)</td></tr>
+<tr class="panel-row"><th colspan="4">פאנל ב': אירועים פוליטיים</th></tr>
+<tr><th>מקדם שבוע +1 (β)</th><td class="num">-0.215***</td><td class="num">-0.359</td><td class="num">-0.164***</td></tr>
+<tr><th>(טעות תקן)</th><td class="num">(0.047)</td><td class="num">(0.228)</td><td class="num">(0.044)</td></tr>
+<tr class="panel-row"><th colspan="4">פאנל ג': אירועי טרור</th></tr>
+<tr><th>מקדם שבוע +1 (β)</th><td class="num">0.075*</td><td class="num">0.174*</td><td class="num">0.069*</td></tr>
+<tr><th>(טעות תקן)</th><td class="num">(0.038)</td><td class="num">(0.085)</td><td class="num">(0.039)</td></tr>
+<tr class="panel-row"><th colspan="4">בקרות ונתוני מודל</th></tr>
+<tr><th>R2 - כל האירועים</th><td class="num">0.347</td><td class="num">0.436</td><td class="num">0.362</td></tr>
+<tr><th>R2 - אירועים פוליטיים</th><td class="num">0.329</td><td class="num">0.454</td><td class="num">0.342</td></tr>
+<tr><th>R2 - אירועי טרור</th><td class="num">0.407</td><td class="num">0.483</td><td class="num">0.415</td></tr>
+<tr><th>Fixed Effects</th><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+<tr><th>שורות שבועיות במדגם התיאורי</th><td class="num">9,458</td><td class="num">1,539</td><td class="num">7,919</td></tr>
+<tr><th>N - תצפיות חלון-אירוע מוערמות - כל האירועים</th><td class="num">10,038</td><td class="num">1,411</td><td class="num">8,627</td></tr>
+<tr><th>שורות שבועיות ייחודיות בחלון - כל האירועים</th><td class="num">5,543</td><td class="num">817</td><td class="num">4,726</td></tr>
+<tr><th>N - תצפיות חלון-אירוע מוערמות - אירועים פוליטיים</th><td class="num">5,323</td><td class="num">755</td><td class="num">4,568</td></tr>
+<tr><th>שורות שבועיות ייחודיות בחלון - אירועים פוליטיים</th><td class="num">4,090</td><td class="num">599</td><td class="num">3,491</td></tr>
+<tr><th>N - תצפיות חלון-אירוע מוערמות - אירועי טרור</th><td class="num">4,714</td><td class="num">656</td><td class="num">4,058</td></tr>
+<tr><th>שורות שבועיות ייחודיות בחלון - אירועי טרור</th><td class="num">3,391</td><td class="num">470</td><td class="num">2,921</td></tr>
 </tbody>
 </table>
 </div>
