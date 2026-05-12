@@ -210,3 +210,6 @@ __marimo__/
 #this project: 
 .DS_Store
 .Rproj.user
+
+# Claude Code harness
+.claude/
