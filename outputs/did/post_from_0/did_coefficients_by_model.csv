@@ -1,10 +1,10 @@
 model_name,term,estimate,std.error,statistic,p.value,conf.low,conf.high,pct_change,signif
-all_entities_all_events,post_event,-0.059,0.030,-1.995,0.050,-0.118,0.000,-5.7%,.
+all_entities_all_events,post_event,-0.059,0.030,-1.998,0.050,-0.118,-0.000,-5.7%,*
 political_parties_all_events,post_event,0.041,0.085,0.484,0.636,-0.140,0.222,+4.2%,
-other_orgs_people_all_events,post_event,-0.078,0.032,-2.438,0.019,-0.142,-0.014,-7.5%,*
+other_orgs_people_all_events,post_event,-0.078,0.032,-2.441,0.018,-0.142,-0.014,-7.5%,*
 all_entities_political_events,post_event,-0.063,0.062,-1.003,0.320,-0.187,0.062,-6.1%,
-all_entities_terror_events,post_event,-0.061,0.039,-1.550,0.126,-0.139,0.018,-5.9%,
+all_entities_terror_events,post_event,-0.061,0.039,-1.555,0.125,-0.139,0.017,-5.9%,
 political_parties_political_events,post_event,0.213,0.234,0.910,0.381,-0.297,0.722,+23.7%,
 political_parties_terror_events,post_event,0.005,0.156,0.033,0.974,-0.332,0.343,+0.5%,
 other_orgs_people_political_events,post_event,-0.111,0.060,-1.848,0.071,-0.233,0.010,-10.5%,.
-other_orgs_people_terror_events,post_event,-0.070,0.041,-1.711,0.094,-0.153,0.012,-6.8%,.
+other_orgs_people_terror_events,post_event,-0.070,0.041,-1.715,0.093,-0.153,0.012,-6.8%,.
