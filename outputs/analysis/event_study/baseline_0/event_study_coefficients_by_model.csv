@@ -18,9 +18,9 @@ all_entities_political_events,2,-0.068,0.118,-0.573,0.569,-0.304,0.169,-6.5%,
 all_entities_terror_events,-2,0.060,0.075,0.804,0.426,-0.090,0.210,+6.2%,
 all_entities_terror_events,-1,-0.029,0.076,-0.378,0.707,-0.183,0.125,-2.8%,
 all_entities_terror_events,1,-0.088,0.086,-1.021,0.313,-0.262,0.086,-8.4%,
-all_entities_terror_events,2,-0.176,0.079,-2.221,0.032,-0.335,-0.016,-16.1%,**
+all_entities_terror_events,2,-0.176,0.079,-2.221,0.032,-0.335,-0.016,-16.1%,*
 political_parties_political_events,-2,-0.161,0.299,-0.538,0.601,-0.813,0.491,-14.9%,
-political_parties_political_events,-1,-0.583,0.287,-2.032,0.065,-1.209,0.042,-44.2%,*
+political_parties_political_events,-1,-0.583,0.287,-2.032,0.065,-1.209,0.042,-44.2%,.
 political_parties_political_events,1,-0.168,0.097,-1.725,0.110,-0.381,0.044,-15.5%,
 political_parties_political_events,2,-0.194,0.243,-0.800,0.439,-0.724,0.335,-17.7%,
 political_parties_terror_events,-2,0.174,0.267,0.651,0.536,-0.458,0.806,+19.0%,
@@ -34,4 +34,4 @@ other_orgs_people_political_events,2,-0.038,0.130,-0.290,0.773,-0.301,0.226,-3.7
 other_orgs_people_terror_events,-2,0.052,0.079,0.656,0.516,-0.109,0.212,+5.3%,
 other_orgs_people_terror_events,-1,-0.019,0.077,-0.245,0.808,-0.174,0.137,-1.9%,
 other_orgs_people_terror_events,1,-0.077,0.092,-0.838,0.408,-0.262,0.109,-7.4%,
-other_orgs_people_terror_events,2,-0.196,0.083,-2.375,0.023,-0.364,-0.028,-17.8%,**
+other_orgs_people_terror_events,2,-0.196,0.083,-2.375,0.023,-0.364,-0.028,-17.8%,*

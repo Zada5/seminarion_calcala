@@ -30,7 +30,7 @@ reduction in spend, not a 131% reduction (which would be impossible).
 
 Significance markers
 -------------------------------------------------------------------------
-    ***  p < 0.01    **  p < 0.05    *  p < 0.10
+    ***  p < 0.001    **  p < 0.01    *  p < 0.05    .  p < 0.10
 Standard errors are clustered by entity_name. p-values < 0.001 are shown as
 '<0.001' rather than rounded to 0.000.
 
@@ -228,7 +228,7 @@ relative_week = -2          0.060      0.075        +6.2%     0.426
 relative_week = -1         -0.029      0.076        -2.8%     0.707
 relative_week = +0   (baseline, omitted; estimate fixed at 0)
 relative_week = +1         -0.088      0.086        -8.4%     0.313
-relative_week = +2         -0.176      0.079       -16.1%     0.032   **
+relative_week = +2         -0.176      0.079       -16.1%     0.032    *
 -------------------------------------------------------------------------
 N (stacked event-window obs. used): 784    R^2: 0.521    Adj. R^2: 0.487    Within R^2: 0.006
 
@@ -236,7 +236,7 @@ N (stacked event-window obs. used): 784    R^2: 0.521    Adj. R^2: 0.487    With
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
 relative_week = -2         -0.161      0.299       -14.9%     0.601
-relative_week = -1         -0.583      0.287       -44.2%     0.065    *
+relative_week = -1         -0.583      0.287       -44.2%     0.065    .
 relative_week = +0   (baseline, omitted; estimate fixed at 0)
 relative_week = +1         -0.168      0.097       -15.5%     0.110
 relative_week = +2         -0.194      0.243       -17.7%     0.439
@@ -272,7 +272,7 @@ relative_week = -2          0.052      0.079        +5.3%     0.516
 relative_week = -1         -0.019      0.077        -1.9%     0.808
 relative_week = +0   (baseline, omitted; estimate fixed at 0)
 relative_week = +1         -0.077      0.092        -7.4%     0.408
-relative_week = +2         -0.196      0.083       -17.8%     0.023   **
+relative_week = +2         -0.196      0.083       -17.8%     0.023    *
 -------------------------------------------------------------------------
 N (stacked event-window obs. used): 711    R^2: 0.538    Adj. R^2: 0.508    Within R^2: 0.007
 
@@ -331,17 +331,17 @@ relative_week = -2          0.089      0.071        +9.3%     0.215
 relative_week = -1   (baseline, omitted; estimate fixed at 0)
 relative_week = +0          0.029      0.076        +2.9%     0.707
 relative_week = +1         -0.059      0.085        -5.7%     0.490
-relative_week = +2         -0.147      0.083       -13.7%     0.083    *
+relative_week = +2         -0.147      0.083       -13.7%     0.083    .
 -------------------------------------------------------------------------
 N (stacked event-window obs. used): 784    R^2: 0.521    Adj. R^2: 0.487    Within R^2: 0.006
 
 (6) political_parties_political_events
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-relative_week = -2          0.422      0.225       +52.5%     0.085    *
+relative_week = -2          0.422      0.225       +52.5%     0.085    .
 relative_week = -1   (baseline, omitted; estimate fixed at 0)
-relative_week = +0          0.583      0.287       +79.2%     0.065    *
-relative_week = +1          0.415      0.231       +51.4%     0.097    *
+relative_week = +0          0.583      0.287       +79.2%     0.065    .
+relative_week = +1          0.415      0.231       +51.4%     0.097    .
 relative_week = +2          0.389      0.423       +47.5%     0.376
 -------------------------------------------------------------------------
 N (stacked event-window obs. used): 180    R^2: 0.415    Adj. R^2: 0.329    Within R^2: 0.023
@@ -363,7 +363,7 @@ Variable                 Estimate  Std. Err.   Pct change   p-value  sig
 relative_week = -2         -0.026      0.068        -2.6%     0.704
 relative_week = -1   (baseline, omitted; estimate fixed at 0)
 relative_week = +0         -0.059      0.055        -5.7%     0.292
-relative_week = +1         -0.158      0.085       -14.6%     0.071    *
+relative_week = +1         -0.158      0.085       -14.6%     0.071    .
 relative_week = +2         -0.096      0.115        -9.2%     0.407
 -------------------------------------------------------------------------
 N (stacked event-window obs. used): 859    R^2: 0.357    Adj. R^2: 0.318    Within R^2: 0.002
@@ -375,7 +375,7 @@ relative_week = -2          0.071      0.068        +7.3%     0.308
 relative_week = -1   (baseline, omitted; estimate fixed at 0)
 relative_week = +0          0.019      0.077        +1.9%     0.808
 relative_week = +1         -0.058      0.093        -5.6%     0.539
-relative_week = +2         -0.177      0.086       -16.3%     0.046   **
+relative_week = +2         -0.177      0.086       -16.3%     0.046    *
 -------------------------------------------------------------------------
 N (stacked event-window obs. used): 711    R^2: 0.538    Adj. R^2: 0.508    Within R^2: 0.007
 
@@ -456,7 +456,7 @@ relative_week = -2          0.013      0.115        +1.3%     0.914
 relative_week = -1         -0.030      0.115        -3.0%     0.796
 relative_week = +0   (baseline, omitted; estimate fixed at 0)
 relative_week = +1          0.144      0.099       +15.5%     0.168
-relative_week = +2          0.250      0.116       +28.4%     0.047   **
+relative_week = +2          0.250      0.116       +28.4%     0.047    *
 -------------------------------------------------------------------------
 N (stacked event-window obs. used): 687    R^2: 0.502    Adj. R^2: 0.468    Within R^2: 0.007
 
@@ -544,7 +544,7 @@ N (stacked event-window obs. used): 3,874    R^2: 0.332    Adj. R^2: 0.316    Wi
 (6) political_parties_political_events
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-relative_week = -2         -0.147      0.075       -13.7%     0.070    *
+relative_week = -2         -0.147      0.075       -13.7%     0.070    .
 relative_week = -1   (baseline, omitted; estimate fixed at 0)
 relative_week = +0         -0.015      0.101        -1.5%     0.886
 relative_week = +1         -0.064      0.115        -6.2%     0.589
@@ -559,7 +559,7 @@ relative_week = -2          0.043      0.102        +4.4%     0.680
 relative_week = -1   (baseline, omitted; estimate fixed at 0)
 relative_week = +0          0.030      0.115        +3.1%     0.796
 relative_week = +1          0.174      0.137       +19.0%     0.225
-relative_week = +2          0.280      0.138       +32.3%     0.060    *
+relative_week = +2          0.280      0.138       +32.3%     0.060    .
 -------------------------------------------------------------------------
 N (stacked event-window obs. used): 687    R^2: 0.502    Adj. R^2: 0.468    Within R^2: 0.007
 
@@ -633,8 +633,8 @@ N (stacked event-window obs. used): 144    R^2: 0.679    Adj. R^2: 0.566    With
 (2) oct7_political_parties
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-relative_week = -2          1.787      0.402      +497.0%     0.021   **
-relative_week = -1          1.082      0.402      +195.1%     0.074    *
+relative_week = -2          1.787      0.402      +497.0%     0.021    *
+relative_week = -1          1.082      0.402      +195.1%     0.074    .
 relative_week = +0   (baseline, omitted; estimate fixed at 0)
 relative_week = +1          0.408      0.246       +50.4%     0.196
 -------------------------------------------------------------------------
@@ -671,7 +671,7 @@ N (stacked event-window obs. used): 144    R^2: 0.679    Adj. R^2: 0.566    With
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
 relative_week = -2          0.705      0.804      +102.3%     0.445
 relative_week = -1   (baseline, omitted; estimate fixed at 0)
-relative_week = +0         -1.082      0.402       -66.1%     0.074    *
+relative_week = +0         -1.082      0.402       -66.1%     0.074    .
 relative_week = +1         -0.674      0.329       -49.0%     0.133
 -------------------------------------------------------------------------
 N (stacked event-window obs. used): 13    R^2: 0.708    Adj. R^2: 0.299    Within R^2: 0.557

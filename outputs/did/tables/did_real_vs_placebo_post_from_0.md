@@ -2,7 +2,7 @@
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | all_entities_all_events | All entities x all events | -0.061 | 0.052 | 0.239 | -0.165 | 0.042 | 1825 | 59 | 12 | 0.001 | 0.018 | 0.022 | 0.418 | -0.026 | 0.063 | 9138 | 65 | 60 | 0.000 |
 | political_parties_all_events | Political parties x all events | 0.100 | 0.196 | 0.621 | -0.328 | 0.528 | 253 | 13 | 12 | 0.002 | 0.078 | 0.079 | 0.341 | -0.090 | 0.246 | 1544 | 17 | 60 | 0.001 |
-| other_orgs_people_all_events | Other orgs/people x all events | -0.091* | 0.052 | 0.089 | -0.197 | 0.014 | 1572 | 46 | 12 | 0.001 | 0.007 | 0.021 | 0.750 | -0.036 | 0.049 | 7594 | 48 | 60 | 0.000 |
+| other_orgs_people_all_events | Other orgs/people x all events | -0.091. | 0.052 | 0.089 | -0.197 | 0.014 | 1572 | 46 | 12 | 0.001 | 0.007 | 0.021 | 0.750 | -0.036 | 0.049 | 7594 | 48 | 60 | 0.000 |
 | all_entities_political_events | All entities x political events | -0.042 | 0.075 | 0.580 | -0.192 | 0.108 | 1039 | 54 | 7 | 0.000 | 0.013 | 0.030 | 0.675 | -0.048 | 0.073 | 5262 | 62 | 35 | 0.000 |
 | all_entities_terror_events | All entities x terror events | -0.104 | 0.067 | 0.126 | -0.239 | 0.031 | 784 | 42 | 5 | 0.002 | 0.021 | 0.033 | 0.535 | -0.046 | 0.088 | 3874 | 64 | 25 | 0.000 |
 | political_parties_political_events | Political parties x political events | 0.252 | 0.287 | 0.396 | -0.372 | 0.877 | 180 | 13 | 7 | 0.009 | 0.027 | 0.100 | 0.791 | -0.187 | 0.241 | 856 | 16 | 35 | 0.000 |
