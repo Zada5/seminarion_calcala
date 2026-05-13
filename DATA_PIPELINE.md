@@ -315,12 +315,24 @@ outputs/analysis/descriptive/descriptive_yearly_group_spend_line.png
 outputs/analysis/descriptive/descriptive_yearly_group_spend_line.pdf
 ```
 
+Related paper-ready Table 1 outputs from the same descriptive step are written under:
+
+```text
+outputs/analysis/tables/sample_statistics_he.csv
+outputs/analysis/tables/sample_statistics_he.md
+outputs/analysis/tables/sample_statistics_he.html
+outputs/analysis/tables/sample_statistics_he.tex
+outputs/analysis/tables/sample_statistics_he.png
+outputs/analysis/tables/statistics_table.png
+```
+
 What this step summarizes:
 
 - total spend in ILS
 - mean, median, standard deviation, min, quartiles, and max spend
 - row counts, week counts, and entity counts
 - first and last week in each summarized slice
+- a paper-ready Hebrew "Table 1" sample-statistics table, sourced from `descriptive_overall.csv`
 - spend by entity group
 - spend by calendar year
 - spend before vs. after October 7, 2023
@@ -357,6 +369,7 @@ What the script does:
 - reads real events and converts them to Sunday-start event weeks
 - reads and validates the canonical placebo event list
 - creates or refreshes the descriptive spend tables in `outputs/analysis/descriptive/`
+- creates or refreshes `outputs/analysis/tables/sample_statistics_he.*`, the paper-ready Hebrew Table 1 built from the latest `descriptive_overall.csv` values
 - creates weekly event-count and spend-correlation outputs
 - builds stacked event windows around real and placebo events
 - drops rows with `weekly_spend_ils <= 0` before log regressions
@@ -450,6 +463,7 @@ outputs/did/summaries/regression_summary.txt
 | Placebo event generator | `scripts/03_generate_placebo_events.py` | maintained script with fixed date/count/seed parameters | `data/generated/placebo_events_2020_2025.csv` |
 | Placebo event list | `data/generated/placebo_events_2020_2025.csv` | `scripts/03_generate_placebo_events.py` | `scripts/05_event_study.R`, `scripts/06_did.R` |
 | Descriptive outputs | `outputs/analysis/descriptive/*.csv` | dedicated descriptive R step / descriptive block in `scripts/05_event_study.R` | data hygiene review, seminar descriptive tables |
+| Paper Table 1 sample statistics | `outputs/analysis/tables/sample_statistics_he.{csv,md,html,tex,png}` and compatibility image `outputs/analysis/tables/statistics_table.png` | `scripts/05_event_study.R` descriptive presentation block, sourced from `descriptive_overall.csv` | seminar paper descriptive-statistics table |
 | Event-study outputs | `outputs/analysis/**` | `scripts/05_event_study.R` | seminar tables, figures, interpretation |
 | DiD outputs | `outputs/did/**` | `scripts/06_did.R` | seminar tables, figures, interpretation |
 | Combined total reference | `data/reference/Total_Spend_Per_Party_or_Entity.xlsx` | separate combined total aggregation | quick total-spend lookup |

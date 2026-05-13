@@ -200,6 +200,7 @@ For the seminar paper / presentation, use these compact final tables first:
 
 | Purpose | Final table to open | Canonical source data |
 | --- | --- | --- |
+| Descriptive Table 1 / sample statistics | `outputs/analysis/tables/sample_statistics_he.png`, `.html`, `.tex`, or `.csv` | `outputs/analysis/descriptive/descriptive_overall.csv` |
 | Event-study regression table | `outputs/analysis/tables/event_study_panel_summary_baseline_minus1.xlsx` | `outputs/analysis/tables/event_study_key_results_baseline_minus1.csv` |
 | Difference-in-differences regression table | `outputs/did/tables/did_panel_summary_post_from_0.xlsx` | `outputs/did/tables/did_key_results_post_from_0.csv` |
 | Descriptive summary by entity type | `outputs/analysis/tables/descriptive_entity_type_summary_he.html` or `.csv` | `outputs/analysis/descriptive/descriptive_by_group.csv` |
@@ -219,7 +220,7 @@ The `.xlsx` files are the human-friendly versions that match the requested semin
 | Manual cleaning | `data/processed/first_cleaning/` and manual review | first/second cleaning process | `data/processed/cleaned_data/*.csv`, then preferred inputs in `data/processed/second_cleaning/*.csv` |
 | Placebo event generation | Fixed date/count/seed parameters in the script | `python3 scripts/03_generate_placebo_events.py` | `data/generated/placebo_events_2020_2025.csv` |
 | Main event-study analysis | `data/processed/second_cleaning/*.csv` + event timeline + placebo file | `Rscript scripts/05_event_study.R` | `outputs/analysis/` |
-| Hebrew descriptive presentation tables and chart | `outputs/analysis/descriptive/descriptive_by_group.csv`, `descriptive_by_year.csv`, `descriptive_by_year_and_group.csv` | `scripts/05_event_study.R` descriptive presentation block | `outputs/analysis/tables/descriptive_*_he.{csv,md,html}` and `outputs/analysis/descriptive/descriptive_yearly_group_spend_line.{png,pdf}` |
+| Hebrew descriptive presentation tables and chart | `outputs/analysis/descriptive/descriptive_overall.csv`, `descriptive_by_group.csv`, `descriptive_by_year.csv`, `descriptive_by_year_and_group.csv` | `scripts/05_event_study.R` descriptive presentation block | `outputs/analysis/tables/sample_statistics_he.{csv,md,html,tex,png}`, `outputs/analysis/tables/descriptive_*_he.{csv,md,html}`, and `outputs/analysis/descriptive/descriptive_yearly_group_spend_line.{png,pdf}` |
 | Real/placebo weekly correlations | Same inputs as event study | `scripts/05_event_study.R` correlation block | `outputs/analysis/correlations/*` and `outputs/analysis/tables/correlation_*` |
 | Event-study regression figures and tables | Same inputs as event study | `scripts/05_event_study.R` event-study block | `outputs/analysis/event_study/*` and `outputs/analysis/tables/event_study_key_results_baseline_minus1.*` |
 | Compact event-study presentation table | `event_study_key_results_baseline_minus1.csv` | table-formatting step | `outputs/analysis/tables/event_study_panel_summary_baseline_minus1.*` |
@@ -461,7 +462,7 @@ Different output files report different `N` values. **All come from the same sou
 
 | N | Where it appears | What it counts |
 |---|---|---|
-| **9,548** | `descriptive_overall.csv` (`total_rows`); `event_study_design_overview.csv` (`full_descriptive_weekly_rows`) | Unique **entity-week** rows in the cleaned weekly panel |
+| **9,548** | `descriptive_overall.csv` (`total_rows`); `event_study_design_overview.csv` (`full_descriptive_weekly_rows`); `sample_statistics_he.*` (`סך תצפיות`) | Unique **entity-platform-week** rows in the cleaned weekly panel |
 | **1,827** | `event_study_design_overview.csv` (`stacked_event_window_rows`) | Rows after **stacked event-study** construction around the 12 v4 events. Entity-weeks falling inside multiple ±k event windows are duplicated, one copy per event. `extra_rows_from_stacking = 169`, `unique_weekly_rows_in_windows = 1,658` |
 | **1,825** | `event_study_model_fit.csv` (`used_rows`) | `1,827 − 2` rows dropped by `fixest` as singleton fixed-effect / collinear observations |
 | **313** | `correlation_summary.csv` (`weeks_in_sample`) | Weekly time-series length after collapsing the panel to one row per ISO week |
@@ -478,8 +479,8 @@ Different output files report different `N` values. **All come from the same sou
 
 ### פירוט
 
-1. **9,548 — שורות בפאנל הגולמי (entity-week).**
-   זה מספר השורות הייחודיות בפאנל השבועי הנקי: כל שורה = ישות אחת (מפלגה / ארגון / אדם) בשבוע אחד. זה ה־N של הסטטיסטיקות התיאוריות.
+1. **9,548 — שורות בפאנל הגולמי (entity-platform-week).**
+   זה מספר השורות הייחודיות בפאנל השבועי הנקי: כל שורה = ישות אחת (מפלגה / ארגון / אדם), בפלטפורמה אחת, בשבוע אחד. זה ה־N של הסטטיסטיקות התיאוריות ושל `sample_statistics_he.*`.
 
 2. **1,827 — שורות אחרי בנייה של stacked event study.**
    במחקר event study בשיטה stacked, סביב כל אירוע אנחנו "חותכים" חלון של ±k שבועות. אם אותו entity-week נופל בתוך חלון של **שני אירועים** או יותר, הוא מופיע **פעמיים** (או יותר) בדאטה — פעם אחת לכל אירוע. זה חלק מהמתודולוגיה, לא באג.
