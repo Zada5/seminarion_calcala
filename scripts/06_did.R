@@ -191,6 +191,47 @@ write_clean_csv <- function(dataframe, file_path, digits = 3L) {
   readr::write_csv(format_output_table(dataframe, digits = digits), file_path, na = "")
 }
 
+repair_angle_escaped_utf8 <- function(values) {
+  repair_one <- function(value) {
+    if (is.na(value) || !grepl("(<[0-9A-Fa-f]{2}>)+", value)) {
+      return(value)
+    }
+
+    matches <- gregexpr("(<[0-9A-Fa-f]{2}>)+", value, perl = TRUE)[[1]]
+    if (identical(matches[[1]], -1L)) {
+      return(value)
+    }
+
+    match_lengths <- attr(matches, "match.length")
+    repaired <- value
+    for (match_index in rev(seq_along(matches))) {
+      matched_text <- substr(
+        value,
+        matches[[match_index]],
+        matches[[match_index]] + match_lengths[[match_index]] - 1L
+      )
+      hex_values <- unlist(regmatches(matched_text, gregexpr("[0-9A-Fa-f]{2}", matched_text, perl = TRUE)))
+      decoded_text <- rawToChar(as.raw(strtoi(hex_values, base = 16L)))
+      Encoding(decoded_text) <- "UTF-8"
+      substring(repaired, matches[[match_index]], matches[[match_index]] + match_lengths[[match_index]] - 1L) <- decoded_text
+    }
+    repaired
+  }
+
+  vapply(as.character(values), repair_one, character(1), USE.NAMES = FALSE)
+}
+
+repair_table_text_encoding <- function(dataframe) {
+  names(dataframe) <- repair_angle_escaped_utf8(names(dataframe))
+  dataframe %>%
+    dplyr::mutate(
+      dplyr::across(
+        .cols = where(is.character),
+        .fns = repair_angle_escaped_utf8
+      )
+    )
+}
+
 write_formatted_table <- function(dataframe, summary_connection, digits = 3L) {
   if (nrow(dataframe) == 0) {
     writeLines("No rows.", con = summary_connection)
@@ -725,6 +766,7 @@ write_panel_summary_outputs <- function(summary_table,
                                         latex_caption,
                                         latex_label,
                                         note_text) {
+  summary_table <- repair_table_text_encoding(summary_table)
   readr::write_csv(summary_table, paste0(output_base_path, ".csv"), na = "")
   write_markdown_table(summary_table, paste0(output_base_path, ".md"))
   write_html_presentation_table(

@@ -1,10 +1,10 @@
 model_name,model_status,used_rows,r2,within_r2,adjusted_r2,input_rows,unique_weekly_rows,stacked_extra_rows,input_entities,input_events,first_week,last_week
-all_entities_all_events,ok,11355,0.287,0.000,0.279,11355,6013,5342,65,75,2020-01-26,2025-12-21
+all_entities_all_events,ok,11355,0.287,0.000,0.278,11355,6013,5342,65,75,2020-01-26,2025-12-21
 political_parties_all_events,ok,2156,0.488,0.000,0.466,2156,1121,1035,17,75,2020-01-26,2025-12-21
-other_orgs_people_all_events,ok,9199,0.305,0.000,0.295,9199,4892,4307,48,75,2020-01-26,2025-12-21
+other_orgs_people_all_events,ok,9199,0.304,0.000,0.294,9199,4892,4307,48,75,2020-01-26,2025-12-21
 all_entities_political_events,ok,4109,0.394,0.000,0.381,4111,3189,922,63,27,2020-01-26,2025-11-23
 all_entities_terror_events,ok,7244,0.272,0.000,0.261,7244,4674,2570,64,48,2020-02-02,2025-12-21
 political_parties_political_events,ok,680,0.430,0.005,0.394,682,541,141,15,27,2020-01-26,2025-11-23
 political_parties_terror_events,ok,1474,0.503,0.000,0.480,1474,931,543,17,48,2020-02-02,2025-12-21
-other_orgs_people_political_events,ok,3429,0.402,0.000,0.389,3429,2648,781,48,27,2020-01-26,2025-11-23
-other_orgs_people_terror_events,ok,5770,0.276,0.000,0.264,5770,3743,2027,47,48,2020-02-02,2025-12-21
+other_orgs_people_political_events,ok,3429,0.402,0.000,0.388,3429,2648,781,48,27,2020-01-26,2025-11-23
+other_orgs_people_terror_events,ok,5770,0.275,0.000,0.262,5770,3743,2027,47,48,2020-02-02,2025-12-21

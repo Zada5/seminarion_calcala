@@ -108,7 +108,7 @@ Both analysis scripts read this root file directly. They validate that placebo d
 
 The descriptive outputs count the cleaned weekly spend panel: one row per
 entity/platform/Sunday-start week inside `2020-01-05` through `2025-12-28`.
-In the current preferred second-cleaning inputs this is `9,548` rows.
+In the current preferred second-cleaning inputs this is `9,549` rows.
 
 The event-study and DiD outputs use stacked event-window panels. Each cleaned
 weekly row is crossed with the real or placebo events and only rows inside

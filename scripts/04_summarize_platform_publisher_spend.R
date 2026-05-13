@@ -110,7 +110,8 @@ read_weekly_spend_file <- function(file_path) {
     stop(file_path, " missing columns: ", paste(missing_columns, collapse = ", "))
   }
 
-  weekly_spend
+  weekly_spend %>%
+    dplyr::mutate(week_start_sunday = as.character(week_start_sunday))
 }
 
 weekly_spend_panel <- dplyr::bind_rows(

@@ -66,7 +66,7 @@ the same 2020-2025 window after conversion to the Sunday event week.
 
 Descriptive tables count the cleaned weekly spend panel: one
 entity-platform-week row in the 2020-2025 seminar window. In the current
-second-cleaning inputs this is `9,548` rows.
+second-cleaning inputs this is `9,549` rows.
 
 Regression tables count stacked event-window observations. The scripts first
 cross the weekly spend panel with the event list, keep only rows inside the
@@ -457,30 +457,30 @@ Common extensions that can be added safely:
 
 ---
 
-## Sample Size Conventions (N = 9,548 vs 3,887 vs 313)
+## Sample Size Conventions (N = 9,549 vs 3,887 vs 313)
 
 Different output files report different `N` values. **All come from the same source data and the same filters** — they differ only in the *unit of aggregation*.
 
 | N | Where it appears | What it counts |
 |---|---|---|
-| **9,548** | `descriptive_overall.csv` (`total_rows`); `event_study_design_overview.csv` (`full_descriptive_weekly_rows`); `sample_statistics_he.*` (`סך תצפיות`) | Unique **entity-platform-week** rows in the cleaned weekly panel |
+| **9,549** | `descriptive_overall.csv` (`total_rows`); `event_study_design_overview.csv` (`full_descriptive_weekly_rows`); `sample_statistics_he.*` (`סך תצפיות`) | Unique **entity-platform-week** rows in the cleaned weekly panel |
 | **3,888** | `event_study_design_overview.csv` (`stacked_event_window_rows`) | Rows after **stacked event-study** construction around the 25 v4 events. Entity-weeks falling inside multiple ±k event windows are duplicated, one copy per event. `extra_rows_from_stacking = 963`, `unique_weekly_rows_in_windows = 2,925` |
 | **3,887** | `event_study_model_fit.csv` (`used_rows`) | `3,888 - 1` row dropped by `fixest` as singleton fixed-effect / collinear observation |
 | **313** | `correlation_summary.csv` (`weeks_in_sample`) | Weekly time-series length after collapsing the panel to one row per ISO week |
 
-**Sanity check that all numbers share one source:** `descriptive_overall.csv` `total_rows = 9,548` is identical to `event_study_design_overview.csv` `full_descriptive_weekly_rows = 9,548`. The event-study and correlation files are computed *from* that same panel — no extra filter is applied or removed.
+**Sanity check that all numbers share one source:** `descriptive_overall.csv` `total_rows = 9,549` is identical to `event_study_design_overview.csv` `full_descriptive_weekly_rows = 9,549`. The event-study and correlation files are computed *from* that same panel — no extra filter is applied or removed.
 
 ---
 
 ## הסבר בעברית — למה ה־N שונה בקבצים שונים?
 
-שאלה טבעית: למה בקבצים התיאוריים (descriptive) רואים `N = 9,548`, ובמודל ה־event study רואים `N = 3,887`, ובקורלציות רואים `N = 313`? האם שכחתי פילטר?
+שאלה טבעית: למה בקבצים התיאוריים (descriptive) רואים `N = 9,549`, ובמודל ה־event study רואים `N = 3,887`, ובקורלציות רואים `N = 313`? האם שכחתי פילטר?
 
 **תשובה קצרה: לא. אותו מקור נתונים, אותם פילטרים, רק יחידת ניתוח שונה.**
 
 ### פירוט
 
-1. **9,548 — שורות בפאנל הגולמי (entity-platform-week).**
+1. **9,549 — שורות בפאנל הגולמי (entity-platform-week).**
    זה מספר השורות הייחודיות בפאנל השבועי הנקי: כל שורה = ישות אחת (מפלגה / ארגון / אדם), בפלטפורמה אחת, בשבוע אחד. זה ה־N של הסטטיסטיקות התיאוריות ושל `sample_statistics_he.*`.
 
 2. **3,888 — שורות אחרי בנייה של stacked event study.**
@@ -497,8 +497,8 @@ Different output files report different `N` values. **All come from the same sou
 
 ### בדיקת שפיות
 
-- `descriptive_overall.csv` → `total_rows = 9,548`
-- `event_study_design_overview.csv` → `full_descriptive_weekly_rows = 9,548`
+- `descriptive_overall.csv` → `total_rows = 9,549`
+- `event_study_design_overview.csv` → `full_descriptive_weekly_rows = 9,549`
 
 המספר הזהה מוכיח שגם הסטטיסטיקות התיאוריות וגם ה־event study בנויים על **אותו פאנל בדיוק**. אין פילטר נוסף או חסר.
 
@@ -507,24 +507,24 @@ Different output files report different `N` values. **All come from the same sou
 ב־DiD משתמשים באותה שיטה של stacked design, ולכן רואים בדיוק את אותם המספרים:
 
 **DiD על האירועים האמיתיים** (`outputs/did/post_from_0/`):
-- `full_descriptive_weekly_rows = 9,548` — אותו פאנל בדיוק כמו בתיאורי וב־event study.
+- `full_descriptive_weekly_rows = 9,549` — אותו פאנל בדיוק כמו בתיאורי וב־event study.
 - `total_rows = 3,888` — אחרי stacking (2,925 ייחודיות + 963 שכפולים מחפיפת חלונות).
 - `used_rows = 3,887` — שורה אחת נפלה כ־singleton.
 
 **DiD על הפלצבו** (`outputs/did/placebo/post_from_0/`):
-- `full_descriptive_weekly_rows = 9,548` — שוב אותו פאנל. הוכחה לעקביות.
+- `full_descriptive_weekly_rows = 9,549` — שוב אותו פאנל. הוכחה לעקביות.
 - `total_rows = 11,355` — שונה מ־3,888 כי יש 75 אירועי פלצבו, אז יש יותר חלונות ויותר חפיפה (6,013 ייחודיות + 5,342 שכפולים).
 - `used_rows = 11,355` — לא נפלו שורות במודל הכללי.
 
 **DiD של שביעי באוקטובר** (`outputs/did/oct7/post_from_0/`):
 המספרים קטנים בהרבה (`used_rows = 144` למודל הכללי, `13` למפלגות בלבד) כי יש אירוע אחד בלבד, חלון אחד, ואין stacking של חלונות חופפים.
 
-**הכלל**: בכל קובץ design overview (תיאורי, event study, DiD רגיל, DiD פלצבו) חוזר אותו מספר 9,548 בעמודה `full_descriptive_weekly_rows`. זה הוכחה שכל הניתוחים בנויים על אותו פאנל בדיוק, אותם פילטרים, אותם תאריכים. ההפרש הקטן בין `total_rows` ל־`used_rows` הוא singletons שהחבילה הסטטיסטית מורידה — לא באג, לא פילטר חסר.
+**הכלל**: בכל קובץ design overview (תיאורי, event study, DiD רגיל, DiD פלצבו) חוזר אותו מספר 9,549 בעמודה `full_descriptive_weekly_rows`. זה הוכחה שכל הניתוחים בנויים על אותו פאנל בדיוק, אותם פילטרים, אותם תאריכים. ההפרש הקטן בין `total_rows` ל־`used_rows` הוא singletons שהחבילה הסטטיסטית מורידה — לא באג, לא פילטר חסר.
 
 ### מה לומר למרצה
 
 בכל טבלה, פשוט לציין את יחידת הניתוח:
-- תיאורי: "N = 9,548 תצפיות entity-week."
+- תיאורי: "N = 9,549 תצפיות entity-week."
 - Event study: "Stacked design: N = 3,887 תצפיות מודל (2,925 entity-weeks ייחודיים + 963 שכפולים מ־overlap בין חלונות אירועים; 1 הורדה על־ידי `fixest` כ־singleton)."
 - קורלציות: "N = 313 תצפיות שבועיות (הפאנל קופל לסדרה שבועית)."
 - DiD על אירועים אמיתיים: "Stacked DiD: N = 3,887 (2,925 entity-weeks ייחודיים + 963 שכפולים מחפיפת חלונות; 1 singleton הורד)."

@@ -1,13 +1,13 @@
 | Statistic | All entities x all events | Political parties x all events | Other orgs/people x all events | All entities x political events | All entities x terror events | Political parties x political events | Political parties x terror events | Other orgs/people x political events | Other orgs/people x terror events |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| PostEvent | -0.059. | 0.041 | -0.078* | -0.063 | -0.061 | 0.213 | 0.005 | -0.111. | -0.070. |
+| PostEvent | -0.059* | 0.041 | -0.078* | -0.063 | -0.061 | 0.213 | 0.005 | -0.111. | -0.070. |
 | Std. Error | (0.030) | (0.085) | (0.032) | (0.062) | (0.039) | (0.234) | (0.156) | (0.060) | (0.041) |
-| P-value | 0.050 | 0.636 | 0.019 | 0.320 | 0.126 | 0.381 | 0.974 | 0.071 | 0.094 |
+| P-value | 0.050 | 0.636 | 0.018 | 0.320 | 0.125 | 0.381 | 0.974 | 0.071 | 0.093 |
 | Stacked event-window observations | 3887 | 567 | 3320 | 1373 | 2512 | 215 | 352 | 1158 | 2160 |
 | Unique weekly rows in event windows | 2925 | 412 | 2513 | 1261 | 2073 | 204 | 271 | 1057 | 1802 |
 | Entities | 65 | 15 | 50 | 57 | 60 | 13 | 14 | 44 | 47 |
 | Events | 25 | 25 | 25 | 9 | 16 | 9 | 16 | 9 | 16 |
-| R-squared | 0.398 | 0.432 | 0.412 | 0.369 | 0.462 | 0.410 | 0.506 | 0.387 | 0.466 |
+| R-squared | 0.398 | 0.432 | 0.412 | 0.369 | 0.462 | 0.410 | 0.506 | 0.387 | 0.465 |
 | Within R-squared | 0.001 | 0.000 | 0.001 | 0.001 | 0.001 | 0.007 | 0.000 | 0.002 | 0.001 |
 | Data-source fixed effects | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | Entity fixed effects | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |

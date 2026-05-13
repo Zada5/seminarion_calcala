@@ -1,10 +1,10 @@
 entity_group,event_scope,correlation_weekly_spend_vs_event_count,p.value,weeks_in_sample,weeks_with_any_event,average_weekly_spend_ils,average_weekly_event_count
-all_entities,all_events,0.041,0.468,313,75,185401.779,0.240
-all_entities,political,-0.059,0.302,313,27,185401.779,0.086
-all_entities,terror,0.094,0.095,313,48,185401.779,0.153
-other_org_or_person,all_events,-0.020,0.730,313,75,144700.657,0.240
-other_org_or_person,political,-0.037,0.515,313,27,144700.657,0.086
-other_org_or_person,terror,0.006,0.921,313,48,144700.657,0.153
+all_entities,all_events,0.041,0.469,313,75,185121.123,0.240
+all_entities,political,-0.059,0.301,313,27,185121.123,0.086
+all_entities,terror,0.094,0.096,313,48,185121.123,0.153
+other_org_or_person,all_events,-0.020,0.726,313,75,144420.001,0.240
+other_org_or_person,political,-0.037,0.513,313,27,144420.001,0.086
+other_org_or_person,terror,0.005,0.925,313,48,144420.001,0.153
 political_party,all_events,0.078,0.169,310,75,41095.004,0.242
 political_party,political,-0.064,0.262,310,27,41095.004,0.087
 political_party,terror,0.143,0.012,310,48,41095.004,0.155
