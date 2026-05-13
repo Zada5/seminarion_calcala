@@ -1,3 +1,3 @@
 model_name,term,estimate,std.error,statistic,p.value,conf.low,conf.high,pct_change,signif
-all_entities_all_events__without_gamma_t (paper baseline),post_event,-0.061,0.052,-1.189,0.239,-0.165,0.042,-6.0%,
+all_entities_all_events__without_gamma_t (paper baseline),post_event,-0.059,0.030,-1.995,0.050,-0.118,0.000,-5.7%,.
 all_entities_all_events__with_gamma_t,post_event,-0.000,0.000,-0.000,1.000,-0.000,0.000,-0.0%,

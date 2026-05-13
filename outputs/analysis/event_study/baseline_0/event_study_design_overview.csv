@@ -1,2 +1,2 @@
 event_window_weeks,full_descriptive_weekly_rows,stacked_event_window_rows,unique_weekly_rows_in_windows,extra_rows_from_stacking,total_entities,total_events,first_week,last_week,out_of_analysis_window_rows
-2,9548,1827,1658,169,61,12,2020-12-13,2024-11-24,0
+2,9548,3888,2925,963,65,25,2020-12-13,2025-09-28,0
