@@ -1,2 +1,2 @@
 model_name,model_status,used_rows,r2,within_r2,adjusted_r2,input_rows,unique_weekly_rows,stacked_extra_rows,input_entities,input_events,first_week,last_week
-all_entities_all_events__with_gamma_t,ok,10038,0.370,-0,0.349,10040,5543,4497,67,66,2020-02-23,2025-08-31
+all_entities_all_events__with_gamma_t,ok,1825,0.372,-0,0.326,1827,1658,169,61,12,2020-12-13,2024-11-24

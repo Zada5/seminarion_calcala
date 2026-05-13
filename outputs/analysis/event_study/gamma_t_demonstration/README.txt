@@ -6,7 +6,7 @@ Panel: all_entities_all_events, +/- 2 weeks around every political/terror event.
 Two regressions are reported here side-by-side in
 event_study_coefficients_comparison.csv:
 
-  (A) without_gamma_t  (the spec used in the rest of analysis_outputs/)
+  (A) without_gamma_t  (the spec used in the rest of outputs/analysis/)
       log_y ~ i(relative_week, ref = 0) | entity_name + data_source + event_id
 
   (B) with_gamma_t     (the textbook canonical TWFE spec we tried first)
