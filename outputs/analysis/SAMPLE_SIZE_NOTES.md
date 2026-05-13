@@ -5,9 +5,9 @@ All files below are built from the **same cleaned weekly panel** with the **same
 | N | File / column | Unit |
 |---|---|---|
 | **9,548** | `descriptive/descriptive_overall.csv` → `total_rows`<br>`event_study/*/event_study_design_overview.csv` → `full_descriptive_weekly_rows` | Unique entity-week rows in the panel |
-| **1,827** | `event_study/*/event_study_design_overview.csv` → `stacked_event_window_rows` | Rows after stacked event-study construction around the 12 v4 events. Entity-weeks inside multiple ±k event windows are duplicated (one copy per event). `extra_rows_from_stacking = 169`. |
-| **1,825** | `event_study/*/event_study_model_fit.csv` → `used_rows` | 1,827 minus 2 rows dropped by `fixest` as singleton FE / collinear |
-| **9,138** | `placebo_event_study/*/placebo_event_study_model_fit.csv` → `used_rows` | Placebo event-study all-entities model on 60 placebo events |
+| **3,888** | `event_study/*/event_study_design_overview.csv` → `stacked_event_window_rows` | Rows after stacked event-study construction around the 25 v4 events. Entity-weeks inside multiple ±k event windows are duplicated (one copy per event). `extra_rows_from_stacking = 963`. |
+| **3,887** | `event_study/*/event_study_model_fit.csv` → `used_rows` | 3,888 minus 1 row dropped by `fixest` as singleton FE / collinear |
+| **11,355** | `placebo_event_study/*/placebo_event_study_model_fit.csv` → `used_rows` | Placebo event-study all-entities model on 75 placebo events |
 | **313** | `correlations/*/correlation_summary.csv` → `weeks_in_sample` | Weekly time-series length (panel collapsed to one row per ISO week) |
 
 **Cross-check:** `descriptive_overall.csv:total_rows (9,548) == event_study_design_overview.csv:full_descriptive_weekly_rows (9,548)`. Identical → no hidden filter difference.
