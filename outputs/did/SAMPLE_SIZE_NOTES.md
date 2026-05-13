@@ -10,8 +10,8 @@ All DiD outputs use the **stacked difference-in-differences** design on the same
 | `placebo/post_from_0/did_design_overview.csv` → `full_descriptive_weekly_rows` | **9,548** | Same source panel as real-event DiD |
 | `placebo/post_from_0/did_design_overview.csv` → `total_rows` | **9,138** | Placebo run uses 60 events → 5,386 unique entity-weeks + 3,752 stacked duplicates |
 | `placebo/post_from_0/did_model_fit.csv` → `used_rows` | **9,138** | No singleton FE rows dropped in the all-entities placebo model |
-| `oct7/post_from_0/did_model_fit_0710_by_group.csv` → `used_rows` (oct7_all_entities) | **144** | Single event, single window, no stacking; 35 entities × ±2 weeks |
-| `oct7/post_from_0/did_model_fit_0710_by_group.csv` → `used_rows` (oct7_political_parties) | **13** | Political-party subset only |
+| `oct7/post_from_0/did_model_fit_oct7_by_group.csv` → `used_rows` (oct7_all_entities) | **144** | Single event, single window, no stacking; 35 entities × ±2 weeks |
+| `oct7/post_from_0/did_model_fit_oct7_by_group.csv` → `used_rows` (oct7_political_parties) | **13** | Political-party subset only |
 
 **Cross-check across all analyses:** every `*_design_overview.csv` reports `full_descriptive_weekly_rows = 9,548`. Confirms identical source panel.
 
