@@ -2110,6 +2110,12 @@ descriptive_yearly_group_spend_plot_data <- yearly_spend_stats_by_group %>%
     entity_group_he = factor(
       entity_group_label_he(entity_group),
       levels = c("גוף פרטי/אזרחי", "מפלגה ממוסדת")
+    ),
+    spend_label = paste0(formatC(total_spend_ils / 1000000, format = "f", digits = 1), "M"),
+    label_y = total_spend_ils + dplyr::case_when(
+      entity_group == "other_org_or_person" ~ 450000,
+      entity_group == "political_party" & calendar_year == 2021 ~ -550000,
+      TRUE ~ 350000
     )
   )
 
@@ -2124,8 +2130,17 @@ descriptive_yearly_group_spend_plot <- ggplot2::ggplot(
 ) +
   ggplot2::geom_line(linewidth = 1.2) +
   ggplot2::geom_point(size = 3.5) +
+  ggplot2::geom_text(
+    ggplot2::aes(y = label_y, label = spend_label),
+    size = 3.2,
+    fontface = "bold",
+    show.legend = FALSE
+  ) +
   ggplot2::scale_x_continuous(breaks = seq(2020, 2025, by = 1)) +
-  ggplot2::scale_y_continuous(labels = scales::label_number(suffix = " M", scale = 1e-6)) +
+  ggplot2::scale_y_continuous(
+    labels = scales::label_number(suffix = " M", scale = 1e-6),
+    expand = ggplot2::expansion(mult = c(0.08, 0.12))
+  ) +
   ggplot2::scale_color_manual(
     values = c("גוף פרטי/אזרחי" = "#1f77b4", "מפלגה ממוסדת" = "#ff7f0e")
   ) +

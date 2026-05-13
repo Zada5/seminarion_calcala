@@ -82,7 +82,7 @@ The canonical placebo event-week file is generated with:
 python3 scripts/03_generate_placebo_events.py
 ```
 
-The generator writes the only placebo-date table, `data/generated/placebo_events_2020_2025.csv`. It samples one distinct Sunday-start placebo week per real event with seed `20260510` from clean weeks in the allowed pool `2020-01-26` through `2025-12-07`. Clean weeks are more than 3 weeks away from every real event week. The script assigns placebo labels to match the real event type counts; with the current v4 event file this is 12 placebo events, split into 7 political and 5 terror/security rows. The R scripts read this one root file directly, validate the same real-event distance rule, and do not create extra placebo-date copies.
+The generator writes the only placebo-date table, `data/generated/placebo_events_2020_2025.csv`. It randomly draws 60 distinct Sunday-start placebo weeks with seed `20260510` from the allowed pool `2020-01-26` through `2025-12-07`, rejecting any draw within 3 weeks of a real event week. The script assigns a 7:5 political-to-security ratio: 35 political rows and 25 terror/security rows. Security placebo rows are stored as `terror` because that is the downstream analysis bucket name. The R scripts read this one root file directly, validate the same real-event distance rule, and do not create extra placebo-date copies.
 
 When changing placebo dates, follow the full placebo refresh checklist in [`DATA_PIPELINE.md`](DATA_PIPELINE.md): regenerate the root CSV, review the clean-week diagnostics, verify row/count/date/distance constraints, rerun both R scripts, and confirm no duplicate placebo-date table was recreated.
 
@@ -511,8 +511,8 @@ Different output files report different `N` values. **All come from the same sou
 
 **DiD על הפלצבו** (`outputs/did/placebo/post_from_0/`):
 - `full_descriptive_weekly_rows = 9,548` — שוב אותו פאנל. הוכחה לעקביות.
-- `total_rows = 1,687` — שונה מ־1,827 כי אירועי הפלצבו אקראיים, אז דפוס החפיפה בין חלונות שונה (1,596 ייחודיות + 91 שכפולים).
-- `used_rows = 1,686` — שורה אחת נפלה.
+- `total_rows = 9,138` — שונה מ־1,827 כי יש 60 אירועי פלצבו, אז יש יותר חלונות ויותר חפיפה (5,386 ייחודיות + 3,752 שכפולים).
+- `used_rows = 9,138` — לא נפלו שורות במודל הכללי.
 
 **DiD של שביעי באוקטובר** (`outputs/did/oct7/post_from_0/`):
 המספרים קטנים בהרבה (`used_rows = 144` למודל הכללי, `13` למפלגות בלבד) כי יש אירוע אחד בלבד, חלון אחד, ואין stacking של חלונות חופפים.
@@ -526,7 +526,7 @@ Different output files report different `N` values. **All come from the same sou
 - Event study: "Stacked design: N = 1,825 תצפיות מודל (1,658 entity-weeks ייחודיים + 169 שכפולים מ־overlap בין חלונות אירועים; 2 הורדו על־ידי `fixest` כ־singletons)."
 - קורלציות: "N = 313 תצפיות שבועיות (הפאנל קופל לסדרה שבועית)."
 - DiD על אירועים אמיתיים: "Stacked DiD: N = 1,825 (1,658 entity-weeks ייחודיים + 169 שכפולים מחפיפת חלונות; 2 singletons הורדו)."
-- DiD על פלצבו: "Stacked DiD על אירועי פלצבו: N = 1,686 (1,596 ייחודיים + 91 שכפולים; 1 singleton הורד)."
+- DiD על פלצבו: "Stacked DiD על 60 אירועי פלצבו: N = 9,138 (5,386 ייחודיים + 3,752 שכפולים; לא נפלו singletons במודל הכללי)."
 - DiD של שביעי באוקטובר: "אירוע יחיד, ללא stacking: N = 144 תצפיות (35 ישויות × חלון של ±2 שבועות)."
 
 ---

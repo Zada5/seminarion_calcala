@@ -1,11 +1,11 @@
 | entity_group | event_scope | model_label | real_correlation | real_p.value | real_weeks_in_sample | real_weeks_with_any_event | placebo_correlation | placebo_p.value | placebo_weeks_in_sample | placebo_weeks_with_any_event |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| all_entities | all_events | All entities x all events | -0.024 | 0.671 | 313 | 12 | -0.046 | 0.417 | 313 | 12 |
-| all_entities | political | All entities x political events | -0.032 | 0.578 | 313 | 7 | -0.062 | 0.272 | 313 | 7 |
-| all_entities | terror | All entities x terror events | 0.000 | 0.996 | 313 | 5 | 0.003 | 0.960 | 313 | 5 |
-| other_org_or_person | all_events | Other orgs/people x all events | 0.012 | 0.826 | 313 | 12 | -0.035 | 0.533 | 313 | 12 |
-| other_org_or_person | political | Other orgs/people x political events | -0.023 | 0.691 | 313 | 7 | -0.076 | 0.182 | 313 | 7 |
-| other_org_or_person | terror | Other orgs/people x terror events | 0.046 | 0.420 | 313 | 5 | 0.035 | 0.536 | 313 | 5 |
-| political_party | all_events | Political parties x all events | -0.045 | 0.435 | 310 | 11 | -0.045 | 0.428 | 310 | 12 |
-| political_party | political | Political parties x political events | -0.032 | 0.571 | 310 | 7 | -0.039 | 0.497 | 310 | 7 |
-| political_party | terror | Political parties x terror events | -0.030 | 0.593 | 310 | 4 | -0.023 | 0.681 | 310 | 5 |
+| all_entities | all_events | All entities x all events | -0.024 | 0.671 | 313 | 12 | 0.018 | 0.747 | 313 | 60 |
+| all_entities | political | All entities x political events | -0.032 | 0.578 | 313 | 7 | -0.000 | 0.997 | 313 | 35 |
+| all_entities | terror | All entities x terror events | 0.000 | 0.996 | 313 | 5 | 0.027 | 0.636 | 313 | 25 |
+| other_org_or_person | all_events | Other orgs/people x all events | 0.012 | 0.826 | 313 | 12 | 0.002 | 0.976 | 313 | 60 |
+| other_org_or_person | political | Other orgs/people x political events | -0.023 | 0.691 | 313 | 7 | -0.014 | 0.812 | 313 | 35 |
+| other_org_or_person | terror | Other orgs/people x terror events | 0.046 | 0.420 | 313 | 5 | 0.018 | 0.749 | 313 | 25 |
+| political_party | all_events | Political parties x all events | -0.045 | 0.435 | 310 | 11 | 0.029 | 0.613 | 310 | 59 |
+| political_party | political | Political parties x political events | -0.032 | 0.571 | 310 | 7 | 0.009 | 0.872 | 310 | 35 |
+| political_party | terror | Political parties x terror events | -0.030 | 0.593 | 310 | 4 | 0.031 | 0.581 | 310 | 24 |
