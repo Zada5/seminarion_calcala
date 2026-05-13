@@ -1,10 +1,10 @@
 model_name,entity_group_filter,event_type_filter,entity_label,event_label,estimate_display,std_error_display,p.value,input_rows,used_rows,unique_weekly_rows,stacked_extra_rows,r2,within_r2
-all_entities_all_events,all,all,All entities,All events,-0.041,(0.064),0.521,1827,1825,1658,169,0.357,0.002
-all_entities_political_events,all,political,All entities,Political events,-0.071,(0.082),0.389,1042,1039,928,114,0.353,0.001
-all_entities_terror_events,all,terror,All entities,Terror events,-0.059,(0.085),0.490,785,784,730,55,0.521,0.006
-political_parties_all_events,political_party,all,Political parties,All events,0.218,(0.177),0.242,254,253,242,12,0.369,0.010
-political_parties_political_events,political_party,political,Political parties,Political events,0.415.,(0.231),0.097,180,180,169,11,0.415,0.023
-political_parties_terror_events,political_party,terror,Political parties,Terror events,0.017,(0.193),0.933,74,73,73,1,0.486,0.021
-other_orgs_people_all_events,other_org_or_person,all,Organizations/people,All events,-0.086,(0.069),0.215,1573,1572,1416,157,0.373,0.002
-other_orgs_people_political_events,other_org_or_person,political,Organizations/people,Political events,-0.158.,(0.085),0.071,862,859,759,103,0.357,0.002
-other_orgs_people_terror_events,other_org_or_person,terror,Organizations/people,Terror events,-0.058,(0.093),0.539,711,711,657,54,0.538,0.007
+all_entities_all_events,all,all,All entities,All events,-0.032,(0.041),0.440,3888,3887,2925,963,0.398,0.001
+all_entities_political_events,all,political,All entities,Political events,-0.065,(0.077),0.396,1375,1373,1261,114,0.369,0.002
+all_entities_terror_events,all,terror,All entities,Terror events,-0.014,(0.053),0.793,2513,2512,2073,440,0.463,0.002
+political_parties_all_events,political_party,all,Political parties,All events,0.132,(0.122),0.296,567,567,412,155,0.433,0.003
+political_parties_political_events,political_party,political,Political parties,Political events,0.379.,(0.204),0.088,215,215,204,11,0.416,0.017
+political_parties_terror_events,political_party,terror,Political parties,Terror events,0.053,(0.178),0.771,352,352,271,81,0.506,0.001
+other_orgs_people_all_events,other_org_or_person,all,Organizations/people,All events,-0.060,(0.044),0.176,3321,3320,2513,808,0.413,0.002
+other_orgs_people_political_events,other_org_or_person,political,Organizations/people,Political events,-0.145.,(0.078),0.069,1160,1158,1057,103,0.387,0.003
+other_orgs_people_terror_events,other_org_or_person,terror,Organizations/people,Terror events,-0.021,(0.056),0.714,2161,2160,1802,359,0.467,0.003
