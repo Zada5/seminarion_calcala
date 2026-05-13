@@ -846,6 +846,39 @@ latex_escape <- function(text_values) {
   text_values
 }
 
+write_latex_simple_table <- function(dataframe, file_path, caption, label, note_text) {
+  table_lines <- c(
+    "\\begin{table}[!htbp]",
+    "\\centering",
+    paste0("\\caption{", latex_escape(caption), "}"),
+    paste0("\\label{", label, "}"),
+    "\\begin{tabular}{lll}",
+    "\\hline\\hline",
+    paste0(paste(latex_escape(names(dataframe)), collapse = " & "), " \\\\"),
+    "\\hline"
+  )
+
+  for (row_index in seq_len(nrow(dataframe))) {
+    row_values <- as.character(dataframe[row_index, , drop = TRUE])
+    table_lines <- c(
+      table_lines,
+      paste0(paste(latex_escape(row_values), collapse = " & "), " \\\\")
+    )
+  }
+
+  table_lines <- c(
+    table_lines,
+    "\\hline",
+    paste0("\\multicolumn{3}{l}{\\footnotesize Notes: ", latex_escape(note_text), "}\\\\"),
+    "\\hline\\hline",
+    "\\end{tabular}",
+    "\\end{table}"
+  )
+
+  writeLines(table_lines, con = file_path)
+  invisible(NULL)
+}
+
 write_latex_matrix_table <- function(matrix_table,
                                      file_path,
                                      caption,
@@ -2024,6 +2057,30 @@ format_ils_he <- function(values) {
   )
 }
 
+format_ils_decimal_he <- function(values, digits = 1L) {
+  ifelse(
+    is.na(values),
+    NA_character_,
+    paste0(
+      formatC(
+        round(as.numeric(values), digits = digits),
+        format = "f",
+        digits = digits,
+        big.mark = ","
+      ),
+      " ש\"ח"
+    )
+  )
+}
+
+format_date_he <- function(values) {
+  ifelse(
+    is.na(values),
+    NA_character_,
+    format(as.Date(values), "%d/%m/%Y")
+  )
+}
+
 format_pct_he <- function(values) {
   truncated_values <- sign(values) * floor(abs(values) * 10) / 10
 
@@ -2058,9 +2115,191 @@ format_million_gap_he <- function(values) {
   )
 }
 
+build_sample_statistics_table_he <- function(overall_stats) {
+  stats_row <- overall_stats %>% dplyr::slice(1)
+
+  tibble::tribble(
+    ~"מדד סטטיסטי", ~"ערך", ~"הסבר קצר",
+    "תקופת הניתוח",
+    paste0(format_date_he(stats_row$analysis_start_week), " - ", format_date_he(stats_row$analysis_end_week)),
+    "תאריכי ההתחלה והסיום של פאנל הנתונים",
+    "סך תצפיות (N)",
+    format_integer_he(stats_row$total_rows),
+    "מספר השורות הכולל במסד הנתונים המסונן",
+    "סך ישויות (מפרסמים)",
+    format_integer_he(stats_row$total_entities),
+    "מספר המפלגות והגופים האזרחיים במדגם",
+    "סך שבועות (T)",
+    format_integer_he(stats_row$total_week_rows),
+    "סך השבועות שנמדדו",
+    "סך הוצאה כוללת",
+    format_ils_he(round(stats_row$total_spend_ils)),
+    "סכום ההוצאות המצטבר בכלל המדגם",
+    "ממוצע הוצאה שבועית",
+    format_ils_decimal_he(stats_row$average_weekly_row_spend_ils, digits = 1L),
+    "ההוצאה הממוצעת לשורה שבועית במדגם",
+    "חציון הוצאה שבועית",
+    format_ils_he(round(stats_row$median_weekly_row_spend_ils)),
+    "הערך החציוני של ההוצאה השבועית",
+    "סטיית תקן",
+    format_ils_decimal_he(stats_row$sd_weekly_row_spend_ils, digits = 1L),
+    "מדד פיזור ההוצאות במדגם",
+    "מינימום הוצאה",
+    format_ils_decimal_he(stats_row$min_weekly_row_spend_ils, digits = 2L),
+    "סכום ההוצאה השבועי המינימלי שנרשם",
+    "P25 אחוזון 25",
+    format_ils_decimal_he(stats_row$p25_weekly_row_spend_ils, digits = 1L),
+    "הרבעון התחתון של ההוצאות",
+    "P75 אחוזון 75",
+    format_ils_decimal_he(stats_row$p75_weekly_row_spend_ils, digits = 1L),
+    "הרבעון העליון של ההוצאות",
+    "מקסימום הוצאה",
+    format_ils_he(round(stats_row$max_weekly_row_spend_ils)),
+    "סכום ההוצאה השבועי המקסימלי שנרשם"
+  )
+}
+
+write_sample_statistics_png <- function(dataframe, file_path, title) {
+  dir.create(dirname(file_path), recursive = TRUE, showWarnings = FALSE)
+
+  width_px <- 1200L
+  height_px <- 1180L
+  if (requireNamespace("ragg", quietly = TRUE)) {
+    ragg::agg_png(
+      filename = file_path,
+      width = width_px,
+      height = height_px,
+      units = "px",
+      res = 150,
+      background = "#f6f8ff"
+    )
+  } else {
+    grDevices::png(
+      filename = file_path,
+      width = width_px,
+      height = height_px,
+      res = 150,
+      bg = "#f6f8ff"
+    )
+  }
+  on.exit(grDevices::dev.off(), add = TRUE)
+
+  grid::grid.newpage()
+  grid::grid.rect(gp = grid::gpar(fill = "#f6f8ff", col = NA))
+
+  left <- 0.035
+  right <- 0.965
+  top <- 0.955
+  bottom <- 0.045
+  table_width <- right - left
+  row_count <- nrow(dataframe)
+  title_height <- 0.082
+  header_height <- 0.058
+  row_height <- (top - bottom - title_height - header_height) / row_count
+  header_y <- top - title_height
+  body_top <- header_y - header_height
+
+  grid::grid.roundrect(
+    x = (left + right) / 2,
+    y = (top + bottom) / 2,
+    width = table_width,
+    height = top - bottom,
+    r = grid::unit(0.018, "npc"),
+    gp = grid::gpar(fill = "white", col = "#dbe4f4", lwd = 1)
+  )
+  grid::grid.roundrect(
+    x = (left + right) / 2,
+    y = top - title_height / 2,
+    width = table_width,
+    height = title_height,
+    r = grid::unit(0.018, "npc"),
+    gp = grid::gpar(fill = "#1f356f", col = "#1f356f", lwd = 0)
+  )
+  grid::grid.rect(
+    x = (left + right) / 2,
+    y = top - title_height + 0.006,
+    width = table_width,
+    height = 0.012,
+    gp = grid::gpar(fill = "#1f356f", col = NA)
+  )
+  grid::grid.text(
+    title,
+    x = 0.5,
+    y = top - title_height / 2,
+    gp = grid::gpar(col = "white", fontsize = 15, fontface = "bold")
+  )
+
+  grid::grid.rect(
+    x = (left + right) / 2,
+    y = header_y - header_height / 2,
+    width = table_width,
+    height = header_height,
+    gp = grid::gpar(fill = "#2f4a91", col = NA)
+  )
+
+  x_metric <- left + table_width * 0.87
+  x_value <- left + table_width * 0.55
+  x_note <- left + table_width * 0.04
+
+  grid::grid.text("מדד סטטיסטי", x = x_metric, y = header_y - header_height / 2,
+                  just = c("right", "center"),
+                  gp = grid::gpar(col = "white", fontsize = 11, fontface = "bold"))
+  grid::grid.text("ערך", x = x_value, y = header_y - header_height / 2,
+                  just = c("center", "center"),
+                  gp = grid::gpar(col = "white", fontsize = 11, fontface = "bold"))
+  grid::grid.text("הסבר קצר", x = x_note, y = header_y - header_height / 2,
+                  just = c("left", "center"),
+                  gp = grid::gpar(col = "white", fontsize = 11, fontface = "bold"))
+
+  for (row_index in seq_len(row_count)) {
+    y_center <- body_top - row_height * (row_index - 0.5)
+    fill_color <- if (row_index %% 2 == 0) "#eef3fb" else "#ffffff"
+
+    grid::grid.rect(
+      x = (left + right) / 2,
+      y = y_center,
+      width = table_width,
+      height = row_height,
+      gp = grid::gpar(fill = fill_color, col = "#dbe4f4", lwd = 0.7)
+    )
+
+    value_text <- as.character(dataframe[row_index, "ערך", drop = TRUE])
+    value_text <- gsub(" ש\"ח", " ₪", value_text, fixed = TRUE)
+    if (row_index == 1L) {
+      value_text <- gsub(" - ", " -\n", value_text, fixed = TRUE)
+    }
+
+    grid::grid.text(
+      as.character(dataframe[row_index, "מדד סטטיסטי", drop = TRUE]),
+      x = x_metric,
+      y = y_center,
+      just = c("right", "center"),
+      gp = grid::gpar(col = "#1c2f61", fontsize = 11.5, fontface = "bold")
+    )
+    grid::grid.text(
+      value_text,
+      x = x_value,
+      y = y_center,
+      just = c("center", "center"),
+      gp = grid::gpar(col = "#2d57b8", fontsize = 12, fontface = "bold", lineheight = 0.9)
+    )
+    grid::grid.text(
+      as.character(dataframe[row_index, "הסבר קצר", drop = TRUE]),
+      x = x_note,
+      y = y_center,
+      just = c("left", "center"),
+      gp = grid::gpar(col = "#7180a1", fontsize = 9.5)
+    )
+  }
+
+  invisible(file_path)
+}
+
 # Presentation-ready Hebrew descriptive tables for the seminar paper/slides.
 # The audit/source tables remain descriptive_by_group.csv,
 # descriptive_by_year.csv, and descriptive_by_year_and_group.csv.
+sample_statistics_he <- build_sample_statistics_table_he(overall_spend_stats)
+
 descriptive_entity_type_summary_he <- spend_stats_by_group %>%
   dplyr::mutate(
     entity_group = factor(entity_group, levels = c("other_org_or_person", "political_party"))
@@ -2927,6 +3166,38 @@ write_clean_csv(yearly_spend_stats, file.path(output_paths$descriptive, "descrip
 write_clean_csv(yearly_spend_stats_by_group, file.path(output_paths$descriptive, "descriptive_by_year_and_group.csv"))
 write_clean_csv(pre_post_oct7_stats, file.path(output_paths$descriptive, "descriptive_pre_post_oct7.csv"))
 readr::write_csv(
+  sample_statistics_he,
+  file.path(output_paths$tables, "sample_statistics_he.csv"),
+  na = ""
+)
+write_markdown_table(
+  sample_statistics_he,
+  file.path(output_paths$tables, "sample_statistics_he.md")
+)
+write_html_presentation_table(
+  sample_statistics_he,
+  file.path(output_paths$tables, "sample_statistics_he.html"),
+  title = "טבלה 1: סטטיסטיקה תיאורית - נתוני הוצאות פרסום שבועיות (2020-2025)",
+  subtitle = "מבוסס על קבצי הניקוי השני; יחידת הניתוח היא שורת גוף-פלטפורמה-שבוע"
+)
+write_latex_simple_table(
+  sample_statistics_he,
+  file.path(output_paths$tables, "sample_statistics_he.tex"),
+  caption = "סטטיסטיקה תיאורית - נתוני הוצאות פרסום שבועיות (2020-2025)",
+  label = "tab:sample_statistics_he",
+  note_text = "הטבלה מבוססת על קבצי הניקוי השני. יחידת הניתוח היא שורת גוף-פלטפורמה-שבוע בטווח השבועות 2020-01-05 עד 2025-12-28."
+)
+write_sample_statistics_png(
+  sample_statistics_he,
+  file.path(output_paths$tables, "sample_statistics_he.png"),
+  title = "טבלה 1: סטטיסטיקה תיאורית - נתוני הוצאות פרסום שבועיות (2020-2025)"
+)
+write_sample_statistics_png(
+  sample_statistics_he,
+  file.path(output_paths$tables, "statistics_table.png"),
+  title = "טבלה 1: סטטיסטיקה תיאורית - נתוני הוצאות פרסום שבועיות (2020-2025)"
+)
+readr::write_csv(
   descriptive_entity_type_summary_he,
   file.path(output_paths$tables, "descriptive_entity_type_summary_he.csv"),
   na = ""
@@ -3407,6 +3678,7 @@ print_section("Output Files")
 cat("Saved descriptive stats and regressions to: ", normalizePath(output_directory), "\n", sep = "")
 cat("- summaries/regression_summary.txt\n")
 cat("- tables/*\n")
+cat("- tables/sample_statistics_he.{csv,md,html,tex,png}\n")
 cat("- tables/descriptive_*_he.{csv,md,html}\n")
 cat("- descriptive/*.csv\n")
 cat("- descriptive/descriptive_yearly_group_spend_line.{png,pdf}\n")
