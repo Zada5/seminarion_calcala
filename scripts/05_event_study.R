@@ -105,13 +105,15 @@ percent_change_from_log <- function(estimate_values) {
   ifelse(is.na(estimate_values), NA_real_, (exp(estimate_values) - 1) * 100)
 }
 
-# Standard significance stars used in applied papers.
+# Match R's default significance codes:
+# *** p < 0.001, ** p < 0.01, * p < 0.05, . p < 0.10.
 significance_stars <- function(p_values) {
   dplyr::case_when(
     is.na(p_values) ~ "",
-    p_values < 0.01 ~ "***",
-    p_values < 0.05 ~ "**",
-    p_values < 0.10 ~ "*",
+    p_values < 0.001 ~ "***",
+    p_values < 0.01 ~ "**",
+    p_values < 0.05 ~ "*",
+    p_values < 0.10 ~ ".",
     TRUE ~ ""
   )
 }
@@ -418,7 +420,7 @@ write_paper_style_header <- function(summary_connection,
 
   writeLines("Significance markers", con = summary_connection)
   writeLines(strrep("-", rule_width), con = summary_connection)
-  writeLines("    ***  p < 0.01    **  p < 0.05    *  p < 0.10", con = summary_connection)
+  writeLines("    ***  p < 0.001    **  p < 0.01    *  p < 0.05    .  p < 0.10", con = summary_connection)
   writeLines("Standard errors are clustered by entity_name. p-values < 0.001 are shown as", con = summary_connection)
   writeLines("'<0.001' rather than rounded to 0.000.", con = summary_connection)
   writeLines("", con = summary_connection)
@@ -3023,7 +3025,7 @@ write_latex_matrix_table(
     "Dependent variable is log weekly spending. The omitted baseline is relative week -1. ",
     "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
     "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
-    "*** p < 0.01, ** p < 0.05, * p < 0.10."
+    "*** p < 0.001, ** p < 0.01, * p < 0.05, . p < 0.10."
   )
 )
 write_html_matrix_table(
@@ -3036,7 +3038,7 @@ write_html_matrix_table(
     "Dependent variable is log weekly spending. The omitted baseline is relative week -1. ",
     "All models include entity and data-source fixed effects; stacked models also include event fixed effects. ",
     "Sample is restricted to Sunday-start weeks from ", analysis_start_week, " through ", analysis_end_week, ". ",
-    "*** p < 0.01, ** p < 0.05, * p < 0.10."
+    "*** p < 0.001, ** p < 0.01, * p < 0.05, . p < 0.10."
   )
 )
 
