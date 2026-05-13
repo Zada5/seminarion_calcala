@@ -1,14 +1,14 @@
 | Statistic | All entities x all events | Political parties x all events | Other orgs/people x all events | All entities x political events | All entities x terror events | Political parties x political events | Political parties x terror events | Other orgs/people x political events | Other orgs/people x terror events |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| PostEvent | 0.060 | 0.115 | 0.062 | 0.082 | -0.004 | 0.088 | 0.196 | 0.092 | -0.036 |
-| Std. Error | (0.047) | (0.101) | (0.050) | (0.069) | (0.080) | (0.175) | (0.194) | (0.074) | (0.089) |
-| P-value | 0.204 | 0.273 | 0.222 | 0.240 | 0.957 | 0.626 | 0.334 | 0.221 | 0.689 |
-| Stacked event-window observations | 1686 | 290 | 1396 | 1007 | 677 | 165 | 124 | 842 | 553 |
-| Unique weekly rows in event windows | 1596 | 274 | 1322 | 1010 | 586 | 167 | 107 | 843 | 479 |
-| Entities | 58 | 14 | 44 | 52 | 50 | 11 | 12 | 41 | 38 |
-| Events | 12 | 12 | 12 | 7 | 5 | 7 | 5 | 7 | 5 |
-| R-squared | 0.360 | 0.406 | 0.356 | 0.391 | 0.508 | 0.475 | 0.495 | 0.373 | 0.511 |
-| Within R-squared | 0.001 | 0.003 | 0.001 | 0.001 | 0.000 | 0.002 | 0.008 | 0.002 | 0.000 |
+| PostEvent | 0.018 | 0.078 | 0.007 | 0.013 | 0.021 | 0.027 | 0.140 | 0.014 | -0.006 |
+| Std. Error | (0.022) | (0.079) | (0.021) | (0.030) | (0.033) | (0.100) | (0.110) | (0.030) | (0.033) |
+| P-value | 0.418 | 0.341 | 0.750 | 0.675 | 0.535 | 0.791 | 0.224 | 0.639 | 0.849 |
+| Stacked event-window observations | 9138 | 1544 | 7594 | 5262 | 3874 | 856 | 687 | 4406 | 3187 |
+| Unique weekly rows in event windows | 5386 | 925 | 4461 | 3661 | 3291 | 606 | 574 | 3055 | 2717 |
+| Entities | 65 | 17 | 48 | 62 | 64 | 16 | 16 | 46 | 48 |
+| Events | 60 | 60 | 60 | 35 | 25 | 35 | 25 | 35 | 25 |
+| R-squared | 0.323 | 0.477 | 0.347 | 0.332 | 0.332 | 0.473 | 0.500 | 0.357 | 0.359 |
+| Within R-squared | 0.000 | 0.001 | 0.000 | 0.000 | 0.000 | 0.000 | 0.003 | 0.000 | 0.000 |
 | Data-source fixed effects | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | Entity fixed effects | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | Event fixed effects | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |

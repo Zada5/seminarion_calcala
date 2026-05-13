@@ -12,13 +12,20 @@ EVENTS_CSV = Path("data/raw/events/Consolidated List of Terror and Political inc
 OUTPUT_CSV = Path("data/generated/placebo_events_2020_2025.csv")
 SEED = 20260510
 
-# Three weeks after the first Sunday week of 2020, and three weeks before
-# the last Sunday week of 2025.
+# The R scripts use +/-2-week event windows and require an extra one-week
+# buffer, so placebo weeks must be more than 3 weeks away from real events.
+MIN_WEEKS_FROM_REAL_EVENT = 3
+
 FIRST_PLACEBO_WEEK = date(2020, 1, 26)
 LAST_PLACEBO_WEEK = date(2025, 12, 7)
 
-# Exclude placebo weeks inside the real event-study neighborhood.
-MIN_WEEKS_FROM_REAL_EVENT = 3
+# Security placebo events are stored as "terror" because the downstream
+# analysis bucket is named terror/security.
+PLACEBO_TYPE_COUNTS = {
+    "political": 35,
+    "terror": 25,
+}
+
 
 def parse_event_date(value):
     for date_format in ("%d/%m/%Y", "%Y-%m-%d"):
@@ -51,21 +58,22 @@ def sunday_weeks(start_week, end_week):
     return weeks
 
 
-def real_events():
-    events = []
+def real_event_weeks():
+    weeks = []
     with EVENTS_CSV.open(newline="", encoding="utf-8-sig") as input_file:
         for row in csv.DictReader(input_file):
-            event_group = event_type_group(row["Type"])
-            if event_group is None:
+            if event_type_group(row["Type"]) is None:
                 continue
-            events.append((next_sunday(parse_event_date(row["Date"])), event_group))
-    return events
+            weeks.append(next_sunday(parse_event_date(row["Date"])))
+    if not weeks:
+        raise RuntimeError(f"No political/terror events found in {EVENTS_CSV}")
+    return weeks
 
 
-def far_from_real_events(candidate_week, blocked_weeks):
+def far_from_real_events(candidate_week, real_weeks):
     return all(
         abs((candidate_week - real_week).days) // 7 > MIN_WEEKS_FROM_REAL_EVENT
-        for real_week in blocked_weeks
+        for real_week in real_weeks
     )
 
 
@@ -91,29 +99,42 @@ def write_placebo_events(rows):
 
 def main():
     rng = random.Random(SEED)
+    real_weeks = set(real_event_weeks())
     all_possible_weeks = sunday_weeks(FIRST_PLACEBO_WEEK, LAST_PLACEBO_WEEK)
-    real_event_rows = real_events()
-    if not real_event_rows:
-        raise RuntimeError(f"No political/terror events found in {EVENTS_CSV}")
-    blocked_weeks = {event_week for event_week, _ in real_event_rows}
-    clean_weeks = [
-        week for week in all_possible_weeks
-        if far_from_real_events(week, blocked_weeks)
-    ]
+    target_count = sum(PLACEBO_TYPE_COUNTS.values())
 
-    event_types = []
-    event_type_counts = Counter(event_group for _, event_group in real_event_rows)
-    for event_type, count in event_type_counts.items():
-        event_types.extend([event_type] * count)
+    selected_weeks = set()
+    attempts = 0
+    max_attempts = target_count * 100
 
-    if len(clean_weeks) < len(event_types):
+    while len(selected_weeks) < target_count and attempts < max_attempts:
+        attempts += 1
+        candidate_week = rng.choice(all_possible_weeks)
+        if candidate_week in selected_weeks:
+            continue
+        if not far_from_real_events(candidate_week, real_weeks):
+            continue
+        selected_weeks.add(candidate_week)
+
+    if len(selected_weeks) < target_count:
         raise RuntimeError(
-            f"Need {len(event_types)} clean placebo weeks, but only {len(clean_weeks)} are available."
+            f"Could only generate {len(selected_weeks)} clean placebo weeks; "
+            f"needed {target_count}."
         )
 
-    sampled_weeks = sorted(rng.sample(clean_weeks, len(event_types)))
+    sampled_weeks = sorted(selected_weeks)
+    event_types = [
+        event_type
+        for event_type, count in PLACEBO_TYPE_COUNTS.items()
+        for _ in range(count)
+    ]
     rng.shuffle(event_types)
 
+    minimum_gap = min(
+        abs((placebo_week - real_week).days) // 7
+        for placebo_week in sampled_weeks
+        for real_week in real_weeks
+    )
     rows = [
         [event_week.isoformat(), event_type]
         for event_week, event_type in zip(sampled_weeks, event_types)
@@ -124,10 +145,8 @@ def main():
     print(f"Seed: {SEED}")
     print(f"Allowed date pool: {FIRST_PLACEBO_WEEK} to {LAST_PLACEBO_WEEK}")
     print(f"Candidate Sunday weeks: {len(all_possible_weeks)}")
-    print(f"Clean weeks after real-event exclusion: {len(clean_weeks)}")
-    print(f"Real event weeks excluded around: {len(blocked_weeks)} unique weeks")
-    print(f"Minimum distance from real event week: > {MIN_WEEKS_FROM_REAL_EVENT} weeks")
-    print(f"Real event type counts: {dict(sorted(event_type_counts.items()))}")
+    print(f"Real event weeks excluded around: {len(real_weeks)} unique weeks")
+    print(f"Minimum distance from real event week: {minimum_gap} weeks")
     print(f"Placebo type counts: {dict(sorted(Counter(event_types).items()))}")
     print(f"Selected placebo years: {dict(sorted(Counter(week.year for week in sampled_weeks).items()))}")
     print(f"Longest consecutive selected-week run: {longest_consecutive_run(sampled_weeks)}")
