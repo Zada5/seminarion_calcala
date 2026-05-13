@@ -2,6 +2,15 @@ rm(list = ls())
 gc()
 cat("\014")
 
+# Force a UTF-8 locale so Hebrew strings carry the correct Encoding() tag
+# and survive readr / grid / ragg without being escaped to "<d7><..>" bytes.
+local({
+  utf8_candidates <- c("en_US.UTF-8", "C.UTF-8", "en_US.utf8", "C.utf8")
+  for (candidate in utf8_candidates) {
+    if (tryCatch(!identical(Sys.setlocale("LC_ALL", candidate), ""), error = function(e) FALSE)) break
+  }
+})
+
 # =====================================================
 # Weekly Spending Analysis + Event-Study Regressions
 # =====================================================
