@@ -53,7 +53,7 @@ Both scripts use these default inputs unless command-line arguments override the
 ```bash
 ./data/processed/second_cleaning/weekly_party_spend_google.csv
 ./data/processed/second_cleaning/weekly_party_spend_meta.csv
-./data/raw/events/Consolidated List of Terror and Political incidents 2020-2025 v3.csv
+./data/raw/events/Consolidated List of Terror and Political incidents 2020-2025 v4.csv
 ```
 
 The weekly files in `data/processed/second_cleaning/` are the preferred seminar inputs after manual cleaning and hygiene checks. Earlier script-produced weekly files live in `data/processed/first_cleaning/`, and older cleaned files remain in `data/processed/cleaned_data/` for compatibility. See [`DATA_PIPELINE.md`](DATA_PIPELINE.md) for the complete file lineage.
@@ -66,7 +66,7 @@ the same 2020-2025 window after conversion to the Sunday event week.
 
 Descriptive tables count the cleaned weekly spend panel: one
 entity-platform-week row in the 2020-2025 seminar window. In the current
-second-cleaning inputs this is `9,458` rows.
+second-cleaning inputs this is `9,548` rows.
 
 Regression tables count stacked event-window observations. The scripts first
 cross the weekly spend panel with the event list, keep only rows inside the
@@ -82,7 +82,7 @@ The canonical placebo event-week file is generated with:
 python3 scripts/03_generate_placebo_events.py
 ```
 
-The generator writes the only placebo-date table, `data/generated/placebo_events_2020_2025.csv`. It samples 66 distinct Sunday-start weeks with seed `20260510` from clean weeks in the allowed pool `2020-01-26` through `2025-12-07`. Clean weeks are more than 3 weeks away from every real event week. The script then assigns 36 political and 30 terror labels. The R scripts read this one root file directly, validate the same real-event distance rule, and do not create extra placebo-date copies.
+The generator writes the only placebo-date table, `data/generated/placebo_events_2020_2025.csv`. It samples one distinct Sunday-start placebo week per real event with seed `20260510` from clean weeks in the allowed pool `2020-01-26` through `2025-12-07`. Clean weeks are more than 3 weeks away from every real event week. The script assigns placebo labels to match the real event type counts; with the current v4 event file this is 12 placebo events, split into 7 political and 5 terror/security rows. The R scripts read this one root file directly, validate the same real-event distance rule, and do not create extra placebo-date copies.
 
 When changing placebo dates, follow the full placebo refresh checklist in [`DATA_PIPELINE.md`](DATA_PIPELINE.md): regenerate the root CSV, review the clean-week diagnostics, verify row/count/date/distance constraints, rerun both R scripts, and confirm no duplicate placebo-date table was recreated.
 
@@ -455,48 +455,48 @@ Common extensions that can be added safely:
 
 ---
 
-## Sample Size Conventions (N = 9,458 vs 10,038 vs 313)
+## Sample Size Conventions (N = 9,548 vs 1,825 vs 313)
 
 Different output files report different `N` values. **All come from the same source data and the same filters** — they differ only in the *unit of aggregation*.
 
 | N | Where it appears | What it counts |
 |---|---|---|
-| **9,458** | `descriptive_overall.csv` (`total_rows`); `event_study_design_overview.csv` (`full_descriptive_weekly_rows`) | Unique **entity-week** rows in the cleaned weekly panel |
-| **10,040** | `event_study_design_overview.csv` (`stacked_event_window_rows`) | Rows after **stacked event-study** construction — entity-weeks falling inside multiple ±k event windows are duplicated, one copy per event. `extra_rows_from_stacking = 4,497`, `unique_weekly_rows_in_windows = 5,543` |
-| **10,038** | `event_study_model_fit.csv` (`used_rows`) | `10,040 − 2` rows dropped by `fixest` as singleton fixed-effect / collinear observations |
+| **9,548** | `descriptive_overall.csv` (`total_rows`); `event_study_design_overview.csv` (`full_descriptive_weekly_rows`) | Unique **entity-week** rows in the cleaned weekly panel |
+| **1,827** | `event_study_design_overview.csv` (`stacked_event_window_rows`) | Rows after **stacked event-study** construction around the 12 v4 events. Entity-weeks falling inside multiple ±k event windows are duplicated, one copy per event. `extra_rows_from_stacking = 169`, `unique_weekly_rows_in_windows = 1,658` |
+| **1,825** | `event_study_model_fit.csv` (`used_rows`) | `1,827 − 2` rows dropped by `fixest` as singleton fixed-effect / collinear observations |
 | **313** | `correlation_summary.csv` (`weeks_in_sample`) | Weekly time-series length after collapsing the panel to one row per ISO week |
 
-**Sanity check that all numbers share one source:** `descriptive_overall.csv` `total_rows = 9,458` is identical to `event_study_design_overview.csv` `full_descriptive_weekly_rows = 9,458`. The event-study and correlation files are computed *from* that same panel — no extra filter is applied or removed.
+**Sanity check that all numbers share one source:** `descriptive_overall.csv` `total_rows = 9,548` is identical to `event_study_design_overview.csv` `full_descriptive_weekly_rows = 9,548`. The event-study and correlation files are computed *from* that same panel — no extra filter is applied or removed.
 
 ---
 
 ## הסבר בעברית — למה ה־N שונה בקבצים שונים?
 
-שאלה טבעית: למה בקבצים התיאוריים (descriptive) רואים `N = 9,458`, ובמודל ה־event study רואים `N = 10,038`, ובקורלציות רואים `N = 313`? האם שכחתי פילטר?
+שאלה טבעית: למה בקבצים התיאוריים (descriptive) רואים `N = 9,548`, ובמודל ה־event study רואים `N = 1,825`, ובקורלציות רואים `N = 313`? האם שכחתי פילטר?
 
 **תשובה קצרה: לא. אותו מקור נתונים, אותם פילטרים, רק יחידת ניתוח שונה.**
 
 ### פירוט
 
-1. **9,458 — שורות בפאנל הגולמי (entity-week).**
+1. **9,548 — שורות בפאנל הגולמי (entity-week).**
    זה מספר השורות הייחודיות בפאנל השבועי הנקי: כל שורה = ישות אחת (מפלגה / ארגון / אדם) בשבוע אחד. זה ה־N של הסטטיסטיקות התיאוריות.
 
-2. **10,040 — שורות אחרי בנייה של stacked event study.**
+2. **1,827 — שורות אחרי בנייה של stacked event study.**
    במחקר event study בשיטה stacked, סביב כל אירוע אנחנו "חותכים" חלון של ±k שבועות. אם אותו entity-week נופל בתוך חלון של **שני אירועים** או יותר, הוא מופיע **פעמיים** (או יותר) בדאטה — פעם אחת לכל אירוע. זה חלק מהמתודולוגיה, לא באג.
-   - שורות ייחודיות בתוך החלונות: 5,543
-   - שורות שכפול שנוספו מה־stacking: 4,497
-   - סך הכל: 10,040
+   - שורות ייחודיות בתוך החלונות: 1,658
+   - שורות שכפול שנוספו מה־stacking: 169
+   - סך הכל: 1,827
 
-3. **10,038 — שורות שהמודל בפועל השתמש בהן.**
-   חבילת `fixest` ב־R מורידה אוטומטית שורות שהן "singletons" (קבוצת fixed-effect של תצפית אחת בלבד) או קולינאריות. נפלו 2 שורות מתוך 10,040.
+3. **1,825 — שורות שהמודל בפועל השתמש בהן.**
+   חבילת `fixest` ב־R מורידה אוטומטית שורות שהן "singletons" (קבוצת fixed-effect של תצפית אחת בלבד) או קולינאריות. נפלו 2 שורות מתוך 1,827.
 
 4. **313 — מספר השבועות בקורלציות.**
    כאן יחידת הניתוח שונה לגמרי. אנחנו לא סופרים שורות entity-week, אלא **מקפלים את כל הפאנל ל־time series שבועי אחד** (סוכמים את ההוצאה על פני כל הישויות בכל שבוע) ואז מחשבים קורלציה בין סדרת ההוצאה השבועית לבין סדרת מספר האירועים. יש 313 שבועות בין `2020-01-05` ל־`2025-12-28` → לכן N = 313.
 
 ### בדיקת שפיות
 
-- `descriptive_overall.csv` → `total_rows = 9,458`
-- `event_study_design_overview.csv` → `full_descriptive_weekly_rows = 9,458`
+- `descriptive_overall.csv` → `total_rows = 9,548`
+- `event_study_design_overview.csv` → `full_descriptive_weekly_rows = 9,548`
 
 המספר הזהה מוכיח שגם הסטטיסטיקות התיאוריות וגם ה־event study בנויים על **אותו פאנל בדיוק**. אין פילטר נוסף או חסר.
 
@@ -505,28 +505,28 @@ Different output files report different `N` values. **All come from the same sou
 ב־DiD משתמשים באותה שיטה של stacked design, ולכן רואים בדיוק את אותם המספרים:
 
 **DiD על האירועים האמיתיים** (`outputs/did/post_from_0/`):
-- `full_descriptive_weekly_rows = 9,458` — אותו פאנל בדיוק כמו בתיאורי וב־event study.
-- `total_rows = 10,040` — אחרי stacking (5,543 ייחודיות + 4,497 שכפולים מחפיפת חלונות).
-- `used_rows = 10,038` — שתיים נפלו כ־singletons.
+- `full_descriptive_weekly_rows = 9,548` — אותו פאנל בדיוק כמו בתיאורי וב־event study.
+- `total_rows = 1,827` — אחרי stacking (1,658 ייחודיות + 169 שכפולים מחפיפת חלונות).
+- `used_rows = 1,825` — שתיים נפלו כ־singletons.
 
 **DiD על הפלצבו** (`outputs/did/placebo/post_from_0/`):
-- `full_descriptive_weekly_rows = 9,458` — שוב אותו פאנל. הוכחה לעקביות.
-- `total_rows = 9,941` — שונה מ־10,040 כי אירועי הפלצבו אקראיים, אז דפוס החפיפה בין חלונות שונה (4,332 ייחודיות + 5,609 שכפולים).
-- `used_rows = 9,939` — שתיים נפלו.
+- `full_descriptive_weekly_rows = 9,548` — שוב אותו פאנל. הוכחה לעקביות.
+- `total_rows = 1,687` — שונה מ־1,827 כי אירועי הפלצבו אקראיים, אז דפוס החפיפה בין חלונות שונה (1,596 ייחודיות + 91 שכפולים).
+- `used_rows = 1,686` — שורה אחת נפלה.
 
 **DiD של שביעי באוקטובר** (`outputs/did/oct7/post_from_0/`):
 המספרים קטנים בהרבה (`used_rows = 144` למודל הכללי, `13` למפלגות בלבד) כי יש אירוע אחד בלבד, חלון אחד, ואין stacking של חלונות חופפים.
 
-**הכלל**: בכל קובץ design overview (תיאורי, event study, DiD רגיל, DiD פלצבו) חוזר אותו מספר 9,458 בעמודה `full_descriptive_weekly_rows`. זה הוכחה שכל הניתוחים בנויים על אותו פאנל בדיוק, אותם פילטרים, אותם תאריכים. ההפרש של שורה־שתיים בין `total_rows` ל־`used_rows` הוא תמיד singletons שהחבילה הסטטיסטית מורידה — לא באג, לא פילטר חסר.
+**הכלל**: בכל קובץ design overview (תיאורי, event study, DiD רגיל, DiD פלצבו) חוזר אותו מספר 9,548 בעמודה `full_descriptive_weekly_rows`. זה הוכחה שכל הניתוחים בנויים על אותו פאנל בדיוק, אותם פילטרים, אותם תאריכים. ההפרש הקטן בין `total_rows` ל־`used_rows` הוא singletons שהחבילה הסטטיסטית מורידה — לא באג, לא פילטר חסר.
 
 ### מה לומר למרצה
 
 בכל טבלה, פשוט לציין את יחידת הניתוח:
-- תיאורי: "N = 9,458 תצפיות entity-week."
-- Event study: "Stacked design: N = 10,038 תצפיות מודל (5,543 entity-weeks ייחודיים + 4,497 שכפולים מ־overlap בין חלונות אירועים; 2 הורדו על־ידי `fixest` כ־singletons)."
+- תיאורי: "N = 9,548 תצפיות entity-week."
+- Event study: "Stacked design: N = 1,825 תצפיות מודל (1,658 entity-weeks ייחודיים + 169 שכפולים מ־overlap בין חלונות אירועים; 2 הורדו על־ידי `fixest` כ־singletons)."
 - קורלציות: "N = 313 תצפיות שבועיות (הפאנל קופל לסדרה שבועית)."
-- DiD על אירועים אמיתיים: "Stacked DiD: N = 10,038 (5,543 entity-weeks ייחודיים + 4,497 שכפולים מחפיפת חלונות; 2 singletons הורדו)."
-- DiD על פלצבו: "Stacked DiD על אירועי פלצבו: N = 9,939 (4,332 ייחודיים + 5,609 שכפולים; 2 singletons הורדו)."
+- DiD על אירועים אמיתיים: "Stacked DiD: N = 1,825 (1,658 entity-weeks ייחודיים + 169 שכפולים מחפיפת חלונות; 2 singletons הורדו)."
+- DiD על פלצבו: "Stacked DiD על אירועי פלצבו: N = 1,686 (1,596 ייחודיים + 91 שכפולים; 1 singleton הורד)."
 - DiD של שביעי באוקטובר: "אירוע יחיד, ללא stacking: N = 144 תצפיות (35 ישויות × חלון של ±2 שבועות)."
 
 ---

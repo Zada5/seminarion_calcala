@@ -1,9 +1,8 @@
 model_name,relative_week,estimate,std.error,statistic,p.value,conf.low,conf.high,pct_change,signif
-all_entities_all_events__without_gamma_t (paper baseline),-2,0.071,0.031,2.328,0.023,0.010,0.132,+7.4%,**
-all_entities_all_events__without_gamma_t (paper baseline),-1,0.056,0.026,2.113,0.039,0.003,0.108,+5.7%,**
-all_entities_all_events__without_gamma_t (paper baseline),1,-0.025,0.025,-1.012,0.315,-0.075,0.024,-2.5%,
-all_entities_all_events__without_gamma_t (paper baseline),2,-0.044,0.026,-1.714,0.091,-0.096,0.007,-4.3%,*
-all_entities_all_events__with_gamma_t,-2,-0.193,14.969,-0.013,0.990,-30.097,29.711,-17.6%,
-all_entities_all_events__with_gamma_t,-1,-0.097,7.485,-0.013,0.990,-15.049,14.856,-9.2%,
-all_entities_all_events__with_gamma_t,1,0.097,7.485,0.013,0.990,-14.856,15.049,+10.1%,
-all_entities_all_events__with_gamma_t,2,0.193,14.969,0.013,0.990,-29.711,30.097,+21.3%,
+all_entities_all_events__without_gamma_t (paper baseline),-2,0.032,0.059,0.539,0.592,-0.087,0.151,+3.2%,
+all_entities_all_events__without_gamma_t (paper baseline),-1,-0.028,0.047,-0.599,0.552,-0.122,0.066,-2.8%,
+all_entities_all_events__without_gamma_t (paper baseline),1,-0.070,0.065,-1.074,0.287,-0.199,0.060,-6.7%,
+all_entities_all_events__without_gamma_t (paper baseline),2,-0.109,0.080,-1.364,0.178,-0.270,0.051,-10.4%,
+all_entities_all_events__with_gamma_t,-2,-0.000,0.000,-0.000,1.000,-0.000,0.000,-0.0%,
+all_entities_all_events__with_gamma_t,-1,-0.000,0.000,-0.000,1.000,-0.000,0.000,-0.0%,
+all_entities_all_events__with_gamma_t,1,-0.000,0.000,-0.000,1.000,-0.000,0.000,-0.0%,

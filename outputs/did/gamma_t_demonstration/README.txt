@@ -7,7 +7,7 @@ PostEvent = 1 when relative_week >= 0.
 Two regressions are reported here side-by-side in
 did_coefficient_comparison.csv:
 
-  (A) without_gamma_t  (the spec used in the rest of analysis_outputs_did/)
+  (A) without_gamma_t  (the spec used in the rest of outputs/did/)
       log_y ~ post_event | entity_name + data_source + event_id
 
   (B) with_gamma_t     (the textbook canonical TWFE-DiD spec we tried first)
