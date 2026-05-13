@@ -5,6 +5,6 @@ all_entities_terror_events,all,terror,All entities,Terror events,-0.104,(0.067),
 political_parties_all_events,political_party,all,Political parties,All events,0.100,(0.196),0.621,254,253,242,12,0.364,0.002
 political_parties_political_events,political_party,political,Political parties,Political events,0.252,(0.287),0.396,180,180,169,11,0.407,0.009
 political_parties_terror_events,political_party,terror,Political parties,Terror events,-0.053,(0.203),0.803,74,73,73,1,0.475,0.001
-other_orgs_people_all_events,other_org_or_person,all,Organizations/people,All events,-0.091*,(0.052),0.089,1573,1572,1416,157,0.372,0.001
+other_orgs_people_all_events,other_org_or_person,all,Organizations/people,All events,-0.091.,(0.052),0.089,1573,1572,1416,157,0.372,0.001
 other_orgs_people_political_events,other_org_or_person,political,Organizations/people,Political events,-0.091,(0.072),0.215,862,859,759,103,0.356,0.001
 other_orgs_people_terror_events,other_org_or_person,terror,Organizations/people,Terror events,-0.108,(0.072),0.143,711,711,657,54,0.536,0.003

@@ -31,7 +31,7 @@ reduction in spend, not a 131% reduction (which would be impossible).
 
 Significance markers
 -------------------------------------------------------------------------
-    ***  p < 0.01    **  p < 0.05    *  p < 0.10
+    ***  p < 0.001    **  p < 0.01    *  p < 0.05    .  p < 0.10
 Standard errors clustered by entity_name. p-values < 0.001 are shown as
 '<0.001' rather than rounded to 0.000.
 
@@ -153,7 +153,7 @@ N (stacked event-window obs. used): 253    R^2: 0.364    Adj. R^2: 0.294    With
 (3) other_orgs_people_all_events
 -------------------------------------------------------------------------
 Variable                 Estimate  Std. Err.   Pct change   p-value  sig
-post_event                 -0.091      0.052        -8.7%     0.089    *
+post_event                 -0.091      0.052        -8.7%     0.089    .
 -------------------------------------------------------------------------
 N (stacked event-window obs. used): 1,572    R^2: 0.372    Adj. R^2: 0.348    Within R^2: 0.001
 
@@ -356,7 +356,7 @@ Model                                         Real beta    Real p   Placebo beta
 -------------------------------------------------------------------------------------------------------------------
 All entities x all events                        -0.061     0.239          0.018     0.418      1,825        9,138
 Political parties x all events                    0.100     0.621          0.078     0.341        253        1,544
-Other orgs/people x all events                  -0.091*     0.089          0.007     0.750      1,572        7,594
+Other orgs/people x all events                  -0.091.     0.089          0.007     0.750      1,572        7,594
 All entities x political events                  -0.042     0.580          0.013     0.675      1,039        5,262
 All entities x terror events                     -0.104     0.126          0.021     0.535        784        3,874
 Political parties x political events              0.252     0.396          0.027     0.791        180          856
