@@ -5,6 +5,7 @@ import glob
 import math
 from datetime import datetime, date, timedelta
 from collections import defaultdict
+from pathlib import Path
 
 import pandas as pd
 
@@ -14,6 +15,24 @@ import pandas as pd
 # ---------------------------
 
 DATE_RE = re.compile(r"(20\d{2}-\d{2}-\d{2})")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def load_local_env():
+    for env_path in (PROJECT_ROOT / ".env", PROJECT_ROOT / ".secrets" / ".env"):
+        if not env_path.exists():
+            continue
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            if line.startswith("export "):
+                line = line[len("export "):].strip()
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip("\"'")
+            if key:
+                os.environ.setdefault(key, value)
 
 def parse_party_and_download_date_from_filename(path: str):
     """
@@ -105,13 +124,15 @@ def iter_week_starts(start_day: date, end_day: date):
 # ---------------------------
 
 def process_meta_folder(input_folder: str, output_csv_path: str):
+    load_local_env()
+
     # Exchange rate cache: {date_str: rate}
     exchange_rate_cache = {}
 
     def get_usd_to_ils_rate(date_obj):
         # Use 3.5 as the default fallback rate
         DEFAULT_RATE = 3.5
-        API_KEY = "REMOVED_APILAYER_API_KEY"
+        api_key = os.getenv("APILAYER_API_KEY")
         min_supported = datetime(2020, 1, 1).date()
         if date_obj < min_supported:
             print(f"Date {date_obj} before 2020-01-01, using 2020-01-01 for rate lookup.")
@@ -119,10 +140,14 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
         date_str = date_obj.strftime("%Y-%m-%d")
         if date_str in exchange_rate_cache:
             return exchange_rate_cache[date_str]
+        if not api_key:
+            print(f"APILAYER_API_KEY is not set. Using default rate {DEFAULT_RATE} for {date_str}.")
+            exchange_rate_cache[date_str] = DEFAULT_RATE
+            return DEFAULT_RATE
         url = f"https://api.apilayer.com/currency_data/convert?base=USD&symbols=ILS&amount=1&date={date_str}"
-        headers = {"apikey": API_KEY}
+        headers = {"apikey": api_key}
         try:
-            print(f"Fetching USD→ILS rate for {date_str} using API key: {API_KEY[:4]}... (URL: {url})")
+            print(f"Fetching USD→ILS rate for {date_str}.")
             resp = requests.get(url, headers=headers, timeout=10)
             resp.raise_for_status()
             data = resp.json()
@@ -213,7 +238,7 @@ def process_meta_folder(input_folder: str, output_csv_path: str):
     # helpful print
     print(f"Processed {len(csv_paths)} files.")
     print(f"Output: {output_csv_path}")
-    print("All spend is now in ILS. USD values were converted using exchangerate.host.")
+    print("All spend is now in ILS. USD values were converted with APILayer when APILAYER_API_KEY was set; otherwise the default fallback rate was used.")
 
 
 if __name__ == "__main__":

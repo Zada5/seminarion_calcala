@@ -163,7 +163,7 @@ What the script does:
 - treats missing ad stop dates as active through the download date
 - spreads each ad's estimated spend evenly across its active days
 - allocates daily spend into Sunday-start weeks
-- converts USD rows to ILS when needed, using a fallback rate if lookup fails
+- converts USD rows to ILS when needed, using APILayer if `APILAYER_API_KEY` is set and a fallback rate otherwise
 - writes one row per entity-week
 
 Output schema:
