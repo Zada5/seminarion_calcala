@@ -136,6 +136,9 @@ celerybeat.pid
 
 # Environments
 .env
+.env.*
+!.env.example
+.secrets/
 .envrc
 .venv
 env/
@@ -210,6 +213,9 @@ __marimo__/
 #this project: 
 .DS_Store
 .Rproj.user
+.Rhistory
+.RData
+.Renviron
 
 # Claude Code harness
 .claude/

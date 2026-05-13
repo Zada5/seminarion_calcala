@@ -451,6 +451,7 @@ Common extensions that can be added safely:
    ```bash
    python3 scripts/01_meta_csvs_to_final_file.py
    ```
+   Optional: set `APILAYER_API_KEY` in `.secrets/.env` before running if you want live USD-to-ILS conversion rates. `.secrets/` is ignored by Git. If the key is unset, the script uses its documented fallback rate.
 4. Review the generated `data/processed/first_cleaning/weekly_party_spend_meta.csv`
 5. Use `data/processed/second_cleaning/weekly_party_spend_meta.csv` for the default seminar analysis after manual cleaning
 
