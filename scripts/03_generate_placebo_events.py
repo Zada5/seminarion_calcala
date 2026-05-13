@@ -22,8 +22,8 @@ LAST_PLACEBO_WEEK = date(2025, 12, 7)
 # Security placebo events are stored as "terror" because the downstream
 # analysis bucket is named terror/security.
 PLACEBO_TYPE_COUNTS = {
-    "political": 35,
-    "terror": 25,
+    "political": 27,
+    "terror": 48,
 }
 
 

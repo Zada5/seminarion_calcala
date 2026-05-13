@@ -1,11 +1,11 @@
 | model_name | model_label | real_estimate_display | real_std.error | real_p.value | real_conf.low | real_conf.high | real_used_rows | real_entities | real_events | real_within_r2 | placebo_estimate_display | placebo_std.error | placebo_p.value | placebo_conf.low | placebo_conf.high | placebo_used_rows | placebo_entities | placebo_events | placebo_within_r2 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| all_entities_all_events | All entities x all events | -0.061 | 0.052 | 0.239 | -0.165 | 0.042 | 1825 | 59 | 12 | 0.001 | 0.018 | 0.022 | 0.418 | -0.026 | 0.063 | 9138 | 65 | 60 | 0.000 |
-| political_parties_all_events | Political parties x all events | 0.100 | 0.196 | 0.621 | -0.328 | 0.528 | 253 | 13 | 12 | 0.002 | 0.078 | 0.079 | 0.341 | -0.090 | 0.246 | 1544 | 17 | 60 | 0.001 |
-| other_orgs_people_all_events | Other orgs/people x all events | -0.091. | 0.052 | 0.089 | -0.197 | 0.014 | 1572 | 46 | 12 | 0.001 | 0.007 | 0.021 | 0.750 | -0.036 | 0.049 | 7594 | 48 | 60 | 0.000 |
-| all_entities_political_events | All entities x political events | -0.042 | 0.075 | 0.580 | -0.192 | 0.108 | 1039 | 54 | 7 | 0.000 | 0.013 | 0.030 | 0.675 | -0.048 | 0.073 | 5262 | 62 | 35 | 0.000 |
-| all_entities_terror_events | All entities x terror events | -0.104 | 0.067 | 0.126 | -0.239 | 0.031 | 784 | 42 | 5 | 0.002 | 0.021 | 0.033 | 0.535 | -0.046 | 0.088 | 3874 | 64 | 25 | 0.000 |
-| political_parties_political_events | Political parties x political events | 0.252 | 0.287 | 0.396 | -0.372 | 0.877 | 180 | 13 | 7 | 0.009 | 0.027 | 0.100 | 0.791 | -0.187 | 0.241 | 856 | 16 | 35 | 0.000 |
-| political_parties_terror_events | Political parties x terror events | -0.053 | 0.203 | 0.803 | -0.533 | 0.428 | 73 | 7 | 5 | 0.001 | 0.140 | 0.110 | 0.224 | -0.095 | 0.374 | 687 | 16 | 25 | 0.003 |
-| other_orgs_people_political_events | Other orgs/people x political events | -0.091 | 0.072 | 0.215 | -0.236 | 0.055 | 859 | 41 | 7 | 0.001 | 0.014 | 0.030 | 0.639 | -0.046 | 0.074 | 4406 | 46 | 35 | 0.000 |
-| other_orgs_people_terror_events | Other orgs/people x terror events | -0.108 | 0.072 | 0.143 | -0.255 | 0.039 | 711 | 36 | 5 | 0.003 | -0.006 | 0.033 | 0.849 | -0.073 | 0.060 | 3187 | 48 | 25 | 0.000 |
+| all_entities_all_events | All entities x all events | -0.059. | 0.030 | 0.050 | -0.118 | 0.000 | 3887 | 65 | 25 | 0.001 | 0.012 | 0.024 | 0.615 | -0.035 | 0.059 | 11355 | 65 | 75 | 0.000 |
+| political_parties_all_events | Political parties x all events | 0.041 | 0.085 | 0.636 | -0.140 | 0.222 | 567 | 15 | 25 | 0.000 | 0.035 | 0.043 | 0.429 | -0.056 | 0.125 | 2156 | 17 | 75 | 0.000 |
+| other_orgs_people_all_events | Other orgs/people x all events | -0.078* | 0.032 | 0.019 | -0.142 | -0.014 | 3320 | 50 | 25 | 0.001 | 0.013 | 0.027 | 0.630 | -0.042 | 0.068 | 9199 | 48 | 75 | 0.000 |
+| all_entities_political_events | All entities x political events | -0.063 | 0.062 | 0.320 | -0.187 | 0.062 | 1373 | 57 | 9 | 0.001 | 0.034 | 0.034 | 0.322 | -0.034 | 0.102 | 4109 | 62 | 27 | 0.000 |
+| all_entities_terror_events | All entities x terror events | -0.061 | 0.039 | 0.126 | -0.139 | 0.018 | 2512 | 60 | 16 | 0.001 | 0.006 | 0.025 | 0.818 | -0.045 | 0.056 | 7244 | 64 | 48 | 0.000 |
+| political_parties_political_events | Political parties x political events | 0.213 | 0.234 | 0.381 | -0.297 | 0.722 | 215 | 13 | 9 | 0.007 | 0.154 | 0.090 | 0.111 | -0.041 | 0.349 | 680 | 14 | 27 | 0.005 |
+| political_parties_terror_events | Political parties x terror events | 0.005 | 0.156 | 0.974 | -0.332 | 0.343 | 352 | 14 | 16 | 0.000 | -0.012 | 0.058 | 0.842 | -0.135 | 0.112 | 1474 | 17 | 48 | 0.000 |
+| other_orgs_people_political_events | Other orgs/people x political events | -0.111. | 0.060 | 0.071 | -0.233 | 0.010 | 1158 | 44 | 9 | 0.002 | 0.011 | 0.038 | 0.773 | -0.065 | 0.087 | 3429 | 48 | 27 | 0.000 |
+| other_orgs_people_terror_events | Other orgs/people x terror events | -0.070. | 0.041 | 0.094 | -0.153 | 0.012 | 2160 | 47 | 16 | 0.001 | 0.018 | 0.029 | 0.541 | -0.041 | 0.077 | 5770 | 47 | 48 | 0.000 |

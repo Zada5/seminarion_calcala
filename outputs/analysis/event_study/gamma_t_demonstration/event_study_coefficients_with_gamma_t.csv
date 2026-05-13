@@ -1,4 +1,4 @@
 model_name,relative_week,estimate,std.error,statistic,p.value,conf.low,conf.high,pct_change,signif
-all_entities_all_events__with_gamma_t,-2,-0,0.000,-0.000,1.000,-0.000,0.000,-0.0%,
-all_entities_all_events__with_gamma_t,-1,-0,0.000,-0.000,1.000,-0.000,0.000,-0.0%,
+all_entities_all_events__with_gamma_t,-2,0,0.000,0.000,1.000,-0.000,0.000,+0.0%,
+all_entities_all_events__with_gamma_t,-1,0,0.000,0.000,1.000,-0.000,0.000,+0.0%,
 all_entities_all_events__with_gamma_t,1,-0,0.000,-0.000,1.000,-0.000,0.000,-0.0%,

@@ -246,7 +246,7 @@ write_model_summary_sections <- function(model_names, coefficients_table, fit_ta
 #   relative_week = -2          0.071        0.031        +7.4%     0.023  **
 #   ...
 #   ---------------------------------------------------------------------
-#   N (stacked event-window obs. used): 1,825    R^2: 0.357    Adj. R^2: 0.330    Within R^2: 0.002
+#   N (stacked event-window obs. used): <used_rows>    R^2: <r2>    Adj. R^2: <adjusted_r2>    Within R^2: <within_r2>
 #
 # Works for event-study coefficients (rows keyed by `relative_week`) and DiD
 # coefficients (rows keyed by `term`).
