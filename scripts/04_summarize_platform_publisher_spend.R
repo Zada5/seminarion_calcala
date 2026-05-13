@@ -6,8 +6,8 @@
 #   - How much was spent on Meta?
 #   - How much did each of the 68 publishers spend on each platform?
 #
-# This script is intentionally separate from 05_event_study_0710.R and
-# 06_did_0710.R. It does not estimate regressions and does not use the events
+# This script is intentionally separate from 05_event_study.R and
+# 06_did.R. It does not estimate regressions and does not use the events
 # file. It only summarizes the cleaned weekly spend inputs.
 #
 # Default inputs:
