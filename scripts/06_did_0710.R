@@ -274,16 +274,14 @@ write_paper_style_model_section <- function(model_label,
 
       signif_text <- if (is.null(row$signif) || is.na(row$signif)) "" else as.character(row$signif)
 
-      writeLines(
-        sprintf("%-22s %10s %10s %12s %9s %4s",
-                variable_label,
-                .fmt_paper_number(row$estimate, 3L),
-                .fmt_paper_number(row$std.error, 3L),
-                pct_text,
-                p_value_text,
-                signif_text),
-        con = summary_connection
-      )
+      coefficient_line <- sprintf("%-22s %10s %10s %12s %9s %4s",
+                                  variable_label,
+                                  .fmt_paper_number(row$estimate, 3L),
+                                  .fmt_paper_number(row$std.error, 3L),
+                                  pct_text,
+                                  p_value_text,
+                                  signif_text)
+      writeLines(sub("\\s+$", "", coefficient_line), con = summary_connection)
     }
   }
 
@@ -1788,7 +1786,7 @@ default_meta_path <- resolve_default_path(c(
   "./data/processed/cleaned_data/weekly_party_spend_meta.csv"
 ))
 default_events_path <- resolve_default_path(c(
-  "./data/raw/events/Consolidated List of Terror and Political incidents 2020-2025 v3.csv"
+  "./data/raw/events/Consolidated List of Terror and Political incidents 2020-2025 v4.csv"
 ))
 
 google_data_path <- if (length(script_arguments) >= 1) script_arguments[1] else default_google_path
@@ -1922,10 +1920,13 @@ full_sample_rows_by_entity <- c(
 raw_events <- readr::read_csv(events_data_path, show_col_types = FALSE)
 names(raw_events) <- trimws(names(raw_events))
 
-required_event_columns <- c("Date", "Type", "Article")
+required_event_columns <- c("Date", "Type")
 missing_event_columns <- setdiff(required_event_columns, names(raw_events))
 if (length(missing_event_columns) > 0) {
   stop("Events file missing columns: ", paste(missing_event_columns, collapse = ", "))
+}
+if (!"Article" %in% names(raw_events)) {
+  raw_events$Article <- if ("Name" %in% names(raw_events)) raw_events$Name else NA_character_
 }
 if (!"Details" %in% names(raw_events)) {
   raw_events$Details <- NA_character_
@@ -1936,7 +1937,7 @@ events_table <- raw_events %>%
     event_date = parse_date_flexible(Date),
     event_type_raw = as.character(Type),
     event_type_group = dplyr::case_when(
-      stringr::str_detect(tolower(Type), "terror") ~ "terror",
+      stringr::str_detect(tolower(Type), "terror|security") ~ "terror",
       stringr::str_detect(tolower(Type), "political") ~ "political",
       TRUE ~ "other"
     ),
