@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 
-EVENTS_CSV = Path("data/raw/events/Consolidated List of Terror and Political incidents 2020-2025 v3.csv")
+EVENTS_CSV = Path("data/raw/events/Consolidated List of Terror and Political incidents 2020-2025 v4.csv")
 OUTPUT_CSV = Path("data/generated/placebo_events_2020_2025.csv")
 SEED = 20260510
 
@@ -19,12 +19,6 @@ LAST_PLACEBO_WEEK = date(2025, 12, 7)
 
 # Exclude placebo weeks inside the real event-study neighborhood.
 MIN_WEEKS_FROM_REAL_EVENT = 3
-
-EVENT_TYPE_COUNTS = {
-    "political": 36,
-    "terror": 30,
-}
-
 
 def parse_event_date(value):
     for date_format in ("%d/%m/%Y", "%Y-%m-%d"):
@@ -37,7 +31,7 @@ def parse_event_date(value):
 
 def event_type_group(value):
     value = value.lower()
-    if "terror" in value:
+    if "terror" in value or "security" in value:
         return "terror"
     if "political" in value:
         return "political"
@@ -57,14 +51,15 @@ def sunday_weeks(start_week, end_week):
     return weeks
 
 
-def real_event_weeks():
-    weeks = []
+def real_events():
+    events = []
     with EVENTS_CSV.open(newline="", encoding="utf-8-sig") as input_file:
         for row in csv.DictReader(input_file):
-            if event_type_group(row["Type"]) is None:
+            event_group = event_type_group(row["Type"])
+            if event_group is None:
                 continue
-            weeks.append(next_sunday(parse_event_date(row["Date"])))
-    return weeks
+            events.append((next_sunday(parse_event_date(row["Date"])), event_group))
+    return events
 
 
 def far_from_real_events(candidate_week, blocked_weeks):
@@ -97,14 +92,18 @@ def write_placebo_events(rows):
 def main():
     rng = random.Random(SEED)
     all_possible_weeks = sunday_weeks(FIRST_PLACEBO_WEEK, LAST_PLACEBO_WEEK)
-    blocked_weeks = set(real_event_weeks())
+    real_event_rows = real_events()
+    if not real_event_rows:
+        raise RuntimeError(f"No political/terror events found in {EVENTS_CSV}")
+    blocked_weeks = {event_week for event_week, _ in real_event_rows}
     clean_weeks = [
         week for week in all_possible_weeks
         if far_from_real_events(week, blocked_weeks)
     ]
 
     event_types = []
-    for event_type, count in EVENT_TYPE_COUNTS.items():
+    event_type_counts = Counter(event_group for _, event_group in real_event_rows)
+    for event_type, count in event_type_counts.items():
         event_types.extend([event_type] * count)
 
     if len(clean_weeks) < len(event_types):
@@ -128,7 +127,8 @@ def main():
     print(f"Clean weeks after real-event exclusion: {len(clean_weeks)}")
     print(f"Real event weeks excluded around: {len(blocked_weeks)} unique weeks")
     print(f"Minimum distance from real event week: > {MIN_WEEKS_FROM_REAL_EVENT} weeks")
-    print(f"Placebo type counts: {dict(Counter(event_types))}")
+    print(f"Real event type counts: {dict(sorted(event_type_counts.items()))}")
+    print(f"Placebo type counts: {dict(sorted(Counter(event_types).items()))}")
     print(f"Selected placebo years: {dict(sorted(Counter(week.year for week in sampled_weeks).items()))}")
     print(f"Longest consecutive selected-week run: {longest_consecutive_run(sampled_weeks)}")
 
