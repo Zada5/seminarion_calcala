@@ -2169,6 +2169,47 @@ build_sample_statistics_table_he <- function(overall_stats) {
 }
 
 write_sample_statistics_png <- function(dataframe, file_path, title) {
+  render_sample_statistics_table(dataframe, file_path, title)
+}
+
+# Renders the same table as a PDF by drawing a PNG first (so Hebrew + RTL
+# come out correctly via ragg's system fonts) and then converting to PDF.
+# Cairo-backed pdf devices on macOS require XQuartz, which we cannot assume,
+# so we route through sips on Darwin and fall back to magick / qpdf-style
+# helpers on other platforms.
+write_sample_statistics_pdf <- function(dataframe, file_path, title) {
+  dir.create(dirname(file_path), recursive = TRUE, showWarnings = FALSE)
+  png_path <- tempfile(fileext = ".png")
+  on.exit(unlink(png_path), add = TRUE)
+  render_sample_statistics_table(dataframe, png_path, title)
+  convert_png_to_pdf(png_path, file_path)
+  invisible(file_path)
+}
+
+convert_png_to_pdf <- function(png_path, pdf_path) {
+  if (identical(unname(Sys.info()["sysname"]), "Darwin") &&
+      nzchar(Sys.which("sips"))) {
+    status <- system2(
+      "sips",
+      args = c("-s", "format", "pdf", shQuote(png_path), "--out", shQuote(pdf_path)),
+      stdout = FALSE,
+      stderr = FALSE
+    )
+    if (status == 0L && file.exists(pdf_path)) return(invisible(pdf_path))
+  }
+  if (requireNamespace("magick", quietly = TRUE)) {
+    image <- magick::image_read(png_path)
+    magick::image_write(image, path = pdf_path, format = "pdf")
+    return(invisible(pdf_path))
+  }
+  warning(
+    "Could not convert PNG to PDF for ", pdf_path,
+    ": install XQuartz (for cairo_pdf), or sips (macOS), or the 'magick' R package."
+  )
+  invisible(NULL)
+}
+
+render_sample_statistics_table <- function(dataframe, file_path, title) {
   dir.create(dirname(file_path), recursive = TRUE, showWarnings = FALSE)
 
   width_px <- 1200L
@@ -3206,6 +3247,16 @@ write_sample_statistics_png(
   file.path(output_paths$tables, "statistics_table.png"),
   title = "טבלה 1: סטטיסטיקה תיאורית - נתוני הוצאות פרסום שבועיות (2020-2025)"
 )
+write_sample_statistics_pdf(
+  sample_statistics_he,
+  file.path(output_paths$tables, "sample_statistics_he.pdf"),
+  title = "טבלה 1: סטטיסטיקה תיאורית - נתוני הוצאות פרסום שבועיות (2020-2025)"
+)
+write_sample_statistics_pdf(
+  sample_statistics_he,
+  file.path(output_paths$tables, "statistics_table.pdf"),
+  title = "טבלה 1: סטטיסטיקה תיאורית - נתוני הוצאות פרסום שבועיות (2020-2025)"
+)
 readr::write_csv(
   descriptive_entity_type_summary_he,
   file.path(output_paths$tables, "descriptive_entity_type_summary_he.csv"),
@@ -3687,7 +3738,7 @@ print_section("Output Files")
 cat("Saved descriptive stats and regressions to: ", normalizePath(output_directory), "\n", sep = "")
 cat("- summaries/regression_summary.txt\n")
 cat("- tables/*\n")
-cat("- tables/sample_statistics_he.{csv,md,html,tex,png}\n")
+cat("- tables/sample_statistics_he.{csv,md,html,tex,png,pdf}\n")
 cat("- tables/descriptive_*_he.{csv,md,html}\n")
 cat("- descriptive/*.csv\n")
 cat("- descriptive/descriptive_yearly_group_spend_line.{png,pdf}\n")

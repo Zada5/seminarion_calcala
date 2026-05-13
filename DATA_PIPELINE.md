@@ -323,7 +323,9 @@ outputs/analysis/tables/sample_statistics_he.md
 outputs/analysis/tables/sample_statistics_he.html
 outputs/analysis/tables/sample_statistics_he.tex
 outputs/analysis/tables/sample_statistics_he.png
+outputs/analysis/tables/sample_statistics_he.pdf
 outputs/analysis/tables/statistics_table.png
+outputs/analysis/tables/statistics_table.pdf
 ```
 
 What this step summarizes:
@@ -463,7 +465,7 @@ outputs/did/summaries/regression_summary.txt
 | Placebo event generator | `scripts/03_generate_placebo_events.py` | maintained script with fixed date/count/seed parameters | `data/generated/placebo_events_2020_2025.csv` |
 | Placebo event list | `data/generated/placebo_events_2020_2025.csv` | `scripts/03_generate_placebo_events.py` | `scripts/05_event_study.R`, `scripts/06_did.R` |
 | Descriptive outputs | `outputs/analysis/descriptive/*.csv` | dedicated descriptive R step / descriptive block in `scripts/05_event_study.R` | data hygiene review, seminar descriptive tables |
-| Paper Table 1 sample statistics | `outputs/analysis/tables/sample_statistics_he.{csv,md,html,tex,png}` and compatibility image `outputs/analysis/tables/statistics_table.png` | `scripts/05_event_study.R` descriptive presentation block, sourced from `descriptive_overall.csv` | seminar paper descriptive-statistics table |
+| Paper Table 1 sample statistics | `outputs/analysis/tables/sample_statistics_he.{csv,md,html,tex,png,pdf}` and compatibility files `outputs/analysis/tables/statistics_table.{png,pdf}` | `scripts/05_event_study.R` descriptive presentation block, sourced from `descriptive_overall.csv` | seminar paper descriptive-statistics table |
 | Event-study outputs | `outputs/analysis/**` | `scripts/05_event_study.R` | seminar tables, figures, interpretation |
 | DiD outputs | `outputs/did/**` | `scripts/06_did.R` | seminar tables, figures, interpretation |
 | Combined total reference | `data/reference/Total_Spend_Per_Party_or_Entity.xlsx` | separate combined total aggregation | quick total-spend lookup |
